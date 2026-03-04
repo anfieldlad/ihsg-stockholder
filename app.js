@@ -710,16 +710,96 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
   });
 });
 
-// Search (debounced)
-let searchTimeout;
-document.getElementById('globalSearch').addEventListener('input', () => {
-  clearTimeout(searchTimeout);
-  searchTimeout = setTimeout(() => {
-    stockPage = 1;
-    investorPage = 1;
-    updateStockTable();
-    updateInvestorTable();
-  }, 250);
+// ── Autocomplete Search ──
+const searchInput = document.getElementById('globalSearch');
+const searchDropdown = document.getElementById('searchDropdown');
+
+function closeDropdown() {
+  searchDropdown.style.display = 'none';
+}
+
+// Close when clicking outside
+document.addEventListener('click', (e) => {
+  if (!searchInput.contains(e.target) && !searchDropdown.contains(e.target)) {
+    closeDropdown();
+  }
+});
+
+// Close on Escape
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') closeDropdown();
+});
+
+searchInput.addEventListener('input', (e) => {
+  const q = e.target.value.toLowerCase().trim();
+  if (!q) {
+    closeDropdown();
+    // Reset tables if search cleared
+    stockPage = 1; investorPage = 1; updateStockTable(); updateInvestorTable();
+    return;
+  }
+
+  // 1. Find matching stocks (deduplicated by code)
+  const uniqueStockCodes = new Set();
+  const matchingStocks = [];
+  for (const s of rawData.items) {
+    if (s.code.toLowerCase().includes(q) || s.issuer.toLowerCase().includes(q)) {
+      if (!uniqueStockCodes.has(s.code)) {
+        uniqueStockCodes.add(s.code);
+        matchingStocks.push(s);
+        if (matchingStocks.length >= 5) break;
+      }
+    }
+  }
+
+  // 2. Find matching investors
+  const investorNames = Object.keys(investorMap);
+  const matchingInvestors = investorNames
+    .filter(name => name.toLowerCase().includes(q))
+    .slice(0, 5); // top 5
+
+  if (matchingStocks.length === 0 && matchingInvestors.length === 0) {
+    searchDropdown.innerHTML = `<div class="dropdown-header" style="text-align:center;padding:16px;">Tidak ada hasil ditemukan</div>`;
+    searchDropdown.style.display = 'block';
+    return;
+  }
+
+  let html = '';
+
+  // Render Stocks
+  if (matchingStocks.length > 0) {
+    html += `<div class="dropdown-header">Saham</div>`;
+    html += matchingStocks.map(s => `
+      <div class="autocomplete-item" onclick="location.hash='#/stock/${s.code}'; document.getElementById('globalSearch').value=''; closeDropdown()">
+        <div>
+          <span class="match-text">${s.code}</span>
+          <span class="match-subtext">${s.issuer.length > 30 ? s.issuer.substring(0, 30) + '...' : s.issuer}</span>
+        </div>
+        <span class="match-badge badge-stock">Saham</span>
+      </div>
+    `).join('');
+  }
+
+  // Render Investors
+  if (matchingInvestors.length > 0) {
+    html += `<div class="dropdown-header">Investor</div>`;
+    html += matchingInvestors.map(name => {
+      const inv = investorMap[name];
+      const safeName = name.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+      const hash = '#/investor/' + encodeURIComponent(name);
+      return `
+      <div class="autocomplete-item" onclick="location.hash='${hash}'; document.getElementById('globalSearch').value=''; closeDropdown()">
+        <div>
+          <span class="match-text">${name}</span>
+          <span class="match-subtext">${TYPE_LABELS[inv.type] || inv.type} &bull; ${inv.stocks.length} Saham</span>
+        </div>
+        <span class="match-badge badge-investor">Investor</span>
+      </div>
+    `}).join('');
+  }
+
+  searchDropdown.innerHTML = html;
+  searchDropdown.style.display = 'block';
 });
 
 // Filters
