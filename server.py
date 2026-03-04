@@ -16,18 +16,9 @@ from flask_cors import CORS
 
 try:
     import yfinance as yf
-    import requests
 except ImportError:
-    print("ERROR: missing dependencies. Run: pip install yfinance requests")
+    print("ERROR: missing dependencies. Run: pip install yfinance")
     exit(1)
-
-# ── Setup custom session for yfinance to work on Vercel ──
-# Vercel's filesystem is read-only (except /tmp), so default yf cache fails.
-# Also Yahoo Finance blocks python-requests default user agent.
-session = requests.Session()
-session.headers.update({
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
-})
 
 
 app = Flask(__name__, static_folder=".", static_url_path="")
@@ -51,7 +42,7 @@ def fetch_single_price(code):
     """Fetch price for a single stock from Yahoo Finance."""
     yf_code = f"{code}.JK"
     try:
-        ticker = yf.Ticker(yf_code, session=session)
+        ticker = yf.Ticker(yf_code)
         info = ticker.fast_info
 
         last_price = getattr(info, "last_price", None)
@@ -103,7 +94,7 @@ def fetch_batch_prices(codes):
     results = {}
 
     try:
-        tickers = yf.Tickers(yf_tickers_str, session=session)
+        tickers = yf.Tickers(yf_tickers_str)
 
         for code in codes:
             yf_code = f"{code}.JK"
