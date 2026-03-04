@@ -933,12 +933,107 @@ tfoot td {
     font-size: 14px;
 }
 
-@media (max-width: 480px) {
-    .stats-grid {
-        grid-template-columns: 1fr;
+/* ── Mobile Responsive (max-width: 768px) ── */
+@media (max-width: 768px) {
+
+    /* Container & Header */
+    .container {
+        padding: 12px;
     }
 
-    .container {
-        padding: 0 16px;
+    .header-top {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 16px;
+    }
+
+    .header-meta {
+        font-size: 12px;
+    }
+
+    .search-box {
+        max-width: 100%;
+    }
+
+    .autocomplete-dropdown {
+        width: 100%;
+        max-height: 250px;
+    }
+
+    /* Grids */
+    .stats-grid,
+    .dashboard-grid {
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+
+    /* Tabs */
+    .tabs-container {
+        display: flex;
+        overflow-x: auto;
+        padding-bottom: 8px;
+        /* For scrollbar breathing room */
+        scrollbar-width: none;
+        /* Firefox */
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .tabs-container::-webkit-scrollbar {
+        display: none;
+        /* Chrome/Safari */
+    }
+
+    .tab-btn {
+        white-space: nowrap;
+        flex-shrink: 0;
+        padding: 10px 16px;
+    }
+
+    /* Table Container (Horizontal Scroll) */
+    .table-container {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        /* Smooth scrolling iOS */
+        padding-bottom: 8px;
+        margin: 0 -12px;
+        /* Pull out of padding for full-width scroll */
+        border-radius: 0;
+        border-left: none;
+        border-right: none;
+    }
+
+    .table-container table {
+        min-width: 600px;
+        /* Force table to maintain width so it scrolls */
+    }
+
+    th,
+    td {
+        padding: 12px 10px;
+        /* slightly smaller padding */
+        font-size: 13px;
+        white-space: nowrap;
+        /* Prevent messy cell wrapping */
+    }
+
+    /* Modals / Page Views */
+    .page-card {
+        padding: 16px 12px;
+    }
+
+    .modal-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+
+    .back-btn {
+        margin-bottom: 8px;
+    }
+
+    .modal-price-meta {
+        flex-direction: column;
+        gap: 4px;
+        align-items: flex-end;
     }
 }
