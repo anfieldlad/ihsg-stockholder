@@ -1,44 +1,30 @@
-# IHSG Stockholder Dashboard
+# IHSG Stockholder Dashboard 📉🚀🤖
 
-A powerful, interactive Single Page Application (SPA) dashboard for analyzing stockholder data from the Indonesia Stock Exchange (BEI/IDX). 
+⚠️ **WARNING: This is 100% pure AI SLOP!** ⚠️
 
-The dashboard provides real-time insights into top investors, stock ownership percentages, and live market valuations.
+Let's be real here: this is **NOT** a proper application. There is no clean code, there is no robust architecture, and it's definitely not following SOLID principles. It's a quick, hacky Single Page Application (SPA) built entirely by AI just for fun. 
 
-## Features
+## What does it do?
+It's a dashboard that parses static JSON data from KSEI (Indonesia Stock Exchange ownership data) and displays it.
+- **Top Investors:** See who owns what in the Indonesian market.
+- **Live Prices (Sort of):** It pings Yahoo Finance to get live stock prices (delayed ~15 mins) and dynamically calculates portfolio valuations.
+- **Hash Routing:** It uses old-school `#/stock/GOTO` url hashes to pretend it's a multi-page app without actually reloading.
 
-- **Dashboard View:** High-level market statistics including total records, total investors (>1% ownership), and local vs foreign ownership ratios.
-- **Top Investors Directory:** Browse the largest stakeholders in the Indonesian market. Click on any investor to view their full portfolio.
-- **Live Stock Valuations:** Integration with Yahoo Finance to pull live stock prices (15-minute delay) and calculate real-time portfolio valuations for investors.
-- **Full-Page Navigation:** Seamless, Hash-based Single Page Application (SPA) routing allows you to navigate between the main dashboard, specific investor portfolios (`#/investor/NAME`), and individual stock holder details (`#/stock/CODE`) without reloading.
-- **Interactive UI:** Smooth transitions, glassmorphism aesthetics, and responsive design for all screen sizes.
+## Tech "Stack"
+- **Frontend:** HTML, Vanilla CSS (glassmorphism because why not), and one massive `app.js` file holding on for dear life.
+- **Backend:** A tiny Flask server that acts as an API proxy for Yahoo Finance so we don't get CORS-blocked.
 
-## Architecture
+## Deployment (Vercel)
+Yes, this AI slop can actually be deployed to Vercel! 
+The Python Flask backend runs as a Serverless Function via `api/index.py`. 
+Just connect the repo to Vercel and it should "just work" (fingers crossed).
 
-- **Frontend:** HTML5, CSS3 (Custom Properties, Glassmorphism), Vanilla JavaScript (No frameworks).
-- **Backend:** Python + Flask (Serves the application and acts as an API proxy).
-- **Data Integration:** 
-  - Static KSEI ownership data (`data/raw.json`).
-  - Live Pricing API via `yfinance`.
-
-## Running Locally
-
-1. Ensure you have Python 3.8+ installed.
-2. Install the required backend dependency:
-   ```bash
-   pip install yfinance flask flask-cors
-   ```
-3. Start the Flask server:
-   ```bash
-   python server.py
-   ```
-4. Open your browser and navigate to: [http://localhost:5000](http://localhost:5000)
-
-## API Endpoints (Backend)
-
-The included Python server provides the following endpoints to proxy Yahoo finance and circumvent CORS/rate-limits:
-- `GET /api/price/<CODE>`: Fetch current price for a single stock.
-- `GET /api/prices?codes=BBCA,GOTO`: Batch fetch prices for multiple stocks.
-- `GET /api/cache/stats`: View the status of the 5-minute in-memory price cache.
+## Local Dev
+If you really want to run this locally:
+1. `pip install -r requirements.txt` (or just `pip install yfinance flask flask-cors`)
+2. `python server.py`
+3. Pray.
+4. Open `http://localhost:5000`
 
 ## Disclaimer
-Data provided is for informational purposes only. The application relies on static ownership data and delayed pricing data from Yahoo Finance.
+Do not use this for actual financial decisions. It's built by an AI that doesn't care if you lose all your money. The pricing data is delayed and the static ownership data is just a snapshot. 
