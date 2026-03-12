@@ -119,6 +119,19 @@ export const storeConfig = {
         this.foreignCount = nloc;
     },
 
+    async loadComponent(id, url) {
+        try {
+            const res = await fetch(url);
+            const html = await res.text();
+            const el = document.getElementById(id);
+            if (el) {
+                el.innerHTML = html;
+            }
+        } catch (e) {
+            console.error('Failed to load component:', url, e);
+        }
+    },
+
     handleHashRoute() {
         const hash = window.location.hash;
         if (hash.startsWith('#/stock/')) {
