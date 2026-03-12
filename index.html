@@ -139,6 +139,7 @@
 
   <!-- Script dependencies -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
 
   <!-- Initialize Application -->
   <script type="module">
@@ -393,6 +394,12 @@
         <button @click="currentTab = 'analytics'"
           :class="currentTab === 'analytics' ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30' : 'text-slate-400 hover:text-white hover:bg-white/5'"
           class="px-5 py-2 text-sm font-medium rounded-lg transition-all">Analitik</button>
+        <button @click="currentTab = 'whalemap'"
+          :class="currentTab === 'whalemap' ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30' : 'text-slate-400 hover:text-white hover:bg-white/5'"
+          class="px-5 py-2 text-sm font-medium rounded-lg transition-all flex items-center gap-2">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" /></svg>
+          Whale Map
+        </button>
       </div>
 
       <!-- TAB: STOCKS -->
@@ -583,6 +590,47 @@
             <h3 class="text-sm font-semibold mb-6 flex items-center gap-2"><span
                 class="w-2 h-2 rounded-full bg-rose-500"></span>Konsentrasi Kepemilikan</h3>
             <div class="h-64 mt-10"><canvas id="chartConcentration"></canvas></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB: WHALE MAP -->
+      <div x-show="currentTab === 'whalemap'" x-cloak class="glass-panel rounded-2xl border border-white/[0.04] shadow-lg flex flex-col overflow-hidden h-[750px]">
+        
+        <!-- Controls Header -->
+        <div class="p-5 border-b border-white/[0.04] bg-slate-800/30 flex flex-col md:flex-row gap-4 justify-between items-start md:items-center z-10">
+          <div>
+            <h3 class="text-lg font-bold text-white flex items-center gap-2">
+              <span class="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
+              Whale Relationship Map
+            </h3>
+            <p class="text-xs text-slate-400 mt-1">Jaringan hubungan antara Investor besar dan Saham yang dimiliki.</p>
+          </div>
+          
+          <div class="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+            <div class="relative w-full sm:w-64">
+              <svg xmlns="http://www.w3.org/2000/svg" class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+              <input type="text" x-model="whaleSearch" @keydown.enter="renderWhaleMap()" placeholder="Cari Investor/Saham..." class="w-full bg-slate-900/50 border border-slate-700/50 rounded-lg pl-9 pr-3 py-2 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-blue-500">
+            </div>
+            
+            <div class="flex items-center gap-2 bg-slate-900/50 border border-slate-700/50 rounded-lg px-3 py-1.5 w-full sm:w-auto">
+              <label class="text-xs text-slate-400 whitespace-nowrap">Min %:</label>
+              <input type="range" x-model="whaleMinPct" @change="renderWhaleMap()" min="1" max="50" step="1" class="w-24 sm:w-20 accent-blue-500">
+              <span class="text-xs font-mono text-blue-400 w-8 text-right" x-text="whaleMinPct + '%'"></span>
+            </div>
+            
+            <button @click="renderWhaleMap()" class="px-3 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xs font-semibold shadow-md shadow-blue-500/20 transition-colors whitespace-nowrap">Update Map</button>
+          </div>
+        </div>
+
+        <!-- ECharts Canvas Container -->
+        <div class="relative flex-1 bg-slate-900/40" id="whaleMapContainer">
+          <!-- Loading Overlay -->
+          <div x-show="whaleLoading" class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm flex flex-col items-center justify-center z-20">
+            <div class="w-10 h-10 border-4 border-slate-700 border-t-blue-500 rounded-full animate-spin"></div>
+            <p class="text-sm font-medium text-slate-300 mt-4 animate-pulse">Menghitung jaringan...</p>
           </div>
         </div>
       </div>

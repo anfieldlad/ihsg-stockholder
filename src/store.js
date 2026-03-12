@@ -41,6 +41,12 @@ export const storeConfig = {
     modalType: null, // 'stock' | 'investor'
     modalData: null,
 
+    // Whale Map
+    whaleSearch: '',
+    whaleMinPct: 5,
+    whaleLoading: false,
+    whaleChartInstance: null,
+
     TYPE_LABELS: {
         CP: 'Corporate', ID: 'Individual', IB: 'Inv. Bank', SC: 'Sekuritas',
         MF: 'Reksa Dana', IS: 'Asuransi', PF: 'Dana Pensiun', OT: 'Lainnya',
@@ -343,5 +349,215 @@ export const storeConfig = {
             const fetched = await fetchPricesBatch(batch);
             this.priceMap = { ...this.priceMap, ...fetched };
         }
+    },
+
+    // Whale Map Logic
+    renderWhaleMap() {
+        if (this.currentTab !== 'whalemap') {
+            if (this.whaleChartInstance) {
+                this.whaleChartInstance.dispose();
+                this.whaleChartInstance = null;
+            }
+            return;
+        }
+
+        this.whaleLoading = true;
+
+        // Give UI time to show loading state before heavy processing
+        setTimeout(() => {
+            const container = document.getElementById('whaleMapContainer');
+            if (!container) {
+                this.whaleLoading = false;
+                return;
+            }
+
+            if (!this.whaleChartInstance) {
+                this.whaleChartInstance = echarts.init(container);
+                
+                // Handle Window Resize
+                window.addEventListener('resize', () => {
+                    if (this.whaleChartInstance && this.currentTab === 'whalemap') {
+                        this.whaleChartInstance.resize();
+                    }
+                });
+
+                // Handle Node Click
+                this.whaleChartInstance.on('click', (params) => {
+                    if (params.dataType === 'node') {
+                        if (params.data.category === 0) {
+                            window.location.hash = '#/investor/' + encodeURIComponent(params.data.name);
+                        } else if (params.data.category === 1) {
+                            window.location.hash = '#/stock/' + params.data.name;
+                        }
+                    }
+                });
+            }
+
+            // Start Data Processing
+            const items = this.rawData.items || [];
+            const minPct = parseFloat(this.whaleMinPct);
+            const searchQ = this.whaleSearch.toLowerCase().trim();
+
+            let nodesData = []; // { id, name, category, symbolSize, value }
+            let linksData = []; // { source, target, value, lineStyle }
+            
+            const addedInvestors = new Set();
+            const addedStocks = new Set();
+            const edgesMap = new Map(); // Track edges to prevent duplicates
+
+            for (const item of items) {
+                if (item.percentage < minPct) continue;
+
+                const invName = item.investor;
+                const stockCode = item.code;
+
+                // If search is active, skip items that don't match the search term
+                // Note: To make it a 'network', we match if either the investor OR the stock matches
+                if (searchQ) {
+                    if (!invName.toLowerCase().includes(searchQ) && !stockCode.toLowerCase().includes(searchQ)) {
+                        continue;
+                    }
+                }
+
+                // Add Investor Node
+                if (!addedInvestors.has(invName)) {
+                    const invData = this.investorMap[invName];
+                    const invStocksCount = invData ? invData.stocks.length : 1;
+                    
+                    // Base size 15, max 40 depending on number of stocks owned
+                    const size = Math.min(40, 15 + (invStocksCount * 2));
+                    
+                    nodesData.push({
+                        id: 'inv_' + invName,
+                        name: invName,
+                        category: 0, // Investor
+                        symbolSize: size,
+                        value: invStocksCount + ' Saham',
+                        label: { show: size > 25 || searchQ !== '' } // Only show labels for big/searched nodes by default
+                    });
+                    addedInvestors.add(invName);
+                }
+
+                // Add Stock Node
+                if (!addedStocks.has(stockCode)) {
+                    const stockData = this.stockMap[stockCode];
+                    const stockHoldersCount = stockData ? stockData.holders.length : 1;
+                    
+                    // Base size 15, max 45 depending on number of whales inside it
+                    const size = Math.min(45, 15 + (stockHoldersCount * 2));
+
+                    nodesData.push({
+                        id: 'stk_' + stockCode,
+                        name: stockCode,
+                        category: 1, // Stock
+                        symbolSize: size,
+                        value: stockHoldersCount + ' Investor Besar',
+                        label: { show: size > 25 || searchQ !== '' }
+                    });
+                    addedStocks.add(stockCode);
+                }
+
+                // Add Edge
+                const edgeKey = `inv_${invName}-stk_${stockCode}`;
+                if (!edgesMap.has(edgeKey)) {
+                    // Line thickness based on percentage
+                    const width = Math.max(0.5, item.percentage / 5);
+                    
+                    linksData.push({
+                        source: 'inv_' + invName,
+                        target: 'stk_' + stockCode,
+                        value: item.percentage,
+                        lineStyle: { width: Math.min(5, width) }
+                    });
+                    edgesMap.set(edgeKey, true);
+                }
+            }
+
+            // If a search is applied and it found nothing, or if filters are too strict
+            if (nodesData.length === 0) {
+                this.whaleChartInstance.clear();
+                this.whaleChartInstance.setOption({
+                    title: {
+                        text: 'Tidak ada data',
+                        subtext: 'Ubah filter minimum kepemilikan atau kata kunci pencarian.',
+                        left: 'center',
+                        top: 'center',
+                        textStyle: { color: '#94a3b8' }
+                    }
+                });
+                this.whaleLoading = false;
+                return;
+            }
+
+            const option = {
+                backgroundColor: 'transparent',
+                tooltip: {
+                    trigger: 'item',
+                    backgroundColor: 'rgba(30, 41, 59, 0.9)',
+                    borderColor: 'rgba(255, 255, 255, 0.1)',
+                    textStyle: { color: '#f8fafc' },
+                    formatter: function (params) {
+                        if (params.dataType === 'node') {
+                            const type = params.data.category === 0 ? 'Investor' : 'Emiten Saham';
+                            return `<div class="font-bold text-blue-400 mb-1">${type}</div>
+                                    <div class="text-sm font-semibold">${params.data.name}</div>
+                                    <div class="text-xs text-slate-400 mt-1">${params.data.category === 0 ? 'Portofolio: ' : 'Jumlah Whale: '}${params.data.value}</div>`;
+                        } else if (params.dataType === 'edge') {
+                            const sourceName = params.data.source.replace('inv_', '');
+                            const targetName = params.data.target.replace('stk_', '');
+                            return `<div class="font-bold text-blue-400 mb-1">Kepemilikan</div>
+                                    <div class="text-xs text-slate-300">Investor: <span class="font-bold text-white">${sourceName}</span></div>
+                                    <div class="text-xs text-slate-300">Saham: <span class="font-bold text-white">${targetName}</span></div>
+                                    <div class="text-xs mt-1 text-emerald-400 font-bold">Porsi: ${params.data.value.toFixed(2)}%</div>`;
+                        }
+                    }
+                },
+                legend: {
+                    data: ['Investor', 'Saham'],
+                    textStyle: { color: '#94a3b8' },
+                    bottom: 20
+                },
+                series: [
+                    {
+                        type: 'graph',
+                        layout: 'force',
+                        data: nodesData,
+                        links: linksData,
+                        categories: [
+                            { name: 'Investor', itemStyle: { color: '#8b5cf6' } }, // Purple
+                            { name: 'Saham', itemStyle: { color: '#3b82f6' } }     // Blue
+                        ],
+                        roam: true, // Enable zoom and pan
+                        label: {
+                            position: 'right',
+                            formatter: '{b}',
+                            color: '#e2e8f0',
+                            fontSize: 10,
+                            textBorderColor: '#0f172a',
+                            textBorderWidth: 2
+                        },
+                        lineStyle: {
+                            color: 'source',
+                            curveness: 0.1,
+                            opacity: 0.6
+                        },
+                        emphasis: {
+                            focus: 'adjacency',
+                            lineStyle: { width: 3, opacity: 1 },
+                            label: { show: true }
+                        },
+                        force: {
+                            repulsion: 150,
+                            edgeLength: [50, 100],
+                            gravity: 0.1,
+                            friction: 0.6
+                        }
+                    }
+                ]
+            };
+
+            this.whaleChartInstance.setOption(option);
+            this.whaleLoading = false;
+        }, 50);
     }
 };
