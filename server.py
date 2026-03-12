@@ -16,7 +16,7 @@ from flask_cors import CORS
 
 from api.services.yahoo import fetch_single_price, fetch_batch_prices
 
-app = Flask(__name__, static_folder="public", static_url_path="")
+app = Flask(__name__, static_folder=".", static_url_path="")
 CORS(app)
 
 # ── In-memory cache to avoid hammering Yahoo Finance ──
@@ -37,12 +37,12 @@ def get_cached_price(code: str) -> Optional[Dict[str, Any]]:
 
 @app.route("/")
 def index() -> Response:
-    return send_from_directory("public", "index.html")
+    return send_from_directory(".", "index.html")
 
 
 @app.route("/<path:filename>")
 def static_files(filename: str) -> Response:
-    return send_from_directory("public", filename)
+    return send_from_directory(".", filename)
 
 
 # ── API routes ──
