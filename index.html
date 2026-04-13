@@ -4,10 +4,56 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>IHSG Storm</title>
+  <title>IHSG Storm - Dashboard Kepemilikan Saham Indonesia Real-Time | Data KSEI & Harga Live</title>
   <meta name="description"
-    content="Dashboard interaktif untuk data kepemilikan saham IHSG dengan kepemilikan di atas 1%">
+    content="Dashboard interaktif kepemilikan saham IHSG Indonesia. Lihat data pemegang saham dari KSEI dengan kepemilikan di atas 1%, harga saham live dari Yahoo Finance, dan analisis top investor.">
+  <meta name="keywords" content="IHSG, saham Indonesia, kepemilikan saham, KSEI, pemegang saham, investor saham, BEI, IDX, stock ownership, shareholder data, harga saham">
+  <meta name="robots" content="index, follow">
+  <meta name="author" content="BAD AI">
+  <link rel="canonical" href="https://ihsg.badai.tech/">
   <link rel="icon" href="/favicon.ico" type="image/x-icon">
+
+  <!-- Open Graph / Facebook -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://ihsg.badai.tech/">
+  <meta property="og:title" content="IHSG Storm - Dashboard Kepemilikan Saham Indonesia Real-Time">
+  <meta property="og:description" content="Dashboard interaktif untuk data kepemilikan saham IHSG dari KSEI. Harga saham live, analisis top investor, dan tracking ownership real-time.">
+  <meta property="og:site_name" content="IHSG Storm">
+  <meta property="og:locale" content="id_ID">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="IHSG Storm - Dashboard Kepemilikan Saham Indonesia">
+  <meta name="twitter:description" content="Data kepemilikan saham IHSG dari KSEI dengan harga live & analisis top investor.">
+
+  <!-- Structured Data (JSON-LD) -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "IHSG Storm",
+    "alternateName": "IHSG Stock Tracking & Ownership Real-time Monitoring",
+    "url": "https://ihsg.badai.tech/",
+    "description": "Dashboard interaktif untuk memantau kepemilikan saham IHSG Indonesia dari data KSEI, dilengkapi dengan harga saham live dari Yahoo Finance dan analisis top investor.",
+    "applicationCategory": "FinanceApplication",
+    "operatingSystem": "Web",
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "IDR"
+    },
+    "creator": {
+      "@type": "Organization",
+      "name": "BAD AI",
+      "url": "https://badai.tech"
+    },
+    "about": {
+      "@type": "FinancialProduct",
+      "name": "Data Kepemilikan Saham IHSG"
+    },
+    "inLanguage": "id"
+  }
+  </script>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
@@ -187,7 +233,7 @@
 
 <body x-data="app" x-init="init()" class="bg-slate-900 text-slate-200 antialiased font-sans">
 
-  <div class="max-w-[1400px] mx-auto">
+  <div class="max-w-[1400px] mx-auto" role="main">
     <!-- HEADER -->
     <header
       class="glass-panel rounded-3xl p-6 lg:p-8 mb-8 flex flex-col md:flex-row md:items-center justify-between gap-8 relative z-50 ring-1 ring-white/10 shadow-2xl shadow-blue-900/20">
@@ -247,8 +293,9 @@
               <circle cx="11" cy="11" r="8" />
               <line x1="21" y1="21" x2="16.65" y2="16.65" />
             </svg>
-            <input type="text" x-model="searchQuery" @input="updateSearch($event.target.value)"
+            <input type="search" x-model="searchQuery" @input="updateSearch($event.target.value)"
               @keydown.enter="submitSearch()" placeholder="Cari emiten, investor..."
+              aria-label="Cari emiten atau investor saham"
               class="w-full bg-slate-900/90 border border-white/10 rounded-full pl-12 pr-5 py-3.5 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all shadow-inner backdrop-blur-xl">
 
             <!-- Keyboard shortcut hint -->
@@ -354,7 +401,7 @@
     <div x-show="error" x-text="error" class="text-rose-500 text-center py-10 font-medium"></div>
 
     <!-- MAIN VIEW (DASHBOARD) -->
-    <div x-show="!loading && !error && !modalType" x-cloak>
+    <main x-show="!loading && !error && !modalType" x-cloak>
 
       <!-- STATS -->
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
@@ -373,7 +420,7 @@
       </div>
 
       <!-- TABS -->
-      <div class="flex flex-wrap gap-2 p-1.5 glass-panel rounded-xl max-w-max mb-6">
+      <nav aria-label="Tab navigasi utama" class="flex flex-wrap gap-2 p-1.5 glass-panel rounded-xl max-w-max mb-6">
         <template x-for="tab in [
           { id: 'stocks', label: 'Daftar Saham' },
           { id: 'investors', label: 'Top Investor' },
@@ -381,36 +428,38 @@
         ]" :key="tab.id">
           <button @click="currentTab = tab.id"
             :class="currentTab === tab.id ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30' : 'text-slate-400 hover:text-white hover:bg-white/5'"
+            :aria-selected="currentTab === tab.id"
+            role="tab"
             class="px-5 py-2 text-sm font-medium rounded-lg transition-all" x-text="tab.label"></button>
         </template>
-      </div>
+      </nav>
 
       <!-- TAB: STOCKS -->
-      <div x-show="currentTab === 'stocks'" x-cloak id="comp-stocks"
+      <section x-show="currentTab === 'stocks'" x-cloak id="comp-stocks" role="tabpanel" aria-label="Daftar Saham"
         x-init="loadComponent('comp-stocks', '/components/tab-stocks.html')">
-      </div>
+      </section>
 
       <!-- TAB: INVESTORS -->
-      <div x-show="currentTab === 'investors'" x-cloak id="comp-investors"
+      <section x-show="currentTab === 'investors'" x-cloak id="comp-investors" role="tabpanel" aria-label="Top Investor"
         x-init="loadComponent('comp-investors', '/components/tab-investors.html')">
-      </div>
+      </section>
 
       <!-- TAB: ANALYTICS -->
-      <div x-show="currentTab === 'analytics'" x-cloak id="comp-analytics"
+      <section x-show="currentTab === 'analytics'" x-cloak id="comp-analytics" role="tabpanel" aria-label="Analitik"
         x-init="loadComponent('comp-analytics', '/components/tab-analytics.html')">
-      </div>
-    </div>
+      </section>
+    </main>
 
 
     <!-- MODAL: STOCK VIEW -->
-    <div x-show="modalType === 'stock'" x-cloak id="comp-modal-stock"
+    <aside x-show="modalType === 'stock'" x-cloak id="comp-modal-stock" role="dialog" aria-label="Detail Saham"
       x-init="loadComponent('comp-modal-stock', '/components/modal-stock.html')">
-    </div>
+    </aside>
 
     <!-- MODAL: INVESTOR VIEW -->
-    <div x-show="modalType === 'investor'" x-cloak id="comp-modal-investor"
+    <aside x-show="modalType === 'investor'" x-cloak id="comp-modal-investor" role="dialog" aria-label="Detail Investor"
       x-init="loadComponent('comp-modal-investor', '/components/modal-investor.html')">
-    </div>
+    </aside>
   </div>
 
 
@@ -419,13 +468,13 @@
     <div class="text-xs text-slate-500 max-w-2xl mx-auto mb-4 leading-relaxed">
       <strong>Disclaimer:</strong> Data yang ditampilkan pada dashboard ini disediakan untuk tujuan informasi semata dan
       bukan merupakan saran investasi, rekomendasi beli/jual, atau penawaran produk keuangan apapun. Harga saham
-      bersifat <i>delayed</i> dan data pemegang saham didasarkan pada rilis publik dari KSEI. Keputusan investasi
+      bersifat <em>delayed</em> dan data pemegang saham didasarkan pada rilis publik dari KSEI. Keputusan investasi
       sepenuhnya adalah tanggung jawab masing-masing individu.
     </div>
-    <div class="text-sm text-slate-400 font-medium">
+    <nav aria-label="Footer links" class="text-sm text-slate-400 font-medium">
       &copy; 2026 Crafted by <a href="https://badai.tech" target="_blank" rel="noopener noreferrer"
         class="text-blue-400 hover:text-blue-300 transition-colors">BAD AI</a>
-    </div>
+    </nav>
   </footer>
 
   </div> <!-- End container -->

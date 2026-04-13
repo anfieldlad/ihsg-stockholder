@@ -31,8 +31,8 @@ def extract_date(text):
 def main():
     script_dir = os.path.dirname(os.path.abspath(__file__))
     project_dir = os.path.dirname(script_dir)
-    pdf_path = os.path.join(script_dir, "shareholder_data.pdf")
-    output_path = os.path.join(project_dir, "public", "shareholder_data.json")
+    pdf_path = os.path.join(script_dir, "shareholder_data_MAR2026.pdf")
+    output_path = os.path.join(project_dir, "shareholder_data.json")
     
     # We want exactly the same formatting as earlier:
     # {"as_of_label": "...", "source_date_in_file": "...", "items": [{"date": "...", "code": "...", ...}]}
@@ -96,10 +96,23 @@ def main():
         print(f"Error reading PDF: {e}")
         return
 
-    # To create as_of_label, doing e.g "3 Maret 2026" based on source_date
-    as_of_label = "3 Maret 2026" # Hardcoded to match example exactly, or we can parse
-    if source_date and source_date == "27-Feb-2026":
-        as_of_label = "3 Maret 2026" # Following example pattern
+    # Generate as_of_label dynamically from source_date
+    month_map = {
+        "Jan": "Januari", "Feb": "Februari", "Mar": "Maret",
+        "Apr": "April", "May": "Mei", "Jun": "Juni",
+        "Jul": "Juli", "Aug": "Agustus", "Sep": "September",
+        "Oct": "Oktober", "Nov": "November", "Dec": "Desember"
+    }
+    as_of_label = source_date or "Unknown"
+    if source_date:
+        try:
+            parts = source_date.split("-")  # e.g. "28-Mar-2026"
+            day = int(parts[0])
+            month_id = month_map.get(parts[1], parts[1])
+            year = parts[2]
+            as_of_label = f"{day} {month_id} {year}"
+        except (IndexError, ValueError):
+            as_of_label = source_date
     
     final_output = {
         "as_of_label": as_of_label,
