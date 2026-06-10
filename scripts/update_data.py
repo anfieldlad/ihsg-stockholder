@@ -281,6 +281,35 @@ def archive_and_save(pdf_bytes):
 # STEP 4: Parse PDF into JSON (inline from parse_pdf.py logic)
 # ======================================================================
 
+# Column layout (left-edge x ranges in PDF points). The IDX/KSEI PDFs render
+# as positioned text without ruled table lines, so we bucket each word into a
+# column by its x0 coordinate. The date and share code are rendered glued
+# together as a single token (e.g. "29-May-2026ALTO"), split via DATE_RE below.
+#   DATE+CODE | ISSUER | INVESTOR | CLASSIFICATION | LOCAL/FOREIGN |
+#   NATIONALITY+DOMICILE | SCRIPLESS | SCRIP | TOTAL_HOLDING | PERCENTAGE
+COLUMN_BOUNDS = [
+    ("code", 0, 90),
+    ("issuer", 90, 145),
+    ("investor", 145, 270),
+    ("investor_type", 270, 328),
+    ("local_foreign", 328, 360),
+    ("natdom", 360, 430),   # nationality + domicile (not exported)
+    ("scripless", 430, 472),  # holdings scripless (not exported)
+    ("scrip", 472, 500),      # holdings scrip (not exported)
+    ("shares", 500, 535),     # total holding shares
+    ("percentage", 535, 99999),
+]
+DATE_CODE_RE = re.compile(r'^(\d{1,2}-[A-Za-z]{3}-\d{4})(.*)$')
+
+
+def _column_for(x0):
+    """Return the column name whose x-range contains x0, or None."""
+    for name, lo, hi in COLUMN_BOUNDS:
+        if lo <= x0 < hi:
+            return name
+    return None
+
+
 def parse_pdf():
     """Parse shareholder_data.pdf into shareholder_data.json."""
     try:
@@ -295,49 +324,49 @@ def parse_pdf():
     source_date = None
 
     with pdfplumber.open(PDF_PATH) as pdf:
-        # Extract date from first page
-        first_page_text = pdf.pages[0].extract_text()
-        if first_page_text:
-            match = re.search(r'\b(\d{1,2}-[A-Za-z]{3}-\d{4})\b', first_page_text)
-            if match:
-                source_date = match.group(1)
-
         for page in pdf.pages:
-            tables = page.extract_tables()
-            for table in tables:
-                for row in table:
-                    if not row or len(row) < 12:
-                        continue
+            # Group words into rows by their vertical position, then bucket
+            # each word into a column by its x0 coordinate.
+            rows = {}
+            for w in page.extract_words():
+                rows.setdefault(round(w["top"]), []).append(w)
 
-                    date_str = row[0]
-                    if not re.match(r'\d{1,2}-[A-Za-z]{3}-\d{4}', str(date_str).strip()):
-                        continue
+            for top in sorted(rows):
+                cells = {}
+                for w in sorted(rows[top], key=lambda w: w["x0"]):
+                    col = _column_for(w["x0"])
+                    if col:
+                        cells.setdefault(col, []).append(w["text"])
 
-                    share_code = str(row[1]).strip()
-                    issuer = " ".join(str(row[2]).strip().split())
-                    investor = " ".join(str(row[3]).strip().split())
-                    investor_type = str(row[4]).strip()
-                    local_foreign = str(row[5]).strip()
+                code_raw = " ".join(cells.get("code", []))
+                match = DATE_CODE_RE.match(code_raw)
+                if not match:
+                    continue  # not a data row (header, blank, etc.)
 
-                    shares_str = str(row[10]).strip()
-                    percentage_str = str(row[11]).strip()
+                date_str = match.group(1)
+                share_code = match.group(2).strip()
 
-                    shares = _clean_number(shares_str)
-                    percentage = _clean_float(percentage_str)
+                issuer = " ".join(cells.get("issuer", []))
+                investor = " ".join(cells.get("investor", []))
+                investor_type = " ".join(cells.get("investor_type", []))
+                local_foreign = " ".join(cells.get("local_foreign", []))
 
-                    items.append({
-                        "date": date_str,
-                        "code": share_code,
-                        "issuer": issuer,
-                        "investor": investor,
-                        "shares": shares,
-                        "percentage": percentage,
-                        "local_foreign": local_foreign,
-                        "investor_type": investor_type,
-                    })
+                shares = _clean_number(" ".join(cells.get("shares", [])))
+                percentage = _clean_float(" ".join(cells.get("percentage", [])))
 
-                    if not source_date:
-                        source_date = date_str
+                items.append({
+                    "date": date_str,
+                    "code": share_code,
+                    "issuer": issuer,
+                    "investor": investor,
+                    "shares": shares,
+                    "percentage": percentage,
+                    "local_foreign": local_foreign,
+                    "investor_type": investor_type,
+                })
+
+                if not source_date:
+                    source_date = date_str
 
     # Generate as_of_label
     as_of_label = source_date or "Unknown"
