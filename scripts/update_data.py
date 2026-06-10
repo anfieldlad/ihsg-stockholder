@@ -292,14 +292,30 @@ COLUMN_BOUNDS = [
     ("issuer", 90, 145),
     ("investor", 145, 270),
     ("investor_type", 270, 328),
-    ("local_foreign", 328, 360),
-    ("natdom", 360, 430),   # nationality + domicile (not exported)
+    ("local_foreign", 328, 345),
+    ("natdom", 345, 430),   # nationality + domicile (not exported)
     ("scripless", 430, 472),  # holdings scripless (not exported)
     ("scrip", 472, 500),      # holdings scrip (not exported)
     ("shares", 500, 535),     # total holding shares
     ("percentage", 535, 99999),
 ]
 DATE_CODE_RE = re.compile(r'^(\d{1,2}-[A-Za-z]{3}-\d{4})(.*)$')
+
+# When an issuer name is long, the source PDF glues the start of the investor
+# name directly onto the issuer's "Tbk" suffix as a single token with no space
+# (e.g. "TbkDRS.JOHNNY", "TbkKINGSWOOD"), which lands in the issuer column. All
+# listed-company issuers end in "Tbk", so split such a token: the part up to and
+# including "Tbk" is the issuer, the trailing capitalised remainder is the start
+# of the investor name. The [A-Z] guard avoids splitting legitimate endings like
+# "Tbk," (trailing comma).
+ISSUER_INVESTOR_SPLIT_RE = re.compile(r'^(.*Tbk)([A-Z].*)$')
+
+# Likewise, a long investor-classification (e.g. "...Limited Partnership") can
+# overflow rightward and glue the single-letter Local/Foreign flag onto its last
+# word as one token (e.g. "PartnershipL", "PartnershipF"). Split off a trailing
+# capital L/F that follows a lowercase letter — no real classification word ends
+# that way, so this only fires on the glued case.
+TYPE_LF_SPLIT_RE = re.compile(r'^(.*[a-z])([LF])$')
 
 
 def _column_for(x0):
@@ -335,8 +351,24 @@ def parse_pdf():
                 cells = {}
                 for w in sorted(rows[top], key=lambda w: w["x0"]):
                     col = _column_for(w["x0"])
-                    if col:
-                        cells.setdefault(col, []).append(w["text"])
+                    if not col:
+                        continue
+                    text = w["text"]
+                    # Recover an investor name glued onto the issuer's "Tbk" suffix.
+                    if col == "issuer":
+                        split = ISSUER_INVESTOR_SPLIT_RE.match(text)
+                        if split:
+                            cells.setdefault("issuer", []).append(split.group(1))
+                            cells.setdefault("investor", []).append(split.group(2))
+                            continue
+                    # Recover a Local/Foreign flag glued onto a long classification.
+                    if col == "investor_type":
+                        split = TYPE_LF_SPLIT_RE.match(text)
+                        if split:
+                            cells.setdefault("investor_type", []).append(split.group(1))
+                            cells.setdefault("local_foreign", []).append(split.group(2))
+                            continue
+                    cells.setdefault(col, []).append(text)
 
                 code_raw = " ".join(cells.get("code", []))
                 match = DATE_CODE_RE.match(code_raw)
