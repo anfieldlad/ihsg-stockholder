@@ -448,7 +448,7 @@ export const storeConfig = {
     },
 
     syncDetailView() {
-        const isDesktop = window.matchMedia('(min-width: 1024px)').matches;
+        const isDesktop = window.matchMedia('(min-width: 1200px)').matches;
         const sheet = document.getElementById('sheet');
         const scrim = document.getElementById('scrim');
 
