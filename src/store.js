@@ -1,7 +1,7 @@
 import { fetchHolderData, fetchPricesBatch, fetchSinglePrice } from './api.js';
 import { COPY } from './copy.js';
 import { toTitleCase, fmtNum, fmtShares, fmtPrice, fmtRp, fmtPct, fmtChangePct } from './utils.js';
-import { canonical_investor_key } from './normalize.js';
+import { canonicalInvestorKey } from './normalize.js';
 import { renderWhaleChart } from './charts.js';
 
 export const storeConfig = {
@@ -85,6 +85,10 @@ export const storeConfig = {
     _priceDebounceTimer: null,
 
     async init() {
+        if (typeof window !== 'undefined' && typeof window.__markAppBooted === 'function') {
+            window.__markAppBooted();
+        }
+
         // Initialize Theme from localStorage or default 'a'
         try {
             const savedTheme = localStorage.getItem('ihsg-theme');

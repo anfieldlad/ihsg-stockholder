@@ -52,6 +52,39 @@
   <!-- Self-hosted Scoped CSS (Zero Build Step, Tailwind CDN removed) -->
   <link rel="stylesheet" href="/assets/css/style.css">
 
+  <!-- Application Fallback Watcher (vanilla JS, runs before ES modules) -->
+  <script>
+    (function() {
+      var booted = false;
+      window.__markAppBooted = function() {
+        booted = true;
+        var el = document.getElementById('app-fallback');
+        if (el) el.style.display = 'none';
+      };
+
+      function triggerFallback(err) {
+        if (booted) return;
+        var el = document.getElementById('app-fallback');
+        if (el) el.style.display = 'block';
+        var fresh = document.getElementById('fresh');
+        if (fresh) fresh.style.display = 'none';
+        if (err) console.error('IHSG Storm startup error / timeout:', err);
+      }
+
+      window.addEventListener('error', function(event) {
+        if (!booted) {
+          triggerFallback(event.error || event.message);
+        }
+      });
+
+      setTimeout(function() {
+        if (!booted) {
+          triggerFallback('Alpine / module initialization timeout (>3s)');
+        }
+      }, 3000);
+    })();
+  </script>
+
   <!-- Application Store & Alpine.js -->
   <script type="module">
     import { storeConfig } from './src/store.js';
@@ -67,6 +100,9 @@
 
     document.addEventListener('alpine:init', () => {
       Alpine.data('app', () => storeConfig);
+      if (typeof window.__markAppBooted === 'function') {
+        window.__markAppBooted();
+      }
     });
   </script>
   <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.3/dist/cdn.min.js" defer></script>
@@ -142,6 +178,21 @@
 
     <!-- Main Content Container -->
     <main class="shell">
+      <!-- Fallback when JavaScript is disabled -->
+      <noscript>
+        <div class="state" style="margin: 40px auto; max-width: 480px;">
+          <b>Gagal memuat data kepemilikan saham. Silakan periksa koneksi internet Anda.</b>
+          <p>JavaScript dinonaktifkan pada peramban Anda. Aktifkan JavaScript untuk memuat data IHSG Storm.</p>
+        </div>
+      </noscript>
+
+      <!-- Fallback when script fails or Alpine does not initialize within ~3s -->
+      <div class="state" id="app-fallback" style="display: none; margin: 40px auto; max-width: 480px;">
+        <b id="app-fallback-msg">Gagal memuat data kepemilikan saham. Silakan periksa koneksi internet Anda.</b>
+        <p>Aplikasi belum berhasil diinisialisasi atau koneksi jaringan terputus.</p>
+        <button class="btn pri" type="button" onclick="location.reload()" style="margin: 0 auto; display: inline-flex;">Coba Lagi</button>
+      </div>
+
       <!-- Freshness Indicator -->
       <div class="fresh" role="status" id="fresh">
         <span class="dot"></span>

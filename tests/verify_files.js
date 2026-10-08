@@ -1,4 +1,6 @@
 import fs from 'node:fs';
+import path from 'node:path';
+import { pathToFileURL } from 'node:url';
 
 const files = [
   'index.html',
@@ -39,3 +41,17 @@ if (!vercelConfig.rewrites) {
   process.exit(1);
 }
 console.log('OK: vercel.json contains valid rewrites configuration');
+
+// Run module import regression check
+const requiredModules = ['src/store.js', 'src/api.js', 'src/charts.js', 'src/copy.js', 'src/utils.js', 'src/normalize.js'];
+for (const mod of requiredModules) {
+  const fileUrl = pathToFileURL(path.resolve(process.cwd(), mod)).href;
+  try {
+    await import(fileUrl);
+    console.log(`OK module import: ${mod}`);
+  } catch (err) {
+    console.error(`MODULE IMPORT ERROR: ${mod}`, err);
+    process.exit(1);
+  }
+}
+

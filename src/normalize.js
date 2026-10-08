@@ -90,6 +90,9 @@ export function canonicalInvestorKey(name) {
   return res || normalized;
 }
 
+// Snake_case alias for compatibility with Python scripts and legacy imports
+export const canonical_investor_key = canonicalInvestorKey;
+
 /**
  * Check if two investor name strings represent the same entity.
  * @param {string} name1

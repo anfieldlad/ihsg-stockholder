@@ -55,3 +55,15 @@ def test_static_index_and_v2_assets(client):
 
     res_font = client.get("/assets/fonts/fonts.css")
     assert res_font.status_code == 200
+
+
+def test_node_module_imports():
+    import subprocess
+    res = subprocess.run(
+        ["node", "tests/test_module_imports.js"],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert res.returncode == 0, f"Node module imports failed:\n{res.stdout}\n{res.stderr}"
+
