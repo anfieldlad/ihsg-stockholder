@@ -27,7 +27,7 @@
             <td class="p-4">
               <span class="px-2 py-1 rounded text-[11px] font-semibold border border-transparent"
                 :style="`background:${TYPE_COLORS[r.type] || '#64748b'}22; color:${TYPE_COLORS[r.type] || '#64748b'}`"
-                x-text="TYPE_LABELS[r.type] || r.type"></span>
+                x-text="TYPE_LABELS[r.type] || (r.type ? r.type : 'Warkat / Tidak Terklasifikasi')"></span>
             </td>
             <td class="p-4 text-center font-bold text-amber-500" x-text="r.stockCount"></td>
             <td class="p-4 text-xs text-slate-400 truncate max-w-[200px]" :title="r.stocks" x-text="r.stocks">

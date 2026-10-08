@@ -9,7 +9,7 @@ except ImportError:
 def fetch_single_price(code: str) -> Dict[str, Any]:
     """Fetch price for a single stock from Yahoo Finance."""
     if not yf:
-        return {"error": "yfinance not installed", "code": code}
+        return {"error": "Layanan harga belum terpasang", "code": code}
         
     yf_code = f"{code}.JK"
     try:
@@ -26,8 +26,8 @@ def fetch_single_price(code: str) -> Dict[str, Any]:
             change_pct = round((last_price - prev_close) / prev_close * 100, 2)
             change_abs = round(last_price - prev_close, 2)
         else:
-            change_pct = 0
-            change_abs = 0
+            change_pct = 0 if last_price is not None else None
+            change_abs = 0 if last_price is not None else None
 
         return {
             "code": code,
@@ -41,26 +41,29 @@ def fetch_single_price(code: str) -> Dict[str, Any]:
             "_fetched_at": time.time(),
         }
 
-    except Exception as e:
+    except Exception:
+        # Never echo raw exception details to the client
         return {
             "code": code,
             "last_price": None,
             "previous_close": None,
-            "change_pct": 0,
-            "change_abs": 0,
+            "change_pct": None,
+            "change_abs": None,
             "market_cap": None,
             "volume": None,
             "currency": "IDR",
-            "error": str(e),
+            "error": "Harga bursa belum tersedia",
             "_fetched_at": time.time(),
         }
 
 
 def fetch_batch_prices(codes: List[str]) -> Dict[str, Dict[str, Any]]:
-    """Fetch prices for multiple stocks using yfinance batch."""
+    """Fetch prices for multiple stocks using yfinance batch (max 30)."""
     if not yf:
-        return {c: {"error": "yfinance not installed", "code": c} for c in codes}
+        return {c: {"error": "Layanan harga belum terpasang", "code": c} for c in codes}
 
+    # Strict cap at 30 codes
+    codes = codes[:30]
     yf_tickers_str = " ".join(f"{c}.JK" for c in codes)
     results: Dict[str, Dict[str, Any]] = {}
 
@@ -74,8 +77,8 @@ def fetch_batch_prices(codes: List[str]) -> Dict[str, Dict[str, Any]]:
                 if ticker is None:
                     results[code] = {
                         "code": code, "last_price": None, "previous_close": None,
-                        "change_pct": 0, "change_abs": 0, "market_cap": None,
-                        "volume": None, "currency": "IDR", "error": "not_found",
+                        "change_pct": None, "change_abs": None, "market_cap": None,
+                        "volume": None, "currency": "IDR", "error": "Kode saham tidak ditemukan",
                         "_fetched_at": time.time(),
                     }
                     continue
@@ -91,8 +94,8 @@ def fetch_batch_prices(codes: List[str]) -> Dict[str, Dict[str, Any]]:
                     change_pct = round((last_price - prev_close) / prev_close * 100, 2)
                     change_abs = round(last_price - prev_close, 2)
                 else:
-                    change_pct = 0
-                    change_abs = 0
+                    change_pct = 0 if last_price is not None else None
+                    change_abs = 0 if last_price is not None else None
 
                 results[code] = {
                     "code": code,
@@ -106,20 +109,20 @@ def fetch_batch_prices(codes: List[str]) -> Dict[str, Dict[str, Any]]:
                     "_fetched_at": time.time(),
                 }
 
-            except Exception as e:
+            except Exception:
                 results[code] = {
                     "code": code, "last_price": None, "previous_close": None,
-                    "change_pct": 0, "change_abs": 0, "market_cap": None,
-                    "volume": None, "currency": "IDR", "error": str(e),
+                    "change_pct": None, "change_abs": None, "market_cap": None,
+                    "volume": None, "currency": "IDR", "error": "Harga bursa belum tersedia",
                     "_fetched_at": time.time(),
                 }
-    except Exception as e:
+    except Exception:
         for code in codes:
             if code not in results:
                 results[code] = {
                     "code": code, "last_price": None, "previous_close": None,
-                    "change_pct": 0, "change_abs": 0, "market_cap": None,
-                    "volume": None, "currency": "IDR", "error": f"batch_error: {e}",
+                    "change_pct": None, "change_abs": None, "market_cap": None,
+                    "volume": None, "currency": "IDR", "error": "Harga bursa belum tersedia",
                     "_fetched_at": time.time(),
                 }
 

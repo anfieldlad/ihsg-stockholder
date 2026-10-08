@@ -8,3 +8,4 @@ from server import app
 
 # Vercel needs the app application instance to handle requests
 # The app instance handles routes natively due to the vercel.json rewrite
+application = app

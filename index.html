@@ -1,29 +1,26 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="id">
-
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>IHSG Storm - Dashboard Kepemilikan Saham Indonesia Real-Time | Data KSEI & Harga Live</title>
-  <meta name="description"
-    content="Dashboard interaktif kepemilikan saham IHSG Indonesia. Lihat data pemegang saham dari KSEI dengan kepemilikan di atas 1%, harga saham live dari Yahoo Finance, dan analisis top investor.">
-  <meta name="keywords" content="IHSG, saham Indonesia, kepemilikan saham, KSEI, pemegang saham, investor saham, BEI, IDX, stock ownership, shareholder data, harga saham">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="description" content="Pantau data kepemilikan saham emiten BEI di atas 1% dari KSEI. Lacak portofolio konglomerat, investor institusi, dan harga bursa terkini.">
+  <meta name="keywords" content="IHSG, saham Indonesia, kepemilikan saham, KSEI, pemegang saham, investor kakap, BEI, IDX, bandarmologi, smart money, free float">
   <meta name="robots" content="index, follow">
   <meta name="author" content="BAD AI">
   <link rel="canonical" href="https://ihsg.badai.tech/">
   <link rel="icon" href="/favicon.ico" type="image/x-icon">
 
-  <!-- Open Graph / Facebook -->
+  <!-- Open Graph -->
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://ihsg.badai.tech/">
-  <meta property="og:title" content="IHSG Storm - Dashboard Kepemilikan Saham Indonesia Real-Time">
-  <meta property="og:description" content="Dashboard interaktif untuk data kepemilikan saham IHSG dari KSEI. Harga saham live, analisis top investor, dan tracking ownership real-time.">
+  <meta property="og:title" content="IHSG Storm — Data Kepemilikan Saham KSEI ≥1% & Harga Bursa">
+  <meta property="og:description" content="Pantau data kepemilikan saham emiten BEI di atas 1% dari KSEI. Lacak portofolio konglomerat, investor institusi, dan harga bursa terkini.">
   <meta property="og:site_name" content="IHSG Storm">
   <meta property="og:locale" content="id_ID">
 
   <!-- Twitter Card -->
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="IHSG Storm - Dashboard Kepemilikan Saham Indonesia">
+  <meta name="twitter:title" content="IHSG Storm — Data Kepemilikan Saham KSEI ≥1% & Harga Bursa">
   <meta name="twitter:description" content="Data kepemilikan saham IHSG dari KSEI dengan harga live & analisis top investor.">
 
   <!-- Structured Data (JSON-LD) -->
@@ -46,439 +43,1095 @@
       "@type": "Organization",
       "name": "BAD AI",
       "url": "https://badai.tech"
-    },
-    "about": {
-      "@type": "FinancialProduct",
-      "name": "Data Kepemilikan Saham IHSG"
-    },
-    "inLanguage": "id"
+    }
   }
   </script>
 
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
-    rel="stylesheet">
+  <title>IHSG Storm — Data Kepemilikan Saham KSEI ≥1% & Harga Bursa</title>
 
-  <!-- Tailwind CSS via CDN -->
-  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Self-hosted Scoped CSS (Zero Build Step, Tailwind CDN removed) -->
+  <link rel="stylesheet" href="/assets/css/style.css">
+
+  <!-- Application Fallback Watcher (vanilla JS, runs before ES modules) -->
   <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          fontFamily: { sans: ['Inter', 'sans-serif'] },
-          colors: {
-            bg: '#0f172a',
-            panel: '#1e293b',
-            primary: '#f8fafc',
-            muted: '#94a3b8'
-          }
-        }
+    (function() {
+      var booted = false;
+      window.__markAppBooted = function() {
+        booted = true;
+        var el = document.getElementById('app-fallback');
+        if (el) el.style.display = 'none';
+      };
+
+      function triggerFallback(err) {
+        if (booted) return;
+        var el = document.getElementById('app-fallback');
+        if (el) el.style.display = 'block';
+        var fresh = document.getElementById('fresh');
+        if (fresh) fresh.style.display = 'none';
+        if (err) console.error('IHSG Storm startup error / timeout:', err);
       }
-    }
+
+      window.addEventListener('error', function(event) {
+        if (!booted) {
+          triggerFallback(event.error || event.message);
+        }
+      });
+
+      setTimeout(function() {
+        if (!booted) {
+          triggerFallback('Alpine / module initialization timeout (>3s)');
+        }
+      }, 3000);
+    })();
   </script>
 
-  <!-- Custom Styles specific to this layout -->
-  <style>
-    body {
-      background-color: theme('colors.bg');
-      color: theme('colors.primary');
-      margin: 0;
-      padding: 24px;
-      min-height: 100vh;
-    }
-
-    ::-webkit-scrollbar {
-      width: 8px;
-      height: 8px;
-    }
-
-    ::-webkit-scrollbar-track {
-      background: rgba(255, 255, 255, 0.02);
-      border-radius: 4px;
-    }
-
-    ::-webkit-scrollbar-thumb {
-      background: rgba(255, 255, 255, 0.1);
-      border-radius: 4px;
-    }
-
-    ::-webkit-scrollbar-thumb:hover {
-      background: rgba(255, 255, 255, 0.2);
-    }
-
-    [x-cloak] {
-      display: none !important;
-    }
-
-    /* Background gradient orbs */
-    body::before,
-    body::after {
-      content: '';
-      position: fixed;
-      border-radius: 50%;
-      filter: blur(120px);
-      opacity: 0.15;
-      z-index: 0;
-      pointer-events: none;
-    }
-
-    body::before {
-      width: 600px;
-      height: 600px;
-      background: #3b82f6;
-      /* accent-blue */
-      top: -200px;
-      right: -100px;
-    }
-
-    body::after {
-      width: 500px;
-      height: 500px;
-      background: #8b5cf6;
-      /* accent-purple */
-      bottom: -150px;
-      left: -100px;
-    }
-
-    /* Glass utility */
-    .glass-panel {
-      background: rgba(30, 41, 59, 0.7);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
-    }
-
-    .glass-panel:hover {
-      border-color: rgba(255, 255, 255, 0.12);
-    }
-
-    .price-loading {
-      background: linear-gradient(90deg, rgba(255, 255, 255, 0.04) 25%, rgba(255, 255, 255, 0.08) 50%, rgba(255, 255, 255, 0.04) 75%);
-      background-size: 200% 100%;
-      animation: shimmer 1.5s infinite;
-      border-radius: 4px;
-    }
-
-    @keyframes shimmer {
-      0% {
-        background-position: 200% 0;
-      }
-
-      100% {
-        background-position: -200% 0;
-      }
-    }
-
-    /* Override ugly default Windows select dropdowns */
-    select {
-      color-scheme: dark;
-    }
-
-    select option {
-      background-color: #1e293b;
-      /* slate-800 */
-      color: #e2e8f0;
-      /* slate-200 */
-    }
-  </style>
-
-  <!-- Script dependencies -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
-
-  <!-- Initialize Application -->
+  <!-- Application Store & Alpine.js -->
   <script type="module">
     import { storeConfig } from './src/store.js';
-    import { renderDashboardCharts, renderModalChart } from './src/charts.js';
-    import { fmtNum, fmtShares, fmtPrice, fmtChangePct } from './src/utils.js';
+    import { toTitleCase, fmtNum, fmtShares, fmtPrice, fmtRp, fmtPct, fmtChangePct } from './src/utils.js';
 
-    // Attach helpers globally so Alpine can access them
+    window.toTitleCase = toTitleCase;
     window.fmtNum = fmtNum;
     window.fmtShares = fmtShares;
     window.fmtPrice = fmtPrice;
+    window.fmtRp = fmtRp;
+    window.fmtPct = fmtPct;
     window.fmtChangePct = fmtChangePct;
 
     document.addEventListener('alpine:init', () => {
       Alpine.data('app', () => storeConfig);
-    });
-
-    document.addEventListener('data-loaded', () => {
-      // We delay chart rendering slightly to ensure Alpine has rendered the DOM
-      setTimeout(() => {
-        if (Alpine.store('app')?.rawData) {
-          renderDashboardCharts(Alpine.store('app').rawData, Alpine.store('app').stockMap);
-        }
-      }, 100);
-    });
-
-    document.addEventListener('render-modal-chart', () => {
-      if (Alpine.store('app')?.modalType === 'stock') {
-        renderModalChart(Alpine.store('app').modalData.holders);
+      if (typeof window.__markAppBooted === 'function') {
+        window.__markAppBooted();
       }
     });
-
-    // We manually set the store globally so it persists properly inside the data definition
-    document.addEventListener('alpine:initializing', () => {
-      Alpine.store('app', storeConfig);
-    });
-
-    // Manually load and initialize Alpine AFTER our scripts are registered
-    const script = document.createElement('script');
-    script.src = 'https://cdn.jsdelivr.net/npm/alpinejs@3.13.3/dist/cdn.min.js';
-    script.defer = true;
-    document.head.appendChild(script);
   </script>
+  <script src="/assets/vendor/alpine.min.js" defer></script>
 </head>
 
-<body x-data="app" x-init="init()" class="bg-slate-900 text-slate-200 antialiased font-sans">
+<body x-data="app" x-init="init()" :data-theme="theme">
 
-  <div class="max-w-[1400px] mx-auto" role="main">
-    <!-- HEADER -->
-    <header
-      class="glass-panel rounded-3xl p-6 lg:p-8 mb-8 flex flex-col md:flex-row md:items-center justify-between gap-8 relative z-50 ring-1 ring-white/10 shadow-2xl shadow-blue-900/20">
-      <!-- Decorative background glow inside header -->
-      <div class="absolute -top-32 -left-32 w-64 h-64 bg-blue-500/20 rounded-full blur-3xl pointer-events-none"></div>
-      <div class="absolute -bottom-32 -right-32 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none">
-      </div>
+  <!-- SVG Icon Symbol Sprites -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <symbol id="i-list" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/></symbol>
+    <symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.6-3.6 3-5.5 6.5-5.5s5.9 1.9 6.5 5.5"/><path d="M16 4.7a3.5 3.5 0 0 1 0 6.6M18 14.8c2 .6 3.2 2.4 3.5 5.2"/></symbol>
+    <symbol id="i-chart" viewBox="0 0 24 24"><path d="M4 20V4M4 20h16M8 16v-5M13 16V8M18 16v-8"/></symbol>
+    <symbol id="i-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
+    <symbol id="i-back" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></symbol>
+    <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></symbol>
+    <symbol id="i-chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></symbol>
+    <symbol id="i-cursor" viewBox="0 0 24 24"><path d="M5 4l6 16 2.5-6.5L20 11z"/></symbol>
+    <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><path d="M12 1v2m0 18v2M4.22 4.22l1.42 1.42m12.72 12.72 1.42 1.42M1 12h2m18 0h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></symbol>
+    <symbol id="i-moon" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+  </svg>
 
-      <div class="relative z-10 flex-1">
-        <div class="flex items-center gap-4 mb-3">
-          <div
-            class="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/30 ring-1 ring-white/20 shrink-0">
-            <svg xmlns="http://www.w3.org/2000/svg" class="w-7 h-7 text-white" fill="none" viewBox="0 0 24 24"
-              stroke="currentColor" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
-            </svg>
-          </div>
-          <div>
-            <h1
-              class="text-3xl md:text-4xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-br from-white via-slate-200 to-slate-400 drop-shadow-sm mb-1">
-              IHSG Storm
-            </h1>
-            <p class="text-[13px] md:text-sm font-medium text-blue-300/80 tracking-wide">
-              IHSG Stock Tracking & Ownership Real-time Monitoring
-            </p>
-          </div>
-        </div>
+  <!-- Desktop Left Rail (>=1024px) -->
+  <nav class="rail" id="rail" aria-label="Navigasi utama">
+    <div class="logo" aria-hidden="true">IH</div>
+    <button class="nb" type="button" @click="setTab('stocks')" :aria-current="currentTab === 'stocks' ? 'page' : null">
+      <svg class="i"><use href="#i-list"/></svg>
+      <span>Saham</span>
+    </button>
+    <button class="nb" type="button" @click="setTab('investors')" :aria-current="currentTab === 'investors' ? 'page' : null">
+      <svg class="i"><use href="#i-users"/></svg>
+      <span>Investor</span>
+    </button>
+    <button class="nb" type="button" @click="setTab('analytics')" :aria-current="currentTab === 'analytics' ? 'page' : null">
+      <svg class="i"><use href="#i-chart"/></svg>
+      <span>Analitik</span>
+    </button>
+    <button class="nb" type="button" @click="setTab('faq')" :aria-current="currentTab === 'faq' ? 'page' : null">
+      <svg class="i"><use href="#i-help"/></svg>
+      <span>Bantuan</span>
+    </button>
 
-        <div class="flex flex-wrap gap-2 md:gap-3 text-xs font-semibold text-slate-300 mt-5 pl-0 md:pl-16">
-          <div
-            class="flex items-center gap-2 bg-slate-800/80 border border-slate-700/80 rounded-full px-3 py-1.5 shadow-sm backdrop-blur-md">
-            <span class="relative flex h-2 w-2">
-              <span
-                class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-              <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-            </span>
-            <span class="tracking-wide">Live Price: Yahoo Finance (~15m delay)</span>
-          </div>
-          <div
-            class="flex items-center gap-2 bg-slate-800/80 border border-slate-700/80 rounded-full px-3 py-1.5 shadow-sm backdrop-blur-md">
-            <span class="w-2 h-2 rounded-full bg-blue-400"></span>
-            <span class="tracking-wide" x-text="sourceDate ? `Data KSEI: ${sourceDate}` : `Memuat data...`"></span>
-          </div>
-        </div>
-      </div>
+    <div class="rail-bottom">
+      <button class="theme-btn" type="button" @click="toggleTheme()" :title="theme === 'a' ? 'Beralih ke Mode Malam' : 'Beralih ke Mode Terang'" :aria-label="theme === 'a' ? 'Beralih ke mode malam' : 'Beralih ke mode terang'">
+        <svg class="i s" x-show="theme === 'a'"><use href="#i-moon"/></svg>
+        <svg class="i s" x-show="theme === 'b'"><use href="#i-sun"/></svg>
+      </button>
+    </div>
+  </nav>
 
-      <!-- GLOBAL SEARCH -->
-      <div class="relative w-full md:w-80 lg:w-96 z-[100] shrink-0" @click.away="showAutocomplete = false">
-        <div class="relative group">
-          <div
-            class="absolute -inset-1 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full blur opacity-25 group-hover:opacity-40 transition duration-300">
-          </div>
-          <div class="relative">
-            <svg xmlns="http://www.w3.org/2000/svg"
-              class="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400 group-focus-within:text-blue-400 transition-colors"
-              fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-              <circle cx="11" cy="11" r="8" />
-              <line x1="21" y1="21" x2="16.65" y2="16.65" />
-            </svg>
-            <input type="search" x-model="searchQuery" @input="updateSearch($event.target.value)"
-              @keydown.enter="submitSearch()" placeholder="Cari emiten, investor..."
-              aria-label="Cari emiten atau investor saham"
-              class="w-full bg-slate-900/90 border border-white/10 rounded-full pl-12 pr-5 py-3.5 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all shadow-inner backdrop-blur-xl">
+  <!-- App Wrapper -->
+  <div class="page">
+    <!-- Sticky Top Header -->
+    <header class="top">
+      <div class="shell top-in">
+        <div class="logo" aria-hidden="true">IH</div>
+        <button class="sbtn" type="button" @click="openSearch()" aria-label="Cari kode saham atau nama investor">
+          <svg class="i"><use href="#i-search"/></svg>
+          <span x-text="C.search.bar_placeholder">Cari kode saham atau investor...</span>
+          <kbd>Ctrl</kbd>&nbsp;<kbd>K</kbd>
+        </button>
 
-            <!-- Keyboard shortcut hint -->
-            <div
-              class="absolute right-4 top-1/2 -translate-y-1/2 hidden sm:flex items-center gap-1 opacity-50 pointer-events-none">
-              <kbd
-                class="px-1.5 py-0.5 text-[10px] font-sans font-semibold bg-slate-800 border border-slate-700 rounded text-slate-400">Ctrl</kbd>
-              <span class="text-[10px] text-slate-500">+</span>
-              <kbd
-                class="px-1.5 py-0.5 text-[10px] font-sans font-semibold bg-slate-800 border border-slate-700 rounded text-slate-400">K</kbd>
-            </div>
-          </div>
-        </div>
+        <button class="theme-btn" type="button" @click="toggleTheme()" :title="theme === 'a' ? 'Mode Malam' : 'Mode Terang'" :aria-label="theme === 'a' ? 'Beralih ke mode malam' : 'Beralih ke mode terang'">
+          <svg class="i s" x-show="theme === 'a'"><use href="#i-moon"/></svg>
+          <svg class="i s" x-show="theme === 'b'"><use href="#i-sun"/></svg>
+        </button>
 
-        <!-- AUTOCOMPLETE DROPDOWN -->
-        <div x-show="showAutocomplete" x-transition:enter="transition ease-out duration-200"
-          x-transition:enter-start="opacity-0 translate-y-2 scale-95"
-          x-transition:enter-end="opacity-100 translate-y-0 scale-100"
-          x-transition:leave="transition ease-in duration-150"
-          x-transition:leave-start="opacity-100 translate-y-0 scale-100"
-          x-transition:leave-end="opacity-0 translate-y-2 scale-95" x-cloak
-          class="absolute top-full left-0 right-0 mt-3 bg-slate-800/95 backdrop-blur-2xl border border-white/10 rounded-2xl shadow-[0_20px_40px_rgba(0,0,0,0.4)] overflow-hidden z-[100] transform origin-top">
-          <template x-if="autocompleteStocks.length === 0 && autocompleteInvestors.length === 0 && searchQuery">
-            <div class="p-8 text-center flex flex-col items-center justify-center gap-3">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-slate-600" fill="none" viewBox="0 0 24 24"
-                stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                  d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <p class="text-sm font-medium text-slate-400">Tidak ada data ditemukan untuk "<span x-text="searchQuery"
-                  class="text-slate-300"></span>"</p>
-            </div>
-          </template>
-
-          <template x-if="autocompleteStocks.length > 0">
-            <div>
-              <div
-                class="px-5 py-2.5 text-[10px] font-bold text-slate-500 uppercase tracking-widest bg-slate-900/60 border-b border-white/5 flex items-center gap-2">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24"
-                  stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-                </svg>
-                Emiten Saham
-              </div>
-              <template x-for="s in autocompleteStocks" :key="s.code">
-                <div @click="location.hash='#/stock/'+s.code; searchQuery=''; showAutocomplete=false"
-                  class="px-5 py-3 hover:bg-slate-700/60 cursor-pointer flex justify-between items-center transition-all duration-200 group">
-                  <div>
-                    <span class="font-bold text-slate-200 group-hover:text-blue-400 transition-colors text-base"
-                      x-text="s.code"></span>
-                    <span class="block text-xs font-medium text-slate-400/80 mt-0.5"
-                      x-text="s.issuer.length > 35 ? s.issuer.substring(0,35) + '...' : s.issuer"></span>
-                  </div>
-                  <span
-                    class="px-2.5 py-1 text-[10px] uppercase tracking-wider font-bold bg-blue-500/10 text-blue-400 rounded-lg group-hover:bg-blue-500/20 transition-colors">Saham</span>
-                </div>
-              </template>
-            </div>
-          </template>
-
-          <template x-if="autocompleteInvestors.length > 0">
-            <div>
-              <div
-                class="px-5 py-2.5 text-[10px] font-bold text-slate-500 uppercase tracking-widest bg-slate-900/60 border-y border-white/5 flex items-center gap-2">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24"
-                  stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                </svg>
-                Investor Top
-              </div>
-              <template x-for="inv in autocompleteInvestors" :key="inv.name">
-                <div
-                  @click="location.hash='#/investor/'+encodeURIComponent(inv.name); searchQuery=''; showAutocomplete=false"
-                  class="px-5 py-3 hover:bg-slate-700/60 cursor-pointer flex justify-between items-center transition-all duration-200 group">
-                  <div class="w-4/5">
-                    <span
-                      class="font-semibold text-slate-200 truncate block group-hover:text-purple-400 transition-colors text-[15px]"
-                      x-text="inv.name"></span>
-                    <span class="text-xs font-medium text-slate-400/80 mt-0.5 flex gap-1.5 items-center">
-                      <span x-text="TYPE_LABELS[inv.type] || inv.type"></span>
-                      <span class="w-1 h-1 rounded-full bg-slate-600"></span>
-                      <span x-text="inv.stocks.length + ' Saham'"></span>
-                    </span>
-                  </div>
-                  <span
-                    class="px-2.5 py-1 text-[10px] uppercase tracking-wider font-bold bg-purple-500/10 text-purple-400 rounded-lg group-hover:bg-purple-500/20 transition-colors shrink-0">Investor</span>
-                </div>
-              </template>
-            </div>
-          </template>
-        </div>
+        <button class="pro" type="button" @click="openPro('top')" aria-label="Fitur PRO" x-text="C.nav.pro_pill">PRO</button>
       </div>
     </header>
 
-    <!-- LOADING STATE -->
-    <div x-show="loading" class="flex flex-col items-center justify-center py-20 gap-4">
-      <div class="w-12 h-12 border-4 border-white/10 border-t-blue-500 rounded-full animate-spin shadow-lg"></div>
-      <p class="text-sm text-slate-400 font-medium tracking-wide drop-shadow-md">Memuat data stockholder...</p>
-    </div>
+    <!-- Main Content Container -->
+    <main class="shell">
+      <!-- Fallback when JavaScript is disabled -->
+      <noscript>
+        <div class="state" style="margin: 40px auto; max-width: 480px;">
+          <b>Gagal memuat data kepemilikan saham. Silakan periksa koneksi internet Anda.</b>
+          <p>JavaScript dinonaktifkan pada peramban Anda. Aktifkan JavaScript untuk memuat data IHSG Storm.</p>
+        </div>
+      </noscript>
 
-    <div x-show="error" x-text="error" class="text-rose-500 text-center py-10 font-medium"></div>
+      <!-- Fallback when script fails or Alpine does not initialize within ~3s -->
+      <div class="state" id="app-fallback" style="display: none; margin: 40px auto; max-width: 480px;">
+        <b id="app-fallback-msg">Gagal memuat data kepemilikan saham. Silakan periksa koneksi internet Anda.</b>
+        <p>Aplikasi belum berhasil diinisialisasi atau koneksi jaringan terputus.</p>
+        <button class="btn pri" type="button" onclick="location.reload()" style="margin: 0 auto; display: inline-flex;">Coba Lagi</button>
+      </div>
 
-    <!-- MAIN VIEW (DASHBOARD) -->
-    <main x-show="!loading && !error && !modalType" x-cloak>
+      <!-- Freshness Indicator -->
+      <div class="fresh" role="status" id="fresh">
+        <span class="dot"></span>
+        <span>Data KSEI per <b x-text="asOfLabel || '30 September 2026'"></b> (pembaruan berkala) · Harga bursa tertunda 15 mnt</span>
+        <button type="button" @click="openPro('freshness')">Info Pembaruan</button>
+      </div>
 
-      <!-- STATS -->
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <template x-for="stat in [
-          { label: 'Total Emiten', val: fmtNum(totalStocks), sub: 'Saham tercatat' },
-          { label: 'Total Investor', val: fmtNum(totalInvestors), sub: 'Kepemilikan >1%' },
-          { label: 'Total Records', val: fmtNum(totalRecords), sub: 'Data kepemilikan' },
-          { label: 'Lokal vs Asing', val: totalRecords ? Math.round(localCount / totalRecords * 100) + ':' + Math.round(foreignCount / totalRecords * 100) : '-', sub: `${fmtNum(localCount)} lokal • ${fmtNum(foreignCount)} asing`, valClass: 'text-emerald-400' }
-        ]">
-          <div class="glass-panel rounded-2xl p-5 border border-white/[0.04]">
-            <div class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2" x-text="stat.label"></div>
-            <div class="text-2xl font-bold tracking-tight text-white" :class="stat.valClass || ''" x-text="stat.val"></div>
-            <div class="text-xs text-slate-400 mt-1" x-text="stat.sub"></div>
+      <!-- Master-Detail Layout -->
+      <div class="layout" :class="{ 'has-pane': currentTab !== 'analytics' && currentTab !== 'faq' }">
+        <div class="col" id="col">
+
+          <!-- VIEW: STOCKS -->
+          <section class="view" :class="{ on: currentTab === 'stocks' }" id="v-stocks" aria-labelledby="h-stocks">
+            <div class="view-head">
+              <h1 id="h-stocks" x-text="C.stocks.title">Saham</h1>
+              <p class="sub" id="sub-stocks" x-text="`${fmtNum(totalStocks)} emiten dengan pemegang saham ≥1%`"></p>
+
+              <div class="tools">
+                <div class="chips" role="group" id="chips-stocks">
+                  <button class="chip" type="button" @click="setStockFilter('all')" :aria-pressed="stockFilter === 'all'">Semua</button>
+                  <button class="chip" type="button" @click="setStockFilter('foreign')" :aria-pressed="stockFilter === 'foreign'">Dominasi Asing</button>
+                  <button class="chip" type="button" @click="setStockFilter('many')" :aria-pressed="stockFilter === 'many'">Pemegang Terbanyak</button>
+                  <button class="chip" type="button" @click="setStockFilter('scrip')" :aria-pressed="stockFilter === 'scrip'">Warkat / Scrip</button>
+                  <button class="chip" type="button" @click="openPro('screener')" aria-label="Screener saham (Fitur PRO)">
+                    <svg class="i s"><use href="#i-lock"/></svg>
+                    <span>Screener</span>
+                  </button>
+                </div>
+
+                <select class="sortsel" :value="stockSortKey" @change="setStockSort($event.target.value)" aria-label="Urutkan Saham">
+                  <option value="code">Urutkan: Kode (A-Z)</option>
+                  <option value="top">Urutkan: Porsi Terbesar</option>
+                  <option value="holders">Urutkan: Jumlah Pemegang</option>
+                  <option value="local">Urutkan: Porsi Domestik</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Stock List -->
+            <div class="list" id="stockList">
+              <!-- Loading Skeleton -->
+              <template x-if="loading">
+                <div>
+                  <div class="skel" aria-hidden="true"><div class="sk" style="width:38%"></div><div class="sk" style="width:62%;height:10px"></div></div>
+                  <div class="skel" aria-hidden="true"><div class="sk" style="width:42%"></div><div class="sk" style="width:58%;height:10px"></div></div>
+                  <div class="skel" aria-hidden="true"><div class="sk" style="width:35%"></div><div class="sk" style="width:65%;height:10px"></div></div>
+                  <div class="skel" aria-hidden="true"><div class="sk" style="width:40%"></div><div class="sk" style="width:50%;height:10px"></div></div>
+                </div>
+              </template>
+
+              <!-- Error State -->
+              <template x-if="!loading && error">
+                <div class="state">
+                  <b x-text="error"></b>
+                  <p></p>
+                  <button class="btn pri" type="button" @click="init()">Coba Lagi</button>
+                </div>
+              </template>
+
+              <!-- Empty State -->
+              <template x-if="!loading && !error && filteredStocks.length === 0">
+                <div class="state">
+                  <b x-text="C.search.empty_title">Tidak Ditemukan</b>
+                  <p>Tidak ada saham yang sesuai dengan filter.</p>
+                </div>
+              </template>
+
+              <!-- Table Header (Container Query >=560px) -->
+              <div class="thead" aria-hidden="true" x-show="!loading && filteredStocks.length > 0">
+                <span class="h">Kode / Emiten</span>
+                <span class="h r">Harga</span>
+                <span class="h r">+/-</span>
+                <button class="h r" type="button" @click="setStockSort('top')">
+                  <span>Porsi Terbesar</span><span x-show="stockSortKey === 'top'">&nbsp;↓</span>
+                </button>
+                <button class="h r opt1" type="button" @click="setStockSort('holders')">
+                  <span>Pemegang ≥1%</span><span x-show="stockSortKey === 'holders'">&nbsp;↓</span>
+                </button>
+                <span class="h opt2">Pemegang Saham Terbesar</span>
+                <button class="h r opt3" type="button" @click="setStockSort('local')">
+                  <span>Porsi Domestik</span><span x-show="stockSortKey === 'local'">&nbsp;↓</span>
+                </button>
+              </div>
+
+              <!-- Stock Rows -->
+              <template x-for="s in visibleStocks" :key="s.code">
+                <button class="row" type="button" @click="openStock(s.code)" :aria-current="cur && cur.kind === 'stock' && cur.arg === s.code ? 'true' : 'false'">
+                  <span class="id">
+                    <span class="code" x-text="s.code"></span>
+                    <span class="iss" :title="s.issuer" x-text="toTitleCase(s.issuer)"></span>
+                  </span>
+
+                  <!-- Price -->
+                  <span class="px num">
+                    <span x-show="priceLoadingBatch && !priceMap[s.code]" class="skel-px sk" aria-hidden="true"></span>
+                    <span x-show="priceMap[s.code] && priceMap[s.code].last_price != null" x-text="fmtPrice(priceMap[s.code]?.last_price)"></span>
+                    <span x-show="(!priceLoadingBatch && !priceMap[s.code]) || (priceMap[s.code] && priceMap[s.code].last_price == null)" class="na-badge">n/a</span>
+                  </span>
+
+                  <!-- Change Chip -->
+                  <span class="ch">
+                    <span x-show="fmtChangePct(priceMap[s.code]?.change_pct)"
+                          class="chg"
+                          :class="fmtChangePct(priceMap[s.code]?.change_pct)?.cls"
+                          x-text="fmtChangePct(priceMap[s.code]?.change_pct)?.text">
+                    </span>
+                    <span x-show="!fmtChangePct(priceMap[s.code]?.change_pct)" class="chg flat">-</span>
+                  </span>
+
+                  <!-- Mobile 3rd Line Info -->
+                  <span class="m3">
+                    <span x-text="`Pemegang terbesar ${fmtPct(s.topHolder ? s.topHolder.percentage : s.holders[0]?.percentage)} · ${toTitleCase(s.topHolder ? s.topHolder.investor : s.holders[0]?.investor)}`"></span>
+                  </span>
+
+                  <!-- Desktop Container Query Cells -->
+                  <div class="cell r v num holder-cell">
+                    <span class="num bold" x-text="fmtPct(s.topHolder ? s.topHolder.percentage : s.holders[0]?.percentage)"></span>
+                    <span class="sub-hname" :title="s.topHolder ? s.topHolder.investor : s.holders[0]?.investor" x-text="toTitleCase(s.topHolder ? s.topHolder.investor : s.holders[0]?.investor)"></span>
+                  </div>
+                  <span class="cell r v num opt1" x-text="s.holders.length"></span>
+                  <span class="cell nm opt2" :title="s.topHolder ? s.topHolder.investor : s.holders[0]?.investor" x-text="toTitleCase(s.topHolder ? s.topHolder.investor : s.holders[0]?.investor)"></span>
+                  <span class="cell r v num opt3" x-text="fmtPct(s.holders.filter(h => h.local_foreign === 'L').reduce((sum, h) => sum + h.percentage, 0))"></span>
+                </button>
+              </template>
+            </div>
+
+            <!-- Load More Controls -->
+            <div class="more" x-show="!loading && visibleStocks.length > 0">
+              <button class="btn sec" type="button" @click="loadMoreStocks()" x-show="visibleStocks.length < filteredStocks.length" x-text="C.stocks.btn_load_more">Muat Lebih Banyak</button>
+              <p class="note" x-text="`Menampilkan ${visibleStocks.length} dari ${fmtNum(filteredStocks.length)} emiten tercatat di Bursa Efek Indonesia.`"></p>
+            </div>
+          </section>
+
+          <!-- VIEW: INVESTORS -->
+          <section class="view" :class="{ on: currentTab === 'investors' }" id="v-investors" aria-labelledby="h-inv">
+            <div class="view-head">
+              <h1 id="h-inv" x-text="C.investors.title">Investor</h1>
+              <p class="sub" id="sub-inv" x-text="C.investors.subtitle"></p>
+
+              <div class="tools">
+                <div class="chips" role="group" id="chips-inv">
+                  <button class="chip" type="button" @click="setInvFilter('all')" :aria-pressed="invFilter === 'all'">Semua</button>
+                  <button class="chip" type="button" @click="setInvFilter('ID')" :aria-pressed="invFilter === 'ID'">Individu</button>
+                  <button class="chip" type="button" @click="setInvFilter('CP')" :aria-pressed="invFilter === 'CP'">Korporasi</button>
+                  <button class="chip" type="button" @click="setInvFilter('F')" :aria-pressed="invFilter === 'F'">Asing</button>
+                  <button class="chip" type="button" @click="setInvFilter('scrip')" :aria-pressed="invFilter === 'scrip'">Warkat</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Investor List -->
+            <div class="list inv" id="invList">
+              <div class="thead" aria-hidden="true" x-show="!loading && filteredInvestors.length > 0">
+                <span class="h">Investor</span>
+                <span class="h r">Jml Emiten</span>
+                <span class="h r">Porsi Terbesar</span>
+                <span class="h">Tipe</span>
+                <span class="h r opt1">#</span>
+                <span class="h opt2">Portofolio Saham</span>
+              </div>
+
+              <template x-for="(v, index) in visibleInvestors" :key="v.name">
+                <button class="row" type="button" @click="openInvestor(v.name)" :aria-current="cur && cur.kind === 'investor' && cur.arg === v.name ? 'true' : 'false'">
+                  <span class="id">
+                    <span class="code" style="font-size:15px" x-text="toTitleCase(v.name)"></span>
+                    <span class="iss">
+                      <span x-text="getTypeName(v.type)"></span> · <span class="tag" :class="getLFClass(v.lf)" x-text="getLFLabel(v.lf)"></span>
+                    </span>
+                  </span>
+
+                  <span class="px num" style="font-size:14px" x-text="`${v.holdings.length}+ emiten`"></span>
+                  <span class="ch note" x-text="`terbesar ${fmtPct(Math.max(...v.holdings.map(h => h.p || h.percentage)))}`"></span>
+
+                  <span class="cell r v num" x-text="`${v.holdings.length}+`"></span>
+                  <span class="cell r v num" x-text="fmtPct(Math.max(...v.holdings.map(h => h.p || h.percentage)))"></span>
+                  <span class="cell nm">
+                    <span x-text="getTypeName(v.type)"></span> · <span class="tag" :class="getLFClass(v.lf)" x-text="getLFLabel(v.lf)"></span>
+                  </span>
+                  <span class="cell r v num opt1" x-text="index + 1"></span>
+                  <span class="cell nm opt2" x-text="v.holdings.slice(0, 4).map(h => h.code).join(' · ')"></span>
+                </button>
+              </template>
+            </div>
+
+            <!-- Pro Gate on Investor List -->
+            <div class="lock">
+              <svg class="i s"><use href="#i-lock"/></svg>
+              <div>
+                <h4>Peringkat Lengkap 5.000+ Investor</h4>
+                <p>Akses seluruh pemegang saham kakap di BEI dan unduh dataset ke Excel/CSV.</p>
+                <button class="go" type="button" @click="openPro('investor_rank')">
+                  Lihat Paket Pro <svg class="i s"><use href="#i-chev"/></svg>
+                </button>
+              </div>
+            </div>
+
+            <!-- Investor Load More -->
+            <div class="more" x-show="!loading && visibleInvestors.length > 0">
+              <button class="btn sec" type="button" @click="loadMoreInvestors()" x-show="visibleInvestors.length < filteredInvestors.length">Muat Lebih Banyak</button>
+              <p class="note" x-text="`Menampilkan ${visibleInvestors.length} dari ${fmtNum(filteredInvestors.length)} investor terdaftar di KSEI.`"></p>
+            </div>
+          </section>
+
+          <!-- VIEW: ANALYTICS (Pure CSS, 0 KB Canvas) -->
+          <section class="view" :class="{ on: currentTab === 'analytics' }" id="v-analytics" aria-labelledby="h-an">
+            <h1 id="h-an" x-text="C.analytics.title">Analitik</h1>
+            <p class="sub" id="sub-an" x-text="`Ringkasan struktur kepemilikan efek KSEI per ${asOfLabel || '30 September 2026'}`"></p>
+
+            <div class="grid2">
+              <!-- Card 1: Domestik vs Asing vs Warkat -->
+              <div class="card">
+                <h3 x-text="C.analytics.card_lf_title">Investor Domestik vs Asing vs Warkat</h3>
+                <p class="note" style="margin-top:2px" x-text="C.analytics.card_lf_desc"></p>
+                <div class="seg">
+                  <i :style="`width:${analyticsData.localPct}%;background:var(--up)`"></i>
+                  <i :style="`width:${analyticsData.foreignPct}%;background:var(--asing)`"></i>
+                  <i :style="`width:${analyticsData.scripPct}%;background:var(--scrip)`"></i>
+                </div>
+                <div class="legend">
+                  <span><i class="sw" style="background:var(--up)"></i>Domestik <b class="num" x-text="`${fmtNum(localCount)} (${analyticsData.localPct}%)`"></b></span>
+                  <span><i class="sw" style="background:var(--asing)"></i>Asing <b class="num" x-text="`${fmtNum(foreignCount)} (${analyticsData.foreignPct}%)`"></b></span>
+                  <span><i class="sw" style="background:var(--scrip)"></i>Warkat <b class="num" x-text="`${fmtNum(scripCount)} (${analyticsData.scripPct}%)`"></b></span>
+                </div>
+              </div>
+
+              <!-- Card 2: Klasifikasi Tipe Investor -->
+              <div class="card">
+                <h3 x-text="C.analytics.card_type_title">Klasifikasi Tipe Investor</h3>
+                <p class="note" style="margin-top:2px" x-text="C.analytics.card_type_desc"></p>
+                <div class="bars">
+                  <template x-for="t in analyticsData.typeBars" :key="t.label">
+                    <div class="bar">
+                      <span class="t" x-text="t.label"></span>
+                      <span class="tr"><i :style="`width:${t.pct}%`"></i></span>
+                      <span class="v num" x-text="fmtNum(t.count)"></span>
+                    </div>
+                  </template>
+                </div>
+              </div>
+
+              <!-- Card 3: Top 10 Emiten Pemegang Terbanyak -->
+              <div class="card">
+                <h3 x-text="C.analytics.card_top15_title">15 Emiten dengan Pemegang Saham Terbanyak</h3>
+                <p class="note" style="margin-top:2px" x-text="C.analytics.card_top15_desc"></p>
+                <div class="bars">
+                  <template x-for="s in analyticsData.top15Bars" :key="s.code">
+                    <div class="bar">
+                      <span class="t" x-text="s.code"></span>
+                      <span class="tr"><i :style="`width:${s.pct}%`"></i></span>
+                      <span class="v num" x-text="s.count"></span>
+                    </div>
+                  </template>
+                </div>
+              </div>
+
+              <!-- Card 4: Konsentrasi Kepemilikan Pengendali -->
+              <div class="card">
+                <h3 x-text="C.analytics.card_conc_title">Konsentrasi Kepemilikan Pengendali</h3>
+                <p class="note" style="margin-top:2px" x-text="C.analytics.card_conc_desc"></p>
+                <div class="bars">
+                  <template x-for="c in analyticsData.concBars" :key="c.label">
+                    <div class="bar">
+                      <span class="t" x-text="c.label"></span>
+                      <span class="tr"><i :style="`width:${c.pct}%`"></i></span>
+                      <span class="v num" x-text="fmtNum(c.count)"></span>
+                    </div>
+                  </template>
+                </div>
+              </div>
+
+              <!-- Card 5 (Span 2): MoM Delta Lock Card -->
+              <div class="span2">
+                <div class="lock" style="margin-top:0">
+                  <svg class="i s"><use href="#i-lock"/></svg>
+                  <div>
+                    <h4 x-text="C.analytics.card_delta_title">Perubahan Kepemilikan Antar-Bulan</h4>
+                    <p x-text="C.analytics.card_delta_desc">Pantau siapa yang akumulasi atau melepas saham besar setiap bulan.</p>
+                    <button class="go" type="button" @click="openPro('delta')">
+                      Lihat Paket Pro <svg class="i s"><use href="#i-chev"/></svg>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- VIEW: FAQ (Integrated Customer Success) -->
+          <section class="view" :class="{ on: currentTab === 'faq' }" id="v-faq" aria-labelledby="h-faq">
+            <h1 id="h-faq">Pusat Bantuan & FAQ</h1>
+            <p class="sub">Pertanyaan umum seputar data kepemilikan efek KSEI dan keterbukaan publik IHSG Storm</p>
+
+            <div class="tools" style="margin-top:20px">
+              <input type="search" class="form-input" style="max-width:380px" placeholder="Cari pertanyaan di FAQ..." x-model="faqSearch">
+              <div class="chips">
+                <button class="chip" type="button" @click="faqCategory = 'all'" :aria-pressed="faqCategory === 'all'">Semua Topik</button>
+                <button class="chip" type="button" @click="faqCategory = 'ksei'" :aria-pressed="faqCategory === 'ksei'">Data KSEI ≥1%</button>
+                <button class="chip" type="button" @click="faqCategory = 'jadwal'" :aria-pressed="faqCategory === 'jadwal'">Jadwal & Delay</button>
+                <button class="chip" type="button" @click="faqCategory = 'legal'" :aria-pressed="faqCategory === 'legal'">Legalitas & DYOR</button>
+              </div>
+            </div>
+
+            <div class="card" style="margin-top:16px">
+              <div class="faq-item">
+                <button class="faq-q" type="button" @click="openFaqIndex = openFaqIndex === 1 ? null : 1">
+                  <span>1. Apa itu IHSG Storm dan dari mana sumber datanya?</span>
+                  <svg class="i s" :style="openFaqIndex === 1 ? 'transform:rotate(180deg)' : ''"><use href="#i-chev"/></svg>
+                </button>
+                <div class="faq-a" x-show="openFaqIndex === 1">
+                  IHSG Storm adalah platform intelijen pasar modal independen untuk memantau struktur kepemilikan saham emiten BEI. Data kepemilikan bersumber dari arsip resmi KSEI (posisi akhir bulan), sedangkan harga saham bursa diperbarui dari Yahoo Finance dengan jeda waktu sekitar 15 menit.
+                </div>
+              </div>
+
+              <div class="faq-item">
+                <button class="faq-q" type="button" @click="openFaqIndex = openFaqIndex === 2 ? null : 2">
+                  <span>2. Mengapa IHSG Storm menggunakan ambang batas kepemilikan ≥1% bukan 5%?</span>
+                  <svg class="i s" :style="openFaqIndex === 2 ? 'transform:rotate(180deg)' : ''"><use href="#i-chev"/></svg>
+                </button>
+                <div class="faq-a" x-show="openFaqIndex === 2">
+                  Regulasi POJK mewajibkan keterbukaan publik untuk kepemilikan ≥5%. Namun, dokumen KSEI mencatat investor signifikan mulai dari 1%. Dengan menampilkan pemegang saham ≥1%, investor dapat melihat pergerakan pemegang saham tier-dua, sindikasi, dan investor institusi sebelum mereka mencapai batas 5%.
+                </div>
+              </div>
+
+              <div class="faq-item">
+                <button class="faq-q" type="button" @click="openFaqIndex = openFaqIndex === 3 ? null : 3">
+                  <span>3. Apa arti label Domestik, Asing, dan Warkat/Scrip?</span>
+                  <svg class="i s" :style="openFaqIndex === 3 ? 'transform:rotate(180deg)' : ''"><use href="#i-chev"/></svg>
+                </button>
+                <div class="faq-a" x-show="openFaqIndex === 3">
+                  Label <b>Domestik (Lokal)</b> menunjukkan entitas atau perorangan WNI berdomisili hukum di Indonesia. <b>Asing</b> adalah entitas internasional atau WNA. <b>Warkat / Scrip</b> adalah saham yang tercatat secara fisik (sertifikat warkat) di luar sistem tanpa warkat (scripless) C-BEST KSEI.
+                </div>
+              </div>
+
+              <div class="faq-item">
+                <button class="faq-q" type="button" @click="openFaqIndex = openFaqIndex === 4 ? null : 4">
+                  <span>4. Mengapa harga saham bursa tertunda 15 menit?</span>
+                  <svg class="i s" :style="openFaqIndex === 4 ? 'transform:rotate(180deg)' : ''"><use href="#i-chev"/></svg>
+                </button>
+                <div class="faq-a" x-show="openFaqIndex === 4">
+                  Feed data harga pasar modal disediakan melalui feed publik tertunda (delayed feed 15 menit) untuk kepatuhan regulasi bursa BEI. IHSG Storm dirancang untuk analisis kepemilikan struktural (smart money & konglomerasi), bukan platform eksekusi scalping harian.
+                </div>
+              </div>
+
+              <div class="faq-item">
+                <button class="faq-q" type="button" @click="openFaqIndex = openFaqIndex === 5 ? null : 5">
+                  <span>5. Bagaimana cara melaporkan jika ada data kepemilikan yang tidak sesuai?</span>
+                  <svg class="i s" :style="openFaqIndex === 5 ? 'transform:rotate(180deg)' : ''"><use href="#i-chev"/></svg>
+                </button>
+                <div class="faq-a" x-show="openFaqIndex === 5">
+                  Anda dapat menggunakan tombol <b>"Laporkan Kesalahan Data"</b> di bagian bawah halaman atau klik tombol lapor di dalam kartu detail saham. Tim audit data kami meninjau setiap masukan terhadap rujukan pengumuman resmi bursa dan KSEI dalam kurun 1x24-48 jam kerja.
+                </div>
+              </div>
+            </div>
+
+            <!-- Help Contact Box (B2 Gated) -->
+            <div class="card" x-show="feedbackAvailable" style="margin-top:20px;text-align:center;padding:28px">
+              <h3 style="font-size:18px">Menemukan Ketidaksesuaian Data atau Ada Pertanyaan Lain?</h3>
+              <p class="sub" style="margin:8px auto 16px;max-width:440px">Bantu kami menjaga akurasi transparansi data pasar modal Indonesia.</p>
+              <button class="btn pri" type="button" @click="openFeedbackModal()">
+                Laporkan Kesalahan Data atau Saran
+              </button>
+            </div>
+          </section>
+
+        </div>
+
+        <!-- DESKTOP MASTER-DETAIL PANE (>=1024px) -->
+        <aside class="pane" id="pane" aria-label="Detail">
+          <!-- Empty Pane Placeholder -->
+          <div class="pane-empty" x-show="!cur">
+            <svg class="i"><use href="#i-cursor"/></svg>
+            <p>Pilih emiten untuk melihat detail</p>
+            <p style="font-size:12px;margin-top:6px;color:var(--ink3)">↑ ↓ navigasi · Enter buka · Ctrl K cari</p>
+          </div>
+
+          <!-- Stock Detail Pane -->
+          <template x-if="cur && cur.kind === 'stock' && detailStock">
+            <div style="display:flex;flex-direction:column;height:100%">
+              <div class="dh">
+                <button class="ib" type="button" x-show="detailStack.length > 0" @click="backDetail()" aria-label="Kembali">
+                  <svg class="i"><use href="#i-back"/></svg>
+                </button>
+                <span class="tt">Detail Saham</span>
+                <button class="ib" type="button" @click="closeDetail()" aria-label="Tutup">
+                  <svg class="i"><use href="#i-x"/></svg>
+                </button>
+              </div>
+
+              <div class="db">
+                <div class="big" x-text="detailStock.code"></div>
+                <div class="d-iss" x-text="detailStock.issuerFormatted"></div>
+
+                <div class="pline">
+                  <span class="pr num" x-text="detailStock.price != null ? fmtRp(detailStock.price) : 'n/a'"></span>
+                  <template x-if="fmtChangePct(detailStock.changePct)">
+                    <span class="chg" :class="fmtChangePct(detailStock.changePct).cls" x-text="fmtChangePct(detailStock.changePct).text"></span>
+                  </template>
+                </div>
+                <p class="note" style="margin-top:4px">Harga bursa tertunda ±15 mnt</p>
+
+                <!-- Stats 2x2 -->
+                <div class="stats">
+                  <div class="stat">
+                    <span>Pemegang ≥1%</span>
+                    <b class="num" x-text="detailStock.holdersTotal"></b>
+                  </div>
+                  <div class="stat">
+                    <span>Porsi Terbesar</span>
+                    <b class="num" x-text="fmtPct(detailStock.topHolder?.percentage)"></b>
+                  </div>
+                  <div class="stat">
+                    <span>Porsi Asing (Top 5)</span>
+                    <b class="num" x-text="fmtPct(detailStock.foreignTopPct)"></b>
+                  </div>
+                  <div class="stat">
+                    <span>Publik & Lainnya (<1%)</span>
+                    <b class="num" x-text="fmtPct(detailStock.restPct)"></b>
+                  </div>
+                </div>
+
+                <!-- Pure CSS Conic Gradient Donut -->
+                <h3 class="sec-h" style="margin-top:6px">Struktur Kepemilikan</h3>
+                <p class="note" x-text="`${detailStock.holders.length} pemegang terbesar (warna selaras daftar di bawah)`"></p>
+                <div class="own">
+                  <div class="donut" :style="`background: conic-gradient(${detailStock.donutStops})`" role="img" :aria-label="`Diagram struktur kepemilikan ${detailStock.code}`"></div>
+                  <p class="note" style="color:var(--ink2);font-size:13px" x-text="`Sisa ${fmtPct(detailStock.restPct)} dimiliki pemegang saham di bawah 1% dan publik.`"></p>
+                </div>
+
+                <!-- Holders List -->
+                <h3 class="sec-h">Daftar Pemegang Saham</h3>
+                <div>
+                  <template x-for="(h, i) in detailStock.holders" :key="h.investor">
+                    <button class="hold" type="button" @click="openInvestor(h.investor, true)">
+                      <i class="sw" :style="`background:var(--c${i})`"></i>
+                      <span class="n" x-text="toTitleCase(h.investor)"></span>
+                      <span class="p num" x-text="fmtPct(h.percentage)"></span>
+                      <span class="m">
+                        <span x-text="getTypeName(h.investor_type)"></span>
+                        <span class="tag" :class="getLFClass(h.local_foreign)" x-text="getLFLabel(h.local_foreign)"></span>
+                      </span>
+                      <span class="s num" x-text="`${fmtNum(h.shares)} lbr`"></span>
+                    </button>
+                  </template>
+                </div>
+
+                <!-- Lazy Whale Map Button -->
+                <div style="margin-top:16px">
+                  <button class="btn sec" type="button" style="width:100%" @click="toggleWhaleMap()">
+                    <span x-text="showWhaleMap ? 'Tutup Peta Relasi' : 'Peta Relasi Pemegang (Whale Map)'"></span>
+                  </button>
+                  <div id="whaleMapContainer" x-show="showWhaleMap" style="width:100%;height:320px;margin-top:12px;border:1px solid var(--line);border-radius:var(--r-s)"></div>
+                </div>
+
+                <!-- Lock Card for Remaining Holders -->
+                <div class="lock" x-show="detailStock.holdersTotal > 5">
+                  <svg class="i s"><use href="#i-lock"/></svg>
+                  <div>
+                    <h4 x-text="`Semua ${detailStock.holdersTotal} Pemegang Saham & Riwayat`"></h4>
+                    <p>Buka seluruh daftar pemegang saham ≥1% beserta histori tren kepemilikan bulanan.</p>
+                    <button class="go" type="button" @click="openPro('stock_holders')">
+                      Lihat Paket Pro <svg class="i s"><use href="#i-chev"/></svg>
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Feedback Button (B2 Gated) -->
+                <div x-show="feedbackAvailable" style="margin-top:20px;border-top:1px solid var(--line);padding-top:14px">
+                  <button class="btn sec" type="button" style="width:100%;font-size:13px" @click="openFeedbackModal({ code: detailStock.code, name: detailStock.issuer })">
+                    Laporkan Ketidaksesuaian Saham Ini
+                  </button>
+                </div>
+              </div>
+            </div>
+          </template>
+
+          <!-- Investor Detail Pane -->
+          <template x-if="cur && cur.kind === 'investor' && detailInvestor">
+            <div style="display:flex;flex-direction:column;height:100%">
+              <div class="dh">
+                <button class="ib" type="button" x-show="detailStack.length > 0" @click="backDetail()" aria-label="Kembali">
+                  <svg class="i"><use href="#i-back"/></svg>
+                </button>
+                <span class="tt">Profil Investor</span>
+                <button class="ib" type="button" @click="closeDetail()" aria-label="Tutup">
+                  <svg class="i"><use href="#i-x"/></svg>
+                </button>
+              </div>
+
+              <div class="db">
+                <div class="big" style="font-size:24px" x-text="detailInvestor.nameFormatted"></div>
+                <div class="d-iss">
+                  <span x-text="detailInvestor.typeName"></span> · <span class="tag" :class="getLFClass(detailInvestor.lf)" x-text="detailInvestor.lfLabel"></span>
+                </div>
+
+                <div class="stats">
+                  <div class="stat">
+                    <span>Emiten Dimiliki</span>
+                    <b class="num" x-text="`${detailInvestor.holdingsCount}+`"></b>
+                  </div>
+                  <div class="stat">
+                    <span>Porsi Terbesar</span>
+                    <b class="num" x-text="`${detailInvestor.topHolding?.code} ${fmtPct(detailInvestor.topHolding?.p || detailInvestor.topHolding?.percentage)}`"></b>
+                  </div>
+                </div>
+
+                <h3 class="sec-h" style="margin-top:6px">Portofolio Saham ≥1%</h3>
+                <div>
+                  <template x-for="h in detailInvestor.holdings" :key="h.code">
+                    <button class="hold pf" type="button" @click="openStock(h.code, true)">
+                      <span class="n">
+                        <span x-text="h.code"></span>
+                        <span class="note" style="font-weight:500" x-text="toTitleCase(h.issuer)"></span>
+                      </span>
+                      <span class="p num" x-text="fmtPct(h.p || h.percentage)"></span>
+                      <span class="m num" x-text="`${fmtNum(h.s || h.shares)} lbr`"></span>
+                    </button>
+                  </template>
+                </div>
+
+                <div class="lock">
+                  <svg class="i s"><use href="#i-lock"/></svg>
+                  <div>
+                    <h4>Portofolio Lengkap & Riwayat Akumulasi</h4>
+                    <p>Lihat seluruh emiten yang dikoleksi investor ini beserta riwayat pergerakan porsinya.</p>
+                    <button class="go" type="button" @click="openPro('investor_portfolio')">
+                      Lihat Paket Pro <svg class="i s"><use href="#i-chev"/></svg>
+                    </button>
+                  </div>
+                </div>
+
+                <div x-show="feedbackAvailable" style="margin-top:20px;border-top:1px solid var(--line);padding-top:14px">
+                  <button class="btn sec" type="button" style="width:100%;font-size:13px" @click="openFeedbackModal({ name: detailInvestor.name })">
+                    Laporkan Ketidaksesuaian Investor Ini
+                  </button>
+                </div>
+              </div>
+            </div>
+          </template>
+        </aside>
+      </div>
+    </main>
+
+    <!-- One-Line Footer -->
+    <footer class="shell foot">
+      <span>© 2026 IHSG Storm · by BAD.AI · Bukan saran investasi · <a href="#/faq" @click="setTab('faq')">Pusat Bantuan & FAQ</a><template x-if="feedbackAvailable"> · <a href="javascript:void(0)" @click="openFeedbackModal()">Laporkan Data</a></template></span>
+    </footer>
+  </div>
+
+  <!-- Mobile Bottom Navigation (<1024px) -->
+  <nav class="bnav" id="bnav" aria-label="Navigasi utama">
+    <button class="nb" type="button" @click="setTab('stocks')" :aria-current="currentTab === 'stocks' ? 'page' : null">
+      <svg class="i"><use href="#i-list"/></svg>
+      <span>Saham</span>
+    </button>
+    <button class="nb" type="button" @click="setTab('investors')" :aria-current="currentTab === 'investors' ? 'page' : null">
+      <svg class="i"><use href="#i-users"/></svg>
+      <span>Investor</span>
+    </button>
+    <button class="nb" type="button" @click="setTab('analytics')" :aria-current="currentTab === 'analytics' ? 'page' : null">
+      <svg class="i"><use href="#i-chart"/></svg>
+      <span>Analitik</span>
+    </button>
+    <button class="nb" type="button" @click="setTab('faq')" :aria-current="currentTab === 'faq' ? 'page' : null">
+      <svg class="i"><use href="#i-help"/></svg>
+      <span>Bantuan</span>
+    </button>
+    <button class="nb" type="button" @click="openSearch()">
+      <svg class="i"><use href="#i-search"/></svg>
+      <span>Cari</span>
+    </button>
+  </nav>
+
+  <!-- Mobile Sliding Bottom Sheet (<1024px) -->
+  <div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-label="Detail">
+    <!-- Stock View in Sheet -->
+    <template x-if="cur && cur.kind === 'stock' && detailStock">
+      <div style="display:flex;flex-direction:column;height:100%">
+        <div class="dh">
+          <button class="ib" type="button" x-show="detailStack.length > 0" @click="backDetail()" aria-label="Kembali">
+            <svg class="i"><use href="#i-back"/></svg>
+          </button>
+          <span class="tt">Detail Saham</span>
+          <button class="ib" type="button" @click="closeDetail()" aria-label="Tutup">
+            <svg class="i"><use href="#i-x"/></svg>
+          </button>
+        </div>
+
+        <div class="db">
+          <div class="big" x-text="detailStock.code"></div>
+          <div class="d-iss" x-text="detailStock.issuerFormatted"></div>
+
+          <div class="pline">
+            <span class="pr num" x-text="detailStock.price != null ? fmtRp(detailStock.price) : 'n/a'"></span>
+            <template x-if="fmtChangePct(detailStock.changePct)">
+              <span class="chg" :class="fmtChangePct(detailStock.changePct).cls" x-text="fmtChangePct(detailStock.changePct).text"></span>
+            </template>
+          </div>
+          <p class="note" style="margin-top:4px">Harga bursa tertunda ±15 mnt</p>
+
+          <div class="stats">
+            <div class="stat">
+              <span>Pemegang ≥1%</span>
+              <b class="num" x-text="detailStock.holdersTotal"></b>
+            </div>
+            <div class="stat">
+              <span>Porsi Terbesar</span>
+              <b class="num" x-text="fmtPct(detailStock.topHolder?.percentage)"></b>
+            </div>
+            <div class="stat">
+              <span>Porsi Asing (Top 5)</span>
+              <b class="num" x-text="fmtPct(detailStock.foreignTopPct)"></b>
+            </div>
+            <div class="stat">
+              <span>Publik & Lainnya (<1%)</span>
+              <b class="num" x-text="fmtPct(detailStock.restPct)"></b>
+            </div>
+          </div>
+
+          <h3 class="sec-h" style="margin-top:6px">Struktur Kepemilikan</h3>
+          <p class="note" x-text="`${detailStock.holders.length} pemegang terbesar (warna selaras)`"></p>
+          <div class="own">
+            <div class="donut" :style="`background: conic-gradient(${detailStock.donutStops})`" role="img"></div>
+            <p class="note" style="color:var(--ink2);font-size:13px" x-text="`Sisa ${fmtPct(detailStock.restPct)} dimiliki publik.`"></p>
+          </div>
+
+          <h3 class="sec-h">Daftar Pemegang Saham</h3>
+          <div>
+            <template x-for="(h, i) in detailStock.holders" :key="h.investor">
+              <button class="hold" type="button" @click="openInvestor(h.investor, true)">
+                <i class="sw" :style="`background:var(--c${i})`"></i>
+                <span class="n" x-text="toTitleCase(h.investor)"></span>
+                <span class="p num" x-text="fmtPct(h.percentage)"></span>
+                <span class="m">
+                  <span x-text="getTypeName(h.investor_type)"></span>
+                  <span class="tag" :class="getLFClass(h.local_foreign)" x-text="getLFLabel(h.local_foreign)"></span>
+                </span>
+                <span class="s num" x-text="`${fmtNum(h.shares)} lbr`"></span>
+              </button>
+            </template>
+          </div>
+
+          <div style="margin-top:16px">
+            <button class="btn sec" type="button" style="width:100%" @click="toggleWhaleMap()">
+              <span x-text="showWhaleMap ? 'Tutup Peta Relasi' : 'Peta Relasi Pemegang (Whale Map)'"></span>
+            </button>
+            <div id="whaleMapContainerMobile" x-show="showWhaleMap" style="width:100%;height:280px;margin-top:12px;border:1px solid var(--line);border-radius:var(--r-s)"></div>
+          </div>
+
+          <div class="lock" x-show="detailStock.holdersTotal > 5">
+            <svg class="i s"><use href="#i-lock"/></svg>
+            <div>
+              <h4 x-text="`Semua ${detailStock.holdersTotal} Pemegang Saham & Riwayat`"></h4>
+              <p>Buka seluruh daftar pemegang saham ≥1% beserta histori tren kepemilikan.</p>
+              <button class="go" type="button" @click="openPro('stock_holders')">
+                Lihat Paket Pro <svg class="i s"><use href="#i-chev"/></svg>
+              </button>
+            </div>
+          </div>
+
+          <div x-show="feedbackAvailable" style="margin-top:20px;border-top:1px solid var(--line);padding-top:14px">
+            <button class="btn sec" type="button" style="width:100%;font-size:13px" @click="openFeedbackModal({ code: detailStock.code, name: detailStock.issuer })">
+              Laporkan Ketidaksesuaian Saham Ini
+            </button>
+          </div>
+        </div>
+      </div>
+    </template>
+
+    <!-- Investor View in Sheet -->
+    <template x-if="cur && cur.kind === 'investor' && detailInvestor">
+      <div style="display:flex;flex-direction:column;height:100%">
+        <div class="dh">
+          <button class="ib" type="button" x-show="detailStack.length > 0" @click="backDetail()" aria-label="Kembali">
+            <svg class="i"><use href="#i-back"/></svg>
+          </button>
+          <span class="tt">Profil Investor</span>
+          <button class="ib" type="button" @click="closeDetail()" aria-label="Tutup">
+            <svg class="i"><use href="#i-x"/></svg>
+          </button>
+        </div>
+
+        <div class="db">
+          <div class="big" style="font-size:24px" x-text="detailInvestor.nameFormatted"></div>
+          <div class="d-iss">
+            <span x-text="detailInvestor.typeName"></span> · <span class="tag" :class="getLFClass(detailInvestor.lf)" x-text="detailInvestor.lfLabel"></span>
+          </div>
+
+          <div class="stats">
+            <div class="stat">
+              <span>Emiten Dimiliki</span>
+              <b class="num" x-text="`${detailInvestor.holdingsCount}+`"></b>
+            </div>
+            <div class="stat">
+              <span>Porsi Terbesar</span>
+              <b class="num" x-text="`${detailInvestor.topHolding?.code} ${fmtPct(detailInvestor.topHolding?.p || detailInvestor.topHolding?.percentage)}`"></b>
+            </div>
+          </div>
+
+          <h3 class="sec-h" style="margin-top:6px">Portofolio Saham ≥1%</h3>
+          <div>
+            <template x-for="h in detailInvestor.holdings" :key="h.code">
+              <button class="hold pf" type="button" @click="openStock(h.code, true)">
+                <span class="n">
+                  <span x-text="h.code"></span>
+                  <span class="note" style="font-weight:500" x-text="toTitleCase(h.issuer)"></span>
+                </span>
+                <span class="p num" x-text="fmtPct(h.p || h.percentage)"></span>
+                <span class="m num" x-text="`${fmtNum(h.s || h.shares)} lbr`"></span>
+              </button>
+            </template>
+          </div>
+
+          <div class="lock">
+            <svg class="i s"><use href="#i-lock"/></svg>
+            <div>
+              <h4>Portofolio Lengkap & Riwayat Akumulasi</h4>
+              <p>Lihat seluruh emiten yang dikoleksi investor ini beserta riwayat pergerakan porsinya.</p>
+              <button class="go" type="button" @click="openPro('investor_portfolio')">
+                Lihat Paket Pro <svg class="i s"><use href="#i-chev"/></svg>
+              </button>
+            </div>
+          </div>
+
+          <div x-show="feedbackAvailable" style="margin-top:20px;border-top:1px solid var(--line);padding-top:14px">
+            <button class="btn sec" type="button" style="width:100%;font-size:13px" @click="openFeedbackModal({ name: detailInvestor.name })">
+              Laporkan Ketidaksesuaian Investor Ini
+            </button>
+          </div>
+        </div>
+      </div>
+    </template>
+  </div>
+
+  <!-- Search Overlay Palette Modal -->
+  <div class="pal" id="pal" :class="{ on: searchOpen }" role="dialog" aria-modal="true" aria-label="Cari">
+    <div class="pal-box">
+      <div class="pal-h">
+        <input id="searchPaletteInput" type="search" autocomplete="off" placeholder="Ketik kode saham (misal: BBCA) atau nama investor" x-model="searchQuery" aria-label="Cari saham atau investor">
+        <button class="btn sec" type="button" @click="closeSearch()">Batal</button>
+      </div>
+
+      <div class="pal-b">
+        <!-- Recents -->
+        <template x-if="!searchQuery && recentSearches.length > 0">
+          <div>
+            <h5>Pencarian Terakhir</h5>
+            <template x-for="r in recentSearches" :key="r.a">
+              <button class="pr-i" type="button" @click="selectSearchResult({ code: r.a, name: r.a }, r.k)">
+                <span class="code" x-text="r.l"></span>
+                <span class="iss" x-text="r.s"></span>
+              </button>
+            </template>
+          </div>
+        </template>
+
+        <!-- Search Results: Stocks -->
+        <template x-if="searchQuery && searchResults.stocks.length > 0">
+          <div>
+            <h5>Saham Tercatat</h5>
+            <template x-for="s in searchResults.stocks" :key="s.code">
+              <button class="pr-i" type="button" @click="selectSearchResult(s, 'stock')">
+                <span class="code" x-text="s.code"></span>
+                <span class="iss" x-text="toTitleCase(s.issuer)"></span>
+                <span class="r num" x-text="fmtPct(s.holders[0]?.percentage)"></span>
+              </button>
+            </template>
+          </div>
+        </template>
+
+        <!-- Search Results: Investors -->
+        <template x-if="searchQuery && searchResults.investors.length > 0">
+          <div>
+            <h5>Investor Terdaftar</h5>
+            <template x-for="v in searchResults.investors" :key="v.name">
+              <button class="pr-i" type="button" @click="selectSearchResult(v, 'investor')">
+                <span class="code" x-text="toTitleCase(v.name)"></span>
+                <span class="iss" x-text="`${getTypeName(v.type)} · ${v.holdings.length}+ emiten`"></span>
+              </button>
+            </template>
+          </div>
+        </template>
+
+        <!-- Empty Search -->
+        <template x-if="searchQuery && searchResults.stocks.length === 0 && searchResults.investors.length === 0">
+          <div class="state">
+            <b>Tidak Ditemukan</b>
+            <p x-text="`Tidak ada saham atau investor yang cocok dengan '${searchQuery}'.`"></p>
+            <button x-show="feedbackAvailable" class="btn sec" type="button" @click="openFeedbackModal({ description: `Emiten atau investor belum ada: ${searchQuery}` }); closeSearch()">
+              Emiten atau investor belum ada? Laporkan di sini
+            </button>
           </div>
         </template>
       </div>
-
-      <!-- TABS -->
-      <nav aria-label="Tab navigasi utama" class="flex flex-wrap gap-2 p-1.5 glass-panel rounded-xl max-w-max mb-6">
-        <template x-for="tab in [
-          { id: 'stocks', label: 'Daftar Saham' },
-          { id: 'investors', label: 'Top Investor' },
-          { id: 'analytics', label: 'Analitik' }
-        ]" :key="tab.id">
-          <button @click="currentTab = tab.id"
-            :class="currentTab === tab.id ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30' : 'text-slate-400 hover:text-white hover:bg-white/5'"
-            :aria-selected="currentTab === tab.id"
-            role="tab"
-            class="px-5 py-2 text-sm font-medium rounded-lg transition-all" x-text="tab.label"></button>
-        </template>
-      </nav>
-
-      <!-- TAB: STOCKS -->
-      <section x-show="currentTab === 'stocks'" x-cloak id="comp-stocks" role="tabpanel" aria-label="Daftar Saham"
-        x-init="loadComponent('comp-stocks', '/components/tab-stocks.html')">
-      </section>
-
-      <!-- TAB: INVESTORS -->
-      <section x-show="currentTab === 'investors'" x-cloak id="comp-investors" role="tabpanel" aria-label="Top Investor"
-        x-init="loadComponent('comp-investors', '/components/tab-investors.html')">
-      </section>
-
-      <!-- TAB: ANALYTICS -->
-      <section x-show="currentTab === 'analytics'" x-cloak id="comp-analytics" role="tabpanel" aria-label="Analitik"
-        x-init="loadComponent('comp-analytics', '/components/tab-analytics.html')">
-      </section>
-    </main>
-
-
-    <!-- MODAL: STOCK VIEW -->
-    <aside x-show="modalType === 'stock'" x-cloak id="comp-modal-stock" role="dialog" aria-label="Detail Saham"
-      x-init="loadComponent('comp-modal-stock', '/components/modal-stock.html')">
-    </aside>
-
-    <!-- MODAL: INVESTOR VIEW -->
-    <aside x-show="modalType === 'investor'" x-cloak id="comp-modal-investor" role="dialog" aria-label="Detail Investor"
-      x-init="loadComponent('comp-modal-investor', '/components/modal-investor.html')">
-    </aside>
+    </div>
   </div>
 
+  <!-- Pro Plan Modal / Sheet (Oscar v2 Rp19k / Rp49k Tiers) -->
+  <div class="sheet" id="proSheet" :class="{ on: proOpen }" role="dialog" aria-modal="true" aria-label="Paket Pro">
+    <div style="display:flex;flex-direction:column;height:100%">
+      <div class="dh">
+        <span class="tt" style="font-weight:800;letter-spacing:.05em">IHSG STORM PRO</span>
+        <button class="ib" type="button" @click="closePro()" aria-label="Tutup">
+          <svg class="i"><use href="#i-x"/></svg>
+        </button>
+      </div>
 
-  <!-- FOOTER -->
-  <footer class="mt-16 mb-8 text-center border-t border-slate-800 pt-8 pb-4">
-    <div class="text-xs text-slate-500 max-w-2xl mx-auto mb-4 leading-relaxed">
-      <strong>Disclaimer:</strong> Data yang ditampilkan pada dashboard ini disediakan untuk tujuan informasi semata dan
-      bukan merupakan saran investasi, rekomendasi beli/jual, atau penawaran produk keuangan apapun. Harga saham
-      bersifat <em>delayed</em> dan data pemegang saham didasarkan pada rilis publik dari KSEI. Keputusan investasi
-      sepenuhnya adalah tanggung jawab masing-masing individu.
+      <div class="db">
+        <h2 style="font-size:22px;line-height:1.25;letter-spacing:-.02em;font-weight:800">Investasi Lebih Percaya Diri dengan Data Investor Kakap</h2>
+        <p class="sub" style="margin-top:8px">Ketahui langkah konglomerat, investor institusi, dan pengendali sebelum pasar bereaksi luas.</p>
+
+        <!-- Pro Plan Coming Soon Notice (B3 Hardening) -->
+        <div class="card" style="margin:16px 0;padding:20px;text-align:center;background:var(--sunk);border:1px solid var(--line2)">
+          <div style="display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:99px;background:var(--card);font-weight:700;font-size:12px;color:var(--accent-text);margin-bottom:10px">
+            <svg class="i s"><use href="#i-lock"/></svg>
+            <span>SEGERA HADIR</span>
+          </div>
+          <h3 style="font-size:16px;font-weight:800;margin-bottom:6px">Layanan Berlangganan Segera Hadir</h3>
+          <p class="sub" style="font-size:13px;max-width:380px;margin:0 auto">Akses screener canggih, histori akumulasi paus, dan peringatan kepemilikan saham sedang dalam tahap pengembangan.</p>
+        </div>
+
+        <!-- Comparison Table -->
+        <div style="overflow-x:auto">
+          <table style="width:100%;border-collapse:collapse;font-size:13px;text-align:left">
+            <thead>
+              <tr style="color:var(--ink3)">
+                <th style="padding:8px 0;font-weight:700">Fitur</th>
+                <th style="padding:8px">Gratis</th>
+                <th style="padding:8px">Investor</th>
+                <th style="padding:8px">Pakar</th>
+              </tr>
+            </thead>
+            <tbody class="pt">
+              <template x-for="row in C.pro_sheet.rows" :key="row.feature">
+                <tr>
+                  <td x-text="row.feature"></td>
+                  <td class="num" style="padding:8px" x-text="row.free"></td>
+                  <td style="padding:8px" x-text="row.investor"></td>
+                  <td style="padding:8px"><b x-text="row.trader"></b></td>
+                </tr>
+              </template>
+            </tbody>
+          </table>
+        </div>
+
+        <p class="note" style="margin-top:14px" x-text="C.pro_sheet.pricing_note"></p>
+
+        <!-- Close Action -->
+        <button class="btn sec" type="button" style="width:100%;margin-top:16px" @click="closePro()">
+          Tutup
+        </button>
+      </div>
     </div>
-    <nav aria-label="Footer links" class="text-sm text-slate-400 font-medium">
-      &copy; 2026 Crafted by <a href="https://badai.tech" target="_blank" rel="noopener noreferrer"
-        class="text-blue-400 hover:text-blue-300 transition-colors">BAD AI</a>
-    </nav>
-  </footer>
+  </div>
 
-  </div> <!-- End container -->
+  <!-- Customer Success & Feedback Modal -->
+  <div class="sheet" id="feedbackModal" :class="{ on: showFeedbackModal }" role="dialog" aria-modal="true" aria-label="Lapor Kesalahan Data">
+    <div style="display:flex;flex-direction:column;height:100%">
+      <div class="dh">
+        <span class="tt" style="font-weight:800">Laporkan Kesalahan Data atau Saran</span>
+        <button class="ib" type="button" @click="closeFeedbackModal()" aria-label="Tutup">
+          <svg class="i"><use href="#i-x"/></svg>
+        </button>
+      </div>
+
+      <div class="db">
+        <!-- Success State -->
+        <template x-if="feedbackSuccess">
+          <div class="state" style="padding:20px 0">
+            <b style="color:var(--up);font-size:18px">Laporan Berhasil Terkirim!</b>
+            <p style="margin:10px auto">
+              Nomor Tiket: <b class="num" x-text="feedbackTicketId"></b><br>
+              Terima kasih atas ketelitian Anda. Laporan ini telah masuk ke antrean audit data tim kami untuk diverifikasi terhadap dokumen resmi KSEI.
+            </p>
+            <button class="btn pri" type="button" @click="closeFeedbackModal()">Selesai & Tutup</button>
+          </div>
+        </template>
+
+        <!-- Form State -->
+        <template x-if="!feedbackSuccess">
+          <form @submit.prevent="submitFeedback()">
+            <div class="chips" style="margin-bottom:16px">
+              <button class="chip" type="button" @click="feedbackForm.category = 'data_error'" :aria-pressed="feedbackForm.category === 'data_error'">Kesalahan Data</button>
+              <button class="chip" type="button" @click="feedbackForm.category = 'feature_request'" :aria-pressed="feedbackForm.category === 'feature_request'">Saran Fitur</button>
+              <button class="chip" type="button" @click="feedbackForm.category = 'question'" :aria-pressed="feedbackForm.category === 'question'">Pertanyaan</button>
+            </div>
+
+            <div class="form-group" x-show="feedbackForm.entity_code || feedbackForm.entity_name">
+              <span class="note" style="display:block;margin-bottom:4px">Konteks Terpilih:</span>
+              <span class="tag" x-text="[feedbackForm.entity_code, feedbackForm.entity_name].filter(Boolean).join(' · ')"></span>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Tipe Kendala Data</label>
+              <select class="form-select" x-model="feedbackForm.error_type">
+                <option value="glued_token">Teks menempel / terpotong (misal: TbkDRS...)</option>
+                <option value="wrong_shares">Jumlah lembar saham keliru / beda dengan laporan resmi</option>
+                <option value="wrong_percentage">Persentase kepemilikan keliru</option>
+                <option value="wrong_classification">Klasifikasi investor (Domestik/Asing) tertukar</option>
+                <option value="missing_shareholder">Pemegang saham ≥1% belum tercantum</option>
+                <option value="price_discrepancy">Harga bursa terkendala / deviasi data</option>
+                <option value="other_feedback">Kendala lainnya / Saran</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Deskripsi Kendala / Saran *</label>
+              <textarea class="form-textarea" x-model="feedbackForm.description" placeholder="Jelaskan ketidaksesuaian angka atau usulan fitur yang Anda butuhkan..." required></textarea>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Tautan Rujukan Resmi (Opsional)</label>
+              <input type="url" class="form-input" x-model="feedbackForm.reference_url" placeholder="https://www.idx.co.id/... atau tautan KSEI">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Email atau Telegram (Opsional)</label>
+              <input type="text" class="form-input" x-model="feedbackForm.reporter_contact" placeholder="investor@example.com atau @username">
+              <span class="note" style="display:block;margin-top:4px">Hanya dihubungi jika tim audit membutuhkan klarifikasi dokumen rujukan.</span>
+            </div>
+
+            <div style="display:flex;gap:10px;margin-top:20px">
+              <button class="btn sec" type="button" @click="closeFeedbackModal()" style="flex:1">Batal</button>
+              <button class="btn pri" type="submit" style="flex:2" :disabled="feedbackSubmitting">
+                <span x-text="feedbackSubmitting ? 'Mengirim...' : 'Kirim Laporan'"></span>
+              </button>
+            </div>
+          </form>
+        </template>
+      </div>
+    </div>
+  </div>
+
+  <!-- Shared Scrim Backdrop -->
+  <div class="scrim" id="scrim"
+       :class="{ on: (cur && !window.matchMedia('(min-width: 1024px)').matches) || proOpen || searchOpen || showFeedbackModal }"
+       @click="closeDetail(); closePro(); closeSearch(); closeFeedbackModal()">
+  </div>
+
+  <!-- Offline Status Toast -->
+  <div class="toast" id="toast" role="status"></div>
 
 </body>
-
 </html>

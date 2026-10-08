@@ -14,10 +14,11 @@
       <div class="flex gap-2 mb-8 uppercase">
         <span class="px-2 py-1 rounded text-xs font-bold"
           :style="`background:${TYPE_COLORS[modalData.type] || '#64748b'}22; color:${TYPE_COLORS[modalData.type] || '#64748b'}`"
-          x-text="TYPE_LABELS[modalData.type] || modalData.type"></span>
+          x-text="TYPE_LABELS[modalData.type] || (modalData.type ? modalData.type : 'Warkat / Tidak Terklasifikasi')"></span>
         <span
-          :class="modalData.lf === 'L' ? 'text-emerald-400 bg-emerald-400/10' : 'text-rose-400 bg-rose-400/10'"
-          class="px-2 py-1 rounded text-xs font-bold" x-text="modalData.lf === 'L' ? 'Lokal' : 'Asing'"></span>
+          :class="modalData.lf === 'L' ? 'text-emerald-400 bg-emerald-400/10' : ((modalData.lf === 'F' || modalData.lf === 'A') ? 'text-rose-400 bg-rose-400/10' : 'text-slate-400 bg-slate-400/10')"
+          class="px-2 py-1 rounded text-xs font-bold"
+          x-text="modalData.lf === 'L' ? 'Lokal' : ((modalData.lf === 'F' || modalData.lf === 'A') ? 'Asing' : 'Warkat / Scrip')"></span>
       </div>
 
       <div class="flex flex-wrap gap-4 mb-4">

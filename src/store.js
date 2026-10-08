@@ -1,29 +1,27 @@
 import { fetchHolderData, fetchPricesBatch, fetchSinglePrice } from './api.js';
+import { COPY } from './copy.js';
+import { toTitleCase, fmtNum, fmtShares, fmtPrice, fmtRp, fmtPct, fmtChangePct } from './utils.js';
+import { canonicalInvestorKey } from './normalize.js';
+import { renderWhaleChart } from './charts.js';
 
 export const storeConfig = {
+    // Copy reference
+    C: COPY,
+
+    // Theme state
+    theme: 'a',
+
+    // Core Data
     rawData: null,
     stockMap: {},
     investorMap: {},
+    investorList: [],
     priceMap: {},
+    priceLoadingBatch: false,
     loading: true,
     error: null,
     sourceDate: '',
-
-    // Pagination & Filters
-    currentTab: 'stocks',
-    stockPage: 1,
-    investorPage: 1,
-    pageSize: 30,
-    searchQuery: '',
-    tableSearchQuery: '',
-    filterType: '',
-    filterLF: '',
-
-    // Sorting
-    stockSortKey: 'code',
-    stockSortAsc: true,
-    investorSortKey: 'stockCount',
-    investorSortAsc: false,
+    asOfLabel: '',
 
     // Stats
     totalStocks: 0,
@@ -31,78 +29,197 @@ export const storeConfig = {
     totalRecords: 0,
     localCount: 0,
     foreignCount: 0,
+    scripCount: 0,
 
-    // Autocomplete
-    autocompleteStocks: [],
-    autocompleteInvestors: [],
-    showAutocomplete: false,
+    // Navigation & Tabs
+    currentTab: 'stocks', // 'stocks' | 'investors' | 'analytics' | 'faq'
 
-    // Modal Routing Base
-    modalType: null, // 'stock' | 'investor'
-    modalData: null,
+    // Stocks List State
+    stockFilter: 'all', // 'all' | 'foreign' | 'many' | 'scrip'
+    stockSortKey: 'code', // 'code' | 'top' | 'holders' | 'local'
+    stockSortAsc: true,
+    stockLimit: 30,
 
-    // Whale Map
-    whaleChartInstance: null,
+    // Investors List State
+    invFilter: 'all', // 'all' | 'ID' | 'CP' | 'F' | 'scrip'
+    invLimit: 30,
 
-    TYPE_LABELS: {
-        CP: 'Corporate', ID: 'Individual', IB: 'Inv. Bank', SC: 'Sekuritas',
-        MF: 'Reksa Dana', IS: 'Asuransi', PF: 'Dana Pensiun', OT: 'Lainnya',
-        FD: 'Foundation', YY: 'Yayasan'
+    // Master-Detail & Bottom Sheet State
+    cur: null, // { kind: 'stock' | 'investor', arg: code/name }
+    detailStack: [],
+    showWhaleMap: false,
+    whaleLoading: false,
+
+    // Search Overlay Palette
+    searchOpen: false,
+    searchQuery: '',
+    searchActiveIndex: 0,
+    recentSearches: [],
+
+    // Pro Gates & Freemium v2
+    proOpen: false,
+    proWhy: 'general',
+
+    // Customer Success & Feedback Gating (B2)
+    feedbackAvailable: false,
+    showFeedbackModal: false,
+    feedbackSubmitting: false,
+    feedbackSuccess: false,
+    feedbackError: null,
+    feedbackTicketId: null,
+    feedbackForm: {
+        category: 'data_error',
+        context_type: 'general',
+        entity_code: '',
+        entity_name: '',
+        error_type: 'glued_token',
+        description: '',
+        reference_url: '',
+        reporter_contact: ''
     },
 
-    TYPE_COLORS: {
-        CP: '#3b82f6', ID: '#8b5cf6', IB: '#f59e0b', SC: '#06b6d4',
-        MF: '#10b981', IS: '#ec4899', PF: '#f97316', OT: '#64748b',
-        FD: '#a78bfa', YY: '#34d399'
-    },
+    // FAQ View
+    faqCategory: 'all',
+    faqSearch: '',
+    openFaqIndex: null,
+
+    // Price debounce
+    _priceDebounceTimer: null,
 
     async init() {
+        if (typeof window !== 'undefined' && typeof window.__markAppBooted === 'function') {
+            window.__markAppBooted();
+        }
+
+        // Initialize Theme from localStorage or default 'a'
+        try {
+            const savedTheme = localStorage.getItem('ihsg-theme');
+            if (savedTheme === 'b' || savedTheme === 'a') {
+                this.theme = savedTheme;
+            } else {
+                this.theme = 'a';
+            }
+        } catch (e) {
+            this.theme = 'a';
+        }
+        document.body.setAttribute('data-theme', this.theme);
+
+        // Load Recents
+        this.loadRecents();
+
+        // Keyboard navigation setup
+        this.setupKeyboardListeners();
+
+        // Load Data
         try {
             this.loading = true;
             const data = await fetchHolderData();
             this.rawData = data;
-            this.sourceDate = data.source_date_in_file;
+            this.sourceDate = data.source_date_in_file || data.as_of_label || '30-Sep-2026';
+            this.asOfLabel = data.as_of_label || this.sourceDate;
             this.processData();
             this.calculateStats();
             this.loading = false;
 
-            // Re-eval charts event
-            document.dispatchEvent(new CustomEvent('data-loaded'));
+            // Route handling
             this.handleHashRoute();
-
             window.addEventListener('hashchange', () => this.handleHashRoute());
 
-            // Polling mechanism or initial bulk fetch could go here
+            // Fetch prices for initial visible batch
             this.fetchVisiblePrices();
 
+            // Check feedback webhook availability (B2)
+            this.checkFeedbackStatus();
         } catch (e) {
-            this.error = 'Gagal memuat data. Pastikan shareholder_data.json tersedia.';
+            console.error('Initialization error:', e);
+            this.error = COPY.states.error_load;
             this.loading = false;
         }
+
+        // Online/Offline listeners
+        window.addEventListener('offline', () => {
+            const t = document.getElementById('toast');
+            if (t) {
+                t.textContent = COPY.states.offline_notice;
+                t.classList.add('on');
+            }
+        });
+        window.addEventListener('online', () => {
+            const t = document.getElementById('toast');
+            if (t) t.classList.remove('on');
+        });
+    },
+
+    toggleTheme() {
+        this.theme = this.theme === 'a' ? 'b' : 'a';
+        try {
+            localStorage.setItem('ihsg-theme', this.theme);
+        } catch (e) {}
+        document.body.setAttribute('data-theme', this.theme);
     },
 
     processData() {
         const items = this.rawData.items || [];
-
-        let sMap = {};
-        let iMap = {};
+        const sMap = {};
+        const iMap = {};
 
         for (const item of items) {
+            // Group by Stock Code
             if (!sMap[item.code]) {
-                sMap[item.code] = { issuer: item.issuer, holders: [] };
+                sMap[item.code] = {
+                    code: item.code,
+                    issuer: item.issuer,
+                    holders: []
+                };
             }
             sMap[item.code].holders.push(item);
 
-            if (!iMap[item.investor]) {
-                iMap[item.investor] = { type: item.investor_type, lf: item.local_foreign, stocks: [] };
+            // Group by Investor Name
+            const invName = item.investor;
+            if (!iMap[invName]) {
+                iMap[invName] = {
+                    name: invName,
+                    type: item.investor_type || '',
+                    lf: item.local_foreign || '',
+                    holdings: []
+                };
             }
-            iMap[item.investor].stocks.push({
-                code: item.code, pct: item.percentage, shares: item.shares
+            iMap[invName].holdings.push({
+                code: item.code,
+                issuer: item.issuer,
+                p: item.percentage,
+                s: item.shares,
+                shares: item.shares,
+                percentage: item.percentage
             });
+        }
+
+        // Sort holders of each stock descending by percentage (guarantees holders[0] is max holder)
+        for (const s of Object.values(sMap)) {
+            s.holders.sort((a, b) => (b.percentage || 0) - (a.percentage || 0));
+            s.topHolder = s.holders[0] || null;
+            s.maxPercentage = s.topHolder ? (s.topHolder.percentage || 0) : 0;
+        }
+
+        // Sort holdings of each investor descending by percentage
+        for (const inv of Object.values(iMap)) {
+            inv.holdings.sort((a, b) => (b.percentage || b.p || 0) - (a.percentage || a.p || 0));
+            inv.maxHolding = inv.holdings[0] || null;
+            inv.maxPercentage = inv.maxHolding ? (inv.maxHolding.percentage || inv.maxHolding.p || 0) : 0;
         }
 
         this.stockMap = sMap;
         this.investorMap = iMap;
+
+        // Build sorted investor list (ranked by holdings count, then largest stake)
+        this.investorList = Object.values(iMap).sort((a, b) => {
+            if (b.holdings.length !== a.holdings.length) {
+                return b.holdings.length - a.holdings.length;
+            }
+            const maxA = a.maxPercentage || Math.max(...a.holdings.map(h => h.p || h.percentage));
+            const maxB = b.maxPercentage || Math.max(...b.holdings.map(h => h.p || h.percentage));
+            return maxB - maxA;
+        });
     },
 
     calculateStats() {
@@ -111,480 +228,687 @@ export const storeConfig = {
         this.totalInvestors = Object.keys(this.investorMap).length;
         this.totalRecords = items.length;
 
-        let loc = 0; let nloc = 0;
+        let loc = 0;
+        let fgn = 0;
+        let scrip = 0;
+
         for (const item of items) {
-            item.local_foreign === 'L' ? loc++ : nloc++;
+            if (item.local_foreign === 'L') {
+                loc++;
+            } else if (item.local_foreign === 'F' || item.local_foreign === 'A') {
+                fgn++;
+            } else {
+                scrip++;
+            }
         }
+
         this.localCount = loc;
-        this.foreignCount = nloc;
+        this.foreignCount = fgn;
+        this.scripCount = scrip;
     },
 
-    async loadComponent(id, url) {
-        try {
-            const res = await fetch(url);
-            const html = await res.text();
-            const el = document.getElementById(id);
-            if (el) {
-                el.innerHTML = html;
-            }
-        } catch (e) {
-            console.error('Failed to load component:', url, e);
+    // Tri-State Badge Helpers
+    getLFLabel(lf) {
+        if (lf === 'L') return COPY.origin_types.L;
+        if (lf === 'F' || lf === 'A') return COPY.origin_types.F;
+        return COPY.origin_types.W;
+    },
+
+    getLFClass(lf) {
+        if (lf === 'L') return 'tag l';
+        if (lf === 'F' || lf === 'A') return 'tag f';
+        return 'tag scrip';
+    },
+
+    getTypeName(type) {
+        return COPY.investor_types[type] || type || COPY.investor_types[''];
+    },
+
+    // Navigation & Tabs
+    setTab(tab) {
+        this.currentTab = tab;
+        this.showWhaleMap = false;
+        if (tab === 'analytics') {
+            this.cur = null;
+            this.detailStack = [];
         }
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     },
 
-    handleHashRoute() {
-        const hash = window.location.hash;
-        if (hash.startsWith('#/stock/')) {
-            const code = decodeURIComponent(hash.split('#/stock/')[1]);
-            this.openStockModal(code);
-        } else if (hash.startsWith('#/investor/')) {
-            const name = decodeURIComponent(hash.split('#/investor/')[1]);
-            this.openInvestorModal(name);
-        } else {
-            this.modalType = null;
-            this.modalData = null;
-            if (this.whaleChartInstance) {
-                this.whaleChartInstance.dispose();
-                this.whaleChartInstance = null;
-            }
-        }
-    },
-
-    // Getters for computed lists
+    // Computed Stock List
     get filteredStocks() {
-        let rows = Object.entries(this.stockMap).map(([code, data]) => {
-            let holders = data.holders;
-            if (this.filterType) holders = holders.filter(h => h.investor_type === this.filterType);
-            if (this.filterLF) holders = holders.filter(h => h.local_foreign === this.filterLF);
+        let stocks = Object.values(this.stockMap);
 
-            if (holders.length === 0 && (this.filterType || this.filterLF)) return null;
-
-            const topHolder = data.holders.reduce((a, b) => a.percentage > b.percentage ? a : b);
-            const localShares = data.holders.filter(h => h.local_foreign === 'L').reduce((s, h) => s + h.percentage, 0);
-            const allPct = data.holders.reduce((s, h) => s + h.percentage, 0);
-            const localPct = allPct > 0 ? localShares : 0;
-
-            const p = this.priceMap[code];
-            const price = p ? p.last_price : null;
-            const changePct = p ? p.change_pct : null;
-
-            return {
-                code, issuer: data.issuer,
-                holders: data.holders.length,
-                topPct: topHolder.percentage,
-                topName: topHolder.investor,
-                localPct: Math.round(localPct * 10) / 10,
-                price: price,
-                changePct: changePct,
-            };
-        }).filter(Boolean);
-
-        const sq = this.tableSearchQuery.toLowerCase();
-        if (sq) {
-            rows = rows.filter(r =>
-                r.code.toLowerCase().includes(sq) ||
-                r.issuer.toLowerCase().includes(sq) ||
-                r.topName.toLowerCase().includes(sq) ||
-                this.stockMap[r.code].holders.some(h => h.investor.toLowerCase().includes(sq))
-            );
+        // Filter chips
+        if (this.stockFilter === 'foreign') {
+            stocks = stocks.filter(s => {
+                const fgnPct = s.holders
+                    .filter(h => h.local_foreign === 'F' || h.local_foreign === 'A')
+                    .reduce((sum, h) => sum + h.percentage, 0);
+                return fgnPct >= 20;
+            });
+        } else if (this.stockFilter === 'many') {
+            stocks = stocks.filter(s => s.holders.length >= 6);
+        } else if (this.stockFilter === 'scrip') {
+            stocks = stocks.filter(s => s.holders.some(h => !h.local_foreign || (h.local_foreign !== 'L' && h.local_foreign !== 'F' && h.local_foreign !== 'A')));
         }
 
-        // Sort
-        rows.sort((a, b) => {
-            let va = a[this.stockSortKey], vb = b[this.stockSortKey];
-            if (typeof va === 'string') { va = va.toLowerCase(); vb = vb.toLowerCase(); }
-            if (va < vb) return this.stockSortAsc ? -1 : 1;
-            if (va > vb) return this.stockSortAsc ? 1 : -1;
+        // Sorting
+        stocks.sort((a, b) => {
+            const topA = a.topHolder || a.holders[0];
+            const topB = b.topHolder || b.holders[0];
+
+            if (this.stockSortKey === 'code') {
+                return this.stockSortAsc ? a.code.localeCompare(b.code) : b.code.localeCompare(a.code);
+            }
+            if (this.stockSortKey === 'top') {
+                const pctA = topA ? topA.percentage : 0;
+                const pctB = topB ? topB.percentage : 0;
+                return this.stockSortAsc ? pctA - pctB : pctB - pctA;
+            }
+            if (this.stockSortKey === 'holders') {
+                return this.stockSortAsc ? a.holders.length - b.holders.length : b.holders.length - a.holders.length;
+            }
+            if (this.stockSortKey === 'local') {
+                const locA = a.holders.filter(h => h.local_foreign === 'L').reduce((s, h) => s + h.percentage, 0);
+                const locB = b.holders.filter(h => h.local_foreign === 'L').reduce((s, h) => s + h.percentage, 0);
+                return this.stockSortAsc ? locA - locB : locB - locA;
+            }
             return 0;
         });
 
-        return rows;
+        return stocks;
     },
 
-    get paginatedStocks() {
-        const start = (this.stockPage - 1) * this.pageSize;
-        return this.filteredStocks.slice(start, start + this.pageSize);
+    get visibleStocks() {
+        return this.filteredStocks.slice(0, this.stockLimit);
     },
 
-    get totalStockPages() {
-        return Math.ceil(this.filteredStocks.length / this.pageSize);
+    loadMoreStocks() {
+        this.stockLimit += 30;
+        this.fetchVisiblePrices();
     },
 
+    setStockSort(key) {
+        if (this.stockSortKey === key) {
+            this.stockSortAsc = !this.stockSortAsc;
+        } else {
+            this.stockSortKey = key;
+            this.stockSortAsc = key === 'code';
+        }
+        this.stockLimit = 30;
+        this.fetchVisiblePrices();
+    },
+
+    setStockFilter(filter) {
+        this.stockFilter = filter;
+        this.stockLimit = 30;
+        this.fetchVisiblePrices();
+    },
+
+    // Computed Investor List
     get filteredInvestors() {
-        let rows = Object.entries(this.investorMap).map(([name, data]) => ({
-            name, type: data.type, lf: data.lf,
-            stockCount: data.stocks.length,
-            stocks: data.stocks.map(s => s.code).join(', ')
-        }));
+        let invs = this.investorList;
 
-        const sq = this.tableSearchQuery.toLowerCase();
-        if (sq) {
-            rows = rows.filter(r => r.name.toLowerCase().includes(sq) || r.stocks.toLowerCase().includes(sq));
+        if (this.invFilter === 'ID') {
+            invs = invs.filter(v => v.type === 'Individual' || v.type === 'ID');
+        } else if (this.invFilter === 'CP') {
+            invs = invs.filter(v => v.type === 'Corporate' || v.type === 'CP');
+        } else if (this.invFilter === 'F') {
+            invs = invs.filter(v => v.lf === 'F' || v.lf === 'A');
+        } else if (this.invFilter === 'scrip') {
+            invs = invs.filter(v => !v.lf || (v.lf !== 'L' && v.lf !== 'F' && v.lf !== 'A'));
         }
 
-        rows.sort((a, b) => {
-            let va = a[this.investorSortKey], vb = b[this.investorSortKey];
-            if (typeof va === 'string') { va = va.toLowerCase(); vb = vb.toLowerCase(); }
-            if (va < vb) return this.investorSortAsc ? -1 : 1;
-            if (va > vb) return this.investorSortAsc ? 1 : -1;
-            return 0;
-        });
-
-        return rows;
+        return invs;
     },
 
-    get paginatedInvestors() {
-        const start = (this.investorPage - 1) * this.pageSize;
-        return this.filteredInvestors.slice(start, start + this.pageSize);
+    get visibleInvestors() {
+        return this.filteredInvestors.slice(0, this.invLimit);
     },
 
-    get totalInvestorPages() {
-        return Math.ceil(this.filteredInvestors.length / this.pageSize);
+    loadMoreInvestors() {
+        this.invLimit += 30;
     },
 
-    // Sorting toggles
-    sortStock(key) {
-        if (this.stockSortKey === key) this.stockSortAsc = !this.stockSortAsc;
-        else { this.stockSortKey = key; this.stockSortAsc = true; }
-        this.stockPage = 1;
+    setInvFilter(filter) {
+        this.invFilter = filter;
+        this.invLimit = 30;
     },
 
-    sortInvestor(key) {
-        if (this.investorSortKey === key) this.investorSortAsc = !this.investorSortAsc;
-        else { this.investorSortKey = key; this.investorSortAsc = (key === 'name'); }
-        this.investorPage = 1;
-    },
+    // Master-Detail & Bottom Sheet
+    openStock(code, isDrilldown = false) {
+        const s = this.stockMap[code];
+        if (!s) return;
 
-    // Pricing
-    async fetchVisiblePrices() {
-        if (this.currentTab !== 'stocks') return;
-        const visibleCodes = this.paginatedStocks.map(s => s.code);
-        const needsFetch = visibleCodes.filter(c => !this.priceMap[c] || this.priceMap[c].last_price == null);
-
-        if (needsFetch.length > 0) {
-            const fetched = await fetchPricesBatch(needsFetch);
-            this.priceMap = { ...this.priceMap, ...fetched };
+        if (isDrilldown && this.cur) {
+            this.detailStack.push({ ...this.cur });
+        } else if (!isDrilldown) {
+            this.detailStack = [];
         }
+
+        this.cur = { kind: 'stock', arg: code };
+        this.showWhaleMap = false;
+        this.addRecent('stock', code);
+
+        // Fetch price if not in cache
+        this.fetchSingleModalPrice(code);
+
+        // Update URL hash without scroll jump
+        if (window.location.hash !== `#/saham/${code}` && window.location.hash !== `#/stock/${code}`) {
+            history.pushState(null, '', `#/saham/${code}`);
+        }
+
+        // Open sheet on mobile
+        this.syncDetailView();
+    },
+
+    openInvestor(name, isDrilldown = false) {
+        const inv = this.investorMap[name];
+        if (!inv) return;
+
+        if (isDrilldown && this.cur) {
+            this.detailStack.push({ ...this.cur });
+        } else if (!isDrilldown) {
+            this.detailStack = [];
+        }
+
+        this.cur = { kind: 'investor', arg: name };
+        this.showWhaleMap = false;
+        this.addRecent('inv', name);
+
+        if (window.location.hash !== `#/investor/${encodeURIComponent(name)}`) {
+            history.pushState(null, '', `#/investor/${encodeURIComponent(name)}`);
+        }
+
+        this.syncDetailView();
+    },
+
+    backDetail() {
+        if (!this.detailStack.length) return;
+        const prev = this.detailStack.pop();
+        if (prev.kind === 'stock') {
+            this.openStock(prev.arg, false);
+        } else {
+            this.openInvestor(prev.arg, false);
+        }
+    },
+
+    closeDetail() {
+        this.cur = null;
+        this.detailStack = [];
+        this.showWhaleMap = false;
+        const sheet = document.getElementById('sheet');
+        const scrim = document.getElementById('scrim');
+        if (sheet) sheet.classList.remove('on');
+        if (scrim) scrim.classList.remove('on');
+        if (window.location.hash.startsWith('#/saham/') || window.location.hash.startsWith('#/stock/') || window.location.hash.startsWith('#/investor/')) {
+            history.pushState(null, '', window.location.pathname);
+        }
+    },
+
+    syncDetailView() {
+        const isDesktop = window.matchMedia('(min-width: 1200px)').matches;
+        const sheet = document.getElementById('sheet');
+        const scrim = document.getElementById('scrim');
+
+        if (!isDesktop) {
+            if (sheet) {
+                sheet.classList.add('on');
+                const db = sheet.querySelector('.db');
+                if (db) db.scrollTop = 0;
+            }
+            if (scrim) scrim.classList.add('on');
+        } else {
+            if (sheet) sheet.classList.remove('on');
+            if (scrim) scrim.classList.remove('on');
+            const paneDb = document.querySelector('#pane .db');
+            if (paneDb) paneDb.scrollTop = 0;
+        }
+    },
+
+    get detailStock() {
+        if (!this.cur || this.cur.kind !== 'stock') return null;
+        const s = this.stockMap[this.cur.arg];
+        if (!s) return null;
+
+        const holders = [...s.holders].sort((a, b) => b.percentage - a.percentage);
+        const top5 = holders.slice(0, 5);
+        const topSum = top5.reduce((acc, h) => acc + h.percentage, 0);
+        const restPct = Math.max(0, 100 - topSum);
+
+        // Generate conic gradient stops for CSS donut
+        let acc = 0;
+        const stops = top5.map((h, i) => {
+            const start = acc;
+            acc += h.percentage;
+            return `var(--c${i}) ${start}% ${acc}%`;
+        }).concat([`var(--c-rest) ${acc}% 100%`]).join(', ');
+
+        const foreignTopPct = top5
+            .filter(h => h.local_foreign === 'F' || h.local_foreign === 'A')
+            .reduce((sum, h) => sum + h.percentage, 0);
+
+        const priceData = this.priceMap[s.code] || null;
+
+        return {
+            code: s.code,
+            issuer: s.issuer,
+            issuerFormatted: toTitleCase(s.issuer),
+            holdersTotal: holders.length,
+            holders: top5,
+            allHolders: holders,
+            topHolder: holders[0] || null,
+            foreignTopPct,
+            restPct,
+            donutStops: stops,
+            price: priceData ? priceData.last_price : null,
+            changePct: priceData ? priceData.change_pct : null
+        };
+    },
+
+    get detailInvestor() {
+        if (!this.cur || this.cur.kind !== 'investor') return null;
+        const inv = this.investorMap[this.cur.arg];
+        if (!inv) return null;
+
+        const holdings = [...inv.holdings].sort((a, b) => (b.p || b.percentage) - (a.p || a.percentage));
+        const topHolding = holdings[0] || null;
+        const totalShares = holdings.reduce((sum, h) => sum + (h.s || h.shares || 0), 0);
+
+        return {
+            name: inv.name,
+            nameFormatted: toTitleCase(inv.name),
+            type: inv.type,
+            typeName: this.getTypeName(inv.type),
+            lf: inv.lf,
+            lfLabel: this.getLFLabel(inv.lf),
+            holdingsCount: holdings.length,
+            holdings: holdings.slice(0, 8),
+            topHolding,
+            totalShares
+        };
+    },
+
+    toggleWhaleMap() {
+        this.showWhaleMap = !this.showWhaleMap;
+        if (this.showWhaleMap && this.cur && this.cur.kind === 'stock') {
+            this.whaleLoading = true;
+            setTimeout(() => {
+                const el = document.getElementById('whaleMapContainer') || document.getElementById('whaleMapContainerMobile');
+                if (el) {
+                    const s = this.stockMap[this.cur.arg];
+                    renderWhaleChart(el, this.cur.arg, s ? s.holders : [], this.stockMap);
+                }
+                this.whaleLoading = false;
+            }, 50);
+        }
+    },
+
+    // Pricing Integration
+    fetchVisiblePrices() {
+        if (this._priceDebounceTimer) clearTimeout(this._priceDebounceTimer);
+        this._priceDebounceTimer = setTimeout(async () => {
+            const codes = this.visibleStocks.map(s => s.code);
+            const needed = codes.filter(c => !this.priceMap[c] || (this.priceMap[c].last_price === undefined && !this.priceMap[c].failed));
+            if (needed.length > 0) {
+                const batch = needed.slice(0, 50);
+                this.priceLoadingBatch = true;
+                try {
+                    const result = await fetchPricesBatch(batch);
+                    const updated = { ...this.priceMap };
+                    for (const code of batch) {
+                        if (result && result[code] && result[code].last_price != null) {
+                            updated[code] = result[code];
+                        } else {
+                            updated[code] = { code, last_price: null, change_pct: null, failed: true };
+                        }
+                    }
+                    this.priceMap = updated;
+                } catch (e) {
+                    const updated = { ...this.priceMap };
+                    for (const code of batch) {
+                        updated[code] = { code, last_price: null, change_pct: null, failed: true };
+                    }
+                    this.priceMap = updated;
+                } finally {
+                    this.priceLoadingBatch = false;
+                }
+            }
+        }, 150);
     },
 
     async fetchSingleModalPrice(code) {
         if (!this.priceMap[code] || this.priceMap[code].last_price == null) {
-            const data = await fetchSinglePrice(code);
-            if (data) {
-                this.priceMap = { ...this.priceMap, [code]: data };
-            }
-        }
-    },
-
-    // Search Autocomplete
-    updateSearch(val) {
-        this.searchQuery = val;
-        const q = val.toLowerCase().trim();
-        if (!q) {
-            this.showAutocomplete = false;
-            this.autocompleteStocks = [];
-            this.autocompleteInvestors = [];
-            return;
-        }
-
-        const uniqueStockCodes = new Set();
-        const matchingStocks = [];
-        for (const s of this.rawData.items) {
-            if (s.code.toLowerCase().includes(q) || s.issuer.toLowerCase().includes(q)) {
-                if (!uniqueStockCodes.has(s.code)) {
-                    uniqueStockCodes.add(s.code);
-                    matchingStocks.push(s);
-                    if (matchingStocks.length >= 5) break;
+            try {
+                const p = await fetchSinglePrice(code);
+                if (p && p.last_price != null) {
+                    this.priceMap = { ...this.priceMap, [code]: p };
+                } else {
+                    this.priceMap = { ...this.priceMap, [code]: { code, last_price: null, change_pct: null, failed: true } };
                 }
+            } catch (e) {
+                this.priceMap = { ...this.priceMap, [code]: { code, last_price: null, change_pct: null, failed: true } };
             }
         }
-
-        const investorNames = Object.keys(this.investorMap);
-        const matchingInvestors = investorNames
-            .filter(name => name.toLowerCase().includes(q))
-            .slice(0, 5);
-
-        this.autocompleteStocks = matchingStocks;
-        this.autocompleteInvestors = matchingInvestors.map(name => ({
-            name, ...this.investorMap[name]
-        }));
-
-        this.showAutocomplete = true;
     },
 
-    submitSearch() {
-        this.tableSearchQuery = this.searchQuery;
-        this.stockPage = 1;
-        this.investorPage = 1;
-        this.showAutocomplete = false;
-        if (this.currentTab === 'analytics') {
-            this.currentTab = 'stocks';
+    // Search Palette & Recents
+    loadRecents() {
+        try {
+            const rec = localStorage.getItem('ihsg-recent');
+            this.recentSearches = rec ? JSON.parse(rec) : [];
+        } catch (e) {
+            this.recentSearches = [];
         }
     },
 
-    // Modals
-    openStockModal(code) {
-        const data = this.stockMap[code];
-        if (!data) return;
-
-        const totalShares = data.holders.reduce((s, h) => s + h.shares, 0);
-        const totalPct = data.holders.reduce((s, h) => s + h.percentage, 0);
-        const localPct = data.holders.filter(h => h.local_foreign === 'L').reduce((s, h) => s + h.percentage, 0);
-        const sortedHolders = [...data.holders].sort((a, b) => b.percentage - a.percentage);
-
-        this.modalType = 'stock';
-        this.modalData = { code, issuer: data.issuer, totalShares, totalPct, localPct, holders: sortedHolders };
-        this.fetchSingleModalPrice(code);
-
-        // Let UI render then trigger chart event
-        setTimeout(() => {
-            document.dispatchEvent(new CustomEvent('render-modal-chart'));
-            this.renderWhaleMap('stock', this.modalData);
-        }, 100);
-    },
-
-    async openInvestorModal(name) {
-        const data = this.investorMap[name];
-        if (!data) return;
-
-        const stocks = [...data.stocks].sort((a, b) => b.shares - a.shares);
-        const enrichedStocks = stocks.map(s => ({
-            ...s,
-            issuer: this.stockMap[s.code] ? this.stockMap[s.code].issuer : '-'
-        }));
-
-        this.modalType = 'investor';
-        this.modalData = { name, ...data, stocks: enrichedStocks };
-
-        // Fetch prices for the investor's portfolio
-        const codes = enrichedStocks.map(s => s.code);
-        const uniqueCodes = [...new Set(codes)];
-        const needsFetch = uniqueCodes.filter(c => !this.priceMap[c] || this.priceMap[c].last_price == null);
-
-        for (let i = 0; i < needsFetch.length; i += 30) {
-            const batch = needsFetch.slice(i, i + 30);
-            const fetched = await fetchPricesBatch(batch);
-            this.priceMap = { ...this.priceMap, ...fetched };
-        }
-
-        setTimeout(() => {
-            this.renderWhaleMap('investor', this.modalData);
-        }, 100);
-    },
-
-    // Whale Map Logic
-    renderWhaleMap(type, ctxData) {
-        if (!type || !ctxData) {
-            if (this.whaleChartInstance) {
-                this.whaleChartInstance.dispose();
-                this.whaleChartInstance = null;
+    addRecent(k, a) {
+        try {
+            let label = a;
+            let sub = '';
+            if (k === 'stock') {
+                const s = this.stockMap[a];
+                label = a;
+                sub = s ? toTitleCase(s.issuer) : '';
+            } else {
+                label = toTitleCase(a);
+                const inv = this.investorMap[a];
+                sub = inv ? `${inv.holdings.length}+ emiten` : '';
             }
+
+            const rec = this.recentSearches.filter(r => !(r.k === k && r.a === a));
+            rec.unshift({ k, a, l: label, s: sub });
+            this.recentSearches = rec.slice(0, 5);
+            localStorage.setItem('ihsg-recent', JSON.stringify(this.recentSearches));
+        } catch (e) {}
+    },
+
+    openSearch() {
+        this.searchOpen = true;
+        this.searchQuery = '';
+        this.searchActiveIndex = 0;
+        setTimeout(() => {
+            const input = document.getElementById('searchPaletteInput');
+            if (input) input.focus();
+        }, 30);
+    },
+
+    closeSearch() {
+        this.searchOpen = false;
+    },
+
+    get searchResults() {
+        const q = this.searchQuery.trim().toLowerCase();
+        if (!q) {
+            return { stocks: [], investors: [], isRecent: true };
+        }
+
+        const stocks = Object.values(this.stockMap)
+            .filter(s => s.code.toLowerCase().includes(q) || s.issuer.toLowerCase().includes(q))
+            .slice(0, 8);
+
+        const investors = this.investorList
+            .filter(v => v.name.toLowerCase().includes(q))
+            .slice(0, 6);
+
+        return { stocks, investors, isRecent: false };
+    },
+
+    selectSearchResult(item, kind) {
+        this.closeSearch();
+        if (kind === 'stock') {
+            this.openStock(item.code);
+        } else {
+            this.openInvestor(item.name);
+        }
+    },
+
+    // Pro Gates & Freemium v2
+    openPro(why = 'general') {
+        this.proWhy = why;
+        this.proOpen = true;
+        if (window.location.hash !== `#/pro/${why}`) {
+            history.pushState(null, '', `#/pro/${why}`);
+        }
+    },
+
+    closePro() {
+        this.proOpen = false;
+        if (window.location.hash.startsWith('#/pro/')) {
+            history.pushState(null, '', window.location.pathname);
+        }
+    },
+
+    // Customer Success & Feedback
+    async checkFeedbackStatus() {
+        try {
+            const res = await fetch('/api/feedback/status');
+            if (res.ok) {
+                const data = await res.json();
+                this.feedbackAvailable = Boolean(data.available);
+            } else {
+                this.feedbackAvailable = false;
+            }
+        } catch (e) {
+            this.feedbackAvailable = false;
+        }
+    },
+
+    openFeedbackModal(context = {}) {
+        if (!this.feedbackAvailable) {
+            return;
+        }
+        this.feedbackSuccess = false;
+        this.feedbackError = null;
+        this.feedbackTicketId = null;
+
+        const defaultCode = context.code || (this.cur?.kind === 'stock' ? this.cur.arg : '') || '';
+        const defaultName = context.name || (this.cur?.kind === 'stock' ? this.stockMap[this.cur.arg]?.issuer : (this.cur?.kind === 'investor' ? this.cur.arg : '')) || '';
+
+        this.feedbackForm = {
+            category: context.category || 'data_error',
+            context_type: context.context_type || (this.cur?.kind || 'general'),
+            entity_code: defaultCode,
+            entity_name: defaultName,
+            error_type: context.error_type || 'glued_token',
+            description: context.description || '',
+            reference_url: context.reference_url || '',
+            reporter_contact: context.reporter_contact || ''
+        };
+        this.showFeedbackModal = true;
+    },
+
+    closeFeedbackModal() {
+        this.showFeedbackModal = false;
+    },
+
+    async submitFeedback() {
+        if (!this.feedbackForm.description.trim()) {
+            this.feedbackError = 'Harap isi deskripsi laporan atau kendala yang ditemukan.';
             return;
         }
 
-        const containerId = type === 'stock' ? 'modalStockWhaleMap' : 'modalInvestorWhaleMap';
-        const container = document.getElementById(containerId);
-        if (!container) return;
+        this.feedbackSubmitting = true;
+        this.feedbackError = null;
 
-        if (this.whaleChartInstance) {
-            this.whaleChartInstance.dispose();
-            this.whaleChartInstance = null;
-        }
-
-        this.whaleChartInstance = echarts.init(container);
-        
-        // Handle Window Resize
-        const resizeHandler = () => {
-            if (this.whaleChartInstance && this.modalType === type) {
-                this.whaleChartInstance.resize();
+        const payload = {
+            timestamp: new Date().toISOString(),
+            ...this.feedbackForm,
+            data_as_of: this.sourceDate || '30-Sep-2026',
+            client_info: {
+                url: window.location.href,
+                user_agent: navigator.userAgent,
+                screen: `${window.innerWidth}x${window.innerHeight}`
             }
         };
-        window.removeEventListener('resize', this._whaleResizeHandler);
-        this._whaleResizeHandler = resizeHandler;
-        window.addEventListener('resize', resizeHandler);
 
-        // Handle Node Click
-        this.whaleChartInstance.on('click', (params) => {
-            if (params.dataType === 'node') {
-                if (params.data.category === 0) {
-                    window.location.hash = '#/investor/' + encodeURIComponent(params.data.name);
-                } else if (params.data.category === 1) {
-                    window.location.hash = '#/stock/' + params.data.name;
+        try {
+            const res = await fetch('/api/feedback', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (!res.ok) {
+                const errData = await res.json().catch(() => ({}));
+                throw new Error(errData.error || 'Gagal mengirim laporan');
+            }
+
+            const resData = await res.json().catch(() => ({}));
+            this.feedbackTicketId = resData.ticket_id || `TICK-${Date.now()}`;
+            this.feedbackSuccess = true;
+        } catch (err) {
+            console.warn('Feedback submission failed:', err);
+            this.feedbackError = err.message || 'Gagal mengirim laporan ke server.';
+            this.feedbackSuccess = false;
+        } finally {
+            this.feedbackSubmitting = false;
+        }
+    },
+
+    // Analytics pure CSS calculations
+    get analyticsData() {
+        if (!this.rawData || !this.rawData.items) {
+            return {
+                localPct: 0, foreignPct: 0, scripPct: 0,
+                typeBars: [], top15Bars: [], concBars: []
+            };
+        }
+
+        const total = this.totalRecords || 1;
+        const localPct = Math.round((this.localCount / total) * 100);
+        const foreignPct = Math.round((this.foreignCount / total) * 100);
+        const scripPct = Math.max(0, 100 - localPct - foreignPct);
+
+        // Group by type
+        const typeMap = {};
+        for (const item of this.rawData.items) {
+            const raw = (item.investor_type || '').trim();
+            const label = this.getTypeName(raw);
+            typeMap[label] = (typeMap[label] || 0) + 1;
+        }
+        const sortedTypes = Object.entries(typeMap)
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 8);
+        const maxType = sortedTypes.length ? sortedTypes[0][1] : 1;
+        const typeBars = sortedTypes.map(([label, count]) => ({
+            label,
+            count,
+            pct: Math.round((count / maxType) * 100)
+        }));
+
+        // Top 15 stocks by holder count
+        const top15 = Object.values(this.stockMap)
+            .sort((a, b) => b.holders.length - a.holders.length)
+            .slice(0, 10);
+        const maxHolders = top15.length ? top15[0].holders.length : 1;
+        const top15Bars = top15.map(s => ({
+            code: s.code,
+            count: s.holders.length,
+            pct: Math.round((s.holders.length / maxHolders) * 100)
+        }));
+
+        // Concentration
+        const conc = { '> 50%': 0, '25 - 50%': 0, '10 - 25%': 0, '< 10%': 0 };
+        for (const s of Object.values(this.stockMap)) {
+            const topH = s.holders.reduce((m, h) => h.percentage > m.percentage ? h : m, s.holders[0]);
+            const p = topH ? topH.percentage : 0;
+            if (p > 50) conc['> 50%']++;
+            else if (p > 25) conc['25 - 50%']++;
+            else if (p > 10) conc['10 - 25%']++;
+            else conc['< 10%']++;
+        }
+        const maxConc = Math.max(...Object.values(conc), 1);
+        const concBars = Object.entries(conc).map(([label, count]) => ({
+            label,
+            count,
+            pct: Math.round((count / maxConc) * 100)
+        }));
+
+        return {
+            localPct,
+            foreignPct,
+            scripPct,
+            typeBars,
+            top15Bars,
+            concBars
+        };
+    },
+
+    // Keyboard Shortcuts
+    setupKeyboardListeners() {
+        window.addEventListener('keydown', (e) => {
+            const typing = /INPUT|SELECT|TEXTAREA/.test(e.target.tagName || '');
+
+            // Ctrl/Cmd + K or "/" opens search
+            if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+                e.preventDefault();
+                if (this.searchOpen) {
+                    const inp = document.getElementById('searchPaletteInput');
+                    if (inp) inp.focus();
+                } else {
+                    this.openSearch();
+                }
+                return;
+            }
+
+            if (e.key === '/' && !typing && !this.searchOpen) {
+                e.preventDefault();
+                this.openSearch();
+                return;
+            }
+
+            // Escape closes search palette, pro sheet, or detail
+            if (e.key === 'Escape') {
+                if (this.searchOpen) {
+                    this.closeSearch();
+                    return;
+                }
+                if (this.proOpen) {
+                    this.closePro();
+                    return;
+                }
+                if (this.showFeedbackModal) {
+                    this.closeFeedbackModal();
+                    return;
+                }
+                if (this.cur) {
+                    this.closeDetail();
+                    return;
                 }
             }
         });
+    },
 
-        // Start Data Processing
-        let nodesData = []; 
-        let linksData = []; 
-        const addedInvestors = new Set();
-        const addedStocks = new Set();
-        const edgesMap = new Map();
+    // Hash Route Handler
+    handleHashRoute() {
+        const hash = window.location.hash;
+        if (!hash) return;
 
-        const addEdge = (invName, stockCode, pct) => {
-            const edgeKey = `inv_${invName}-stk_${stockCode}`;
-            if (!edgesMap.has(edgeKey)) {
-                const width = Math.max(0.5, pct / 5);
-                linksData.push({
-                    source: 'inv_' + invName,
-                    target: 'stk_' + stockCode,
-                    value: pct,
-                    lineStyle: { width: Math.min(5, width) }
-                });
-                edgesMap.set(edgeKey, true);
-            }
-        };
-
-        const addInvestor = (invName, isCenter, overrideSize) => {
-            if (addedInvestors.has(invName)) return;
-            const invData = this.investorMap[invName];
-            const invStocksCount = invData ? invData.stocks.length : 1;
-            const size = overrideSize || Math.min(40, 15 + (invStocksCount * 2));
-            nodesData.push({
-                id: 'inv_' + invName,
-                name: invName,
-                category: 0,
-                symbolSize: size,
-                value: invStocksCount + ' Saham',
-                label: { show: isCenter || size > 25 },
-                itemStyle: isCenter ? { color: '#a855f7', borderColor: '#d8b4fe', borderWidth: 3, shadowBlur: 15, shadowColor: '#a855f7' } : undefined
-            });
-            addedInvestors.add(invName);
-        };
-
-        const addStock = (stockCode, isCenter, overrideSize) => {
-            if (addedStocks.has(stockCode)) return;
-            const stockData = this.stockMap[stockCode];
-            const stockHoldersCount = stockData ? stockData.holders.length : 1;
-            const size = overrideSize || Math.min(45, 15 + (stockHoldersCount * 2));
-            nodesData.push({
-                id: 'stk_' + stockCode,
-                name: stockCode,
-                category: 1,
-                symbolSize: size,
-                value: stockHoldersCount + ' Investor Besar',
-                label: { show: isCenter || size > 25 },
-                itemStyle: isCenter ? { color: '#3b82f6', borderColor: '#93c5fd', borderWidth: 3, shadowBlur: 15, shadowColor: '#3b82f6' } : undefined
-            });
-            addedStocks.add(stockCode);
-        };
-
-        if (type === 'stock') {
-            const centerCode = ctxData.code;
-            addStock(centerCode, true, 55); // Center Stock
-
-            // Level 1: Holders of this stock
-            ctxData.holders.forEach(h => {
-                addInvestor(h.investor, false);
-                addEdge(h.investor, centerCode, h.percentage);
-
-                // Level 2: Top 3 other stocks of this investor
-                const invData = this.investorMap[h.investor];
-                if (invData) {
-                    const topOtherStocks = [...invData.stocks]
-                        .filter(s => s.code !== centerCode)
-                        .sort((a,b) => b.pct - a.pct)
-                        .slice(0, 3);
-                        
-                    topOtherStocks.forEach(s => {
-                        addStock(s.code, false);
-                        addEdge(h.investor, s.code, s.pct);
-                    });
-                }
-            });
-        } 
-        else if (type === 'investor') {
-            const centerName = ctxData.name;
-            addInvestor(centerName, true, 55); // Center Investor
-
-            // Level 1: Stocks held by this investor
-            ctxData.stocks.forEach(s => {
-                addStock(s.code, false);
-                addEdge(centerName, s.code, s.pct);
-
-                // Level 2: Top 3 other holders of this stock
-                const stockData = this.stockMap[s.code];
-                if (stockData) {
-                    const topOtherHolders = [...stockData.holders]
-                        .filter(h => h.investor !== centerName)
-                        .sort((a,b) => b.percentage - a.percentage)
-                        .slice(0, 3);
-                        
-                    topOtherHolders.forEach(h => {
-                        addInvestor(h.investor, false);
-                        addEdge(h.investor, s.code, h.percentage);
-                    });
-                }
-            });
+        if (hash.startsWith('#/saham/')) {
+            const code = decodeURIComponent(hash.slice(8)).toUpperCase();
+            this.currentTab = 'stocks';
+            this.openStock(code);
+        } else if (hash.startsWith('#/stock/')) {
+            const code = decodeURIComponent(hash.slice(8)).toUpperCase();
+            this.currentTab = 'stocks';
+            this.openStock(code);
+        } else if (hash.startsWith('#/investor/')) {
+            const name = decodeURIComponent(hash.slice(11));
+            this.currentTab = 'investors';
+            this.openInvestor(name);
+        } else if (hash.startsWith('#/pro/')) {
+            const why = hash.slice(6) || 'general';
+            this.openPro(why);
+        } else if (hash === '#/faq') {
+            this.setTab('faq');
+        } else if (hash === '#/analytics') {
+            this.setTab('analytics');
+        } else if (hash === '#/investors') {
+            this.setTab('investors');
+        } else if (hash === '#/stocks') {
+            this.setTab('stocks');
         }
-
-        if (nodesData.length === 0) return;
-
-        const option = {
-            backgroundColor: 'transparent',
-            tooltip: {
-                trigger: 'item',
-                backgroundColor: 'rgba(30, 41, 59, 0.9)',
-                borderColor: 'rgba(255, 255, 255, 0.1)',
-                textStyle: { color: '#f8fafc' },
-                formatter: function (params) {
-                    if (params.dataType === 'node') {
-                        const t = params.data.category === 0 ? 'Investor' : 'Emiten Saham';
-                        return `<div class="font-bold text-blue-400 mb-1">${t}</div>
-                                <div class="text-sm font-semibold">${params.data.name}</div>
-                                <div class="text-xs text-slate-400 mt-1">${params.data.category === 0 ? 'Portofolio: ' : 'Jumlah Whale: '}${params.data.value}</div>`;
-                    } else if (params.dataType === 'edge') {
-                        const sourceName = params.data.source.replace('inv_', '');
-                        const targetName = params.data.target.replace('stk_', '');
-                        return `<div class="font-bold text-blue-400 mb-1">Kepemilikan</div>
-                                <div class="text-xs text-slate-300">Investor: <span class="font-bold text-white">${sourceName}</span></div>
-                                <div class="text-xs text-slate-300">Saham: <span class="font-bold text-white">${targetName}</span></div>
-                                <div class="text-xs mt-1 text-emerald-400 font-bold">Porsi: ${params.data.value.toFixed(2)}%</div>`;
-                    }
-                }
-            },
-            legend: {
-                data: ['Investor', 'Saham'],
-                textStyle: { color: '#94a3b8' },
-                bottom: 10
-            },
-            series: [{
-                type: 'graph',
-                layout: 'force',
-                data: nodesData,
-                links: linksData,
-                categories: [
-                    { name: 'Investor', itemStyle: { color: '#8b5cf6' } }, // Purple
-                    { name: 'Saham', itemStyle: { color: '#3b82f6' } }     // Blue
-                ],
-                roam: true,
-                label: {
-                    position: 'right',
-                    formatter: '{b}',
-                    color: '#e2e8f0',
-                    fontSize: 10,
-                    textBorderColor: '#0f172a',
-                    textBorderWidth: 2
-                },
-                lineStyle: {
-                    color: 'source',
-                    curveness: 0.1,
-                    opacity: 0.6
-                },
-                emphasis: {
-                    focus: 'adjacency',
-                    lineStyle: { width: 3, opacity: 1 },
-                    label: { show: true }
-                },
-                force: {
-                    repulsion: 200,
-                    edgeLength: [40, 90],
-                    gravity: 0.1,
-                    friction: 0.6
-                }
-            }]
-        };
-
-        this.whaleChartInstance.setOption(option);
     }
 };
