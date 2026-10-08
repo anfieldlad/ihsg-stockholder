@@ -45,3 +45,12 @@ tmp/
 temp/
 .pytest_cache/
 feedback_submissions.json
+
+# Secrets & Local Configurations
+.env*
+*.pem
+*.key
+*.cert
+*.token
+credentials.json
+client_secrets.json

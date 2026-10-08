@@ -60,7 +60,8 @@ export const storeConfig = {
     proOpen: false,
     proWhy: 'general',
 
-    // Customer Success & Feedback
+    // Customer Success & Feedback Gating (B2)
+    feedbackAvailable: false,
     showFeedbackModal: false,
     feedbackSubmitting: false,
     feedbackSuccess: false,
@@ -126,6 +127,9 @@ export const storeConfig = {
 
             // Fetch prices for initial visible batch
             this.fetchVisiblePrices();
+
+            // Check feedback webhook availability (B2)
+            this.checkFeedbackStatus();
         } catch (e) {
             console.error('Initialization error:', e);
             this.error = COPY.states.error_load;
@@ -677,7 +681,24 @@ export const storeConfig = {
     },
 
     // Customer Success & Feedback
+    async checkFeedbackStatus() {
+        try {
+            const res = await fetch('/api/feedback/status');
+            if (res.ok) {
+                const data = await res.json();
+                this.feedbackAvailable = Boolean(data.available);
+            } else {
+                this.feedbackAvailable = false;
+            }
+        } catch (e) {
+            this.feedbackAvailable = false;
+        }
+    },
+
     openFeedbackModal(context = {}) {
+        if (!this.feedbackAvailable) {
+            return;
+        }
         this.feedbackSuccess = false;
         this.feedbackError = null;
         this.feedbackTicketId = null;
@@ -738,9 +759,9 @@ export const storeConfig = {
             this.feedbackTicketId = resData.ticket_id || `TICK-${Date.now()}`;
             this.feedbackSuccess = true;
         } catch (err) {
-            console.warn('Feedback fallback to local ticket:', err);
-            this.feedbackTicketId = `TICK-${Date.now()}`;
-            this.feedbackSuccess = true;
+            console.warn('Feedback submission failed:', err);
+            this.feedbackError = err.message || 'Gagal mengirim laporan ke server.';
+            this.feedbackSuccess = false;
         } finally {
             this.feedbackSubmitting = false;
         }

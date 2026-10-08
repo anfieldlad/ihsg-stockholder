@@ -8,7 +8,7 @@ export async function loadECharts() {
 
     echartsLoadingPromise = new Promise((resolve, reject) => {
         const script = document.createElement('script');
-        script.src = 'https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js';
+        script.src = '/assets/vendor/echarts.min.js';
         script.async = true;
         script.onload = () => resolve(window.echarts);
         script.onerror = (err) => {

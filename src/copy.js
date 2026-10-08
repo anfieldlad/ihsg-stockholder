@@ -193,16 +193,16 @@ export const COPY = {
     tier_free: "Gratis",
     tier_investor: "Investor",
     tier_trader: "Pakar / Trader",
-    price_free: "Rp 0",
-    price_investor: "Rp 19.000",
-    price_trader: "Rp 49.000",
-    per_month: "/ bulan",
-    note_investor_annual: "Rp 190.000 / thn (hemat 2 bulan)",
-    note_trader_annual: "Rp 490.000 / thn (hemat 2 bulan)",
+    price_free: "Gratis",
+    price_investor: "Segera hadir",
+    price_trader: "Segera hadir",
+    per_month: "",
+    note_investor_annual: "Segera hadir",
+    note_trader_annual: "Segera hadir",
     table_header_feature: "Fitur",
     table_header_free: "Gratis",
-    table_header_investor: "Investor (Rp 19k)",
-    table_header_trader: "Pakar (Rp 49k)",
+    table_header_investor: "Investor (Segera hadir)",
+    table_header_trader: "Pakar (Segera hadir)",
     rows: [
       {
         feature: "Pencarian emiten & investor",
@@ -259,8 +259,8 @@ export const COPY = {
         trader: "Hingga 4 Emiten Sekaligus"
       }
     ],
-    btn_waitlist: "Daftar Tunggu Akses Awal Pro",
-    pricing_note: "Tersedia opsi langganan Bulanan dan Tahunan (bayar 10 bulan untuk akses 12 bulan)."
+    btn_waitlist: "Segera Hadir",
+    pricing_note: "Layanan akun berbayar sedang disiapkan dan belum dibuka untuk umum."
   },
   feedback: {
     btn_open: "Bantuan & Lapor",

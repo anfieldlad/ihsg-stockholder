@@ -57,6 +57,42 @@ def test_static_index_and_v2_assets(client):
     assert res_font.status_code == 200
 
 
+def test_price_ticker_validation_b4(client):
+    """B4: Validates ticker format ^[A-Z0-9]{4}$."""
+    # Invalid tickers
+    res_bad1 = client.get("/api/price/INVALID")
+    assert res_bad1.status_code == 400
+    res_bad2 = client.get("/api/price/B$CA")
+    assert res_bad2.status_code == 400
+    res_bad3 = client.get("/api/price/12")
+    assert res_bad3.status_code == 400
+
+    # Valid ticker format
+    res_valid = client.get("/api/price/BBCA")
+    assert res_valid.status_code == 200
+    # Cache-Control header verified
+    assert "public, s-maxage=60" in res_valid.headers.get("Cache-Control", "")
+
+
+def test_batch_prices_validation_and_cap_b4(client):
+    """B4: Batch prices caps at 30, validates tickers, sets Cache-Control."""
+    # Empty query
+    res_empty = client.get("/api/prices")
+    assert res_empty.status_code == 400
+
+    # All invalid tickers
+    res_bad = client.get("/api/prices?codes=TOOLONG,X,1")
+    assert res_bad.status_code == 400
+
+    # Valid batch capped at 30
+    tickers_list = [f"TK{i:02d}" for i in range(40)]
+    res_batch = client.get(f"/api/prices?codes={','.join(tickers_list)}")
+    assert res_batch.status_code == 200
+    data = res_batch.get_json()
+    assert data["count"] <= 30
+    assert "public, s-maxage=60" in res_batch.headers.get("Cache-Control", "")
+
+
 def test_node_module_imports():
     import subprocess
     res = subprocess.run(
@@ -77,5 +113,3 @@ def test_node_max_holders_and_aadi():
         check=False,
     )
     assert res.returncode == 0, f"Node max holders verification failed:\n{res.stdout}\n{res.stderr}"
-
-

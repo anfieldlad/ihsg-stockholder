@@ -105,7 +105,7 @@
       }
     });
   </script>
-  <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.3/dist/cdn.min.js" defer></script>
+  <script src="/assets/vendor/alpine.min.js" defer></script>
 </head>
 
 <body x-data="app" x-init="init()" :data-theme="theme">
@@ -164,7 +164,7 @@
         <button class="sbtn" type="button" @click="openSearch()" aria-label="Cari kode saham atau nama investor">
           <svg class="i"><use href="#i-search"/></svg>
           <span x-text="C.search.bar_placeholder">Cari kode saham atau investor...</span>
-          <kbd>Ctrl K</kbd>
+          <kbd>Ctrl</kbd>&nbsp;<kbd>K</kbd>
         </button>
 
         <button class="theme-btn" type="button" @click="toggleTheme()" :title="theme === 'a' ? 'Mode Malam' : 'Mode Terang'" :aria-label="theme === 'a' ? 'Beralih ke mode malam' : 'Beralih ke mode terang'">
@@ -266,14 +266,14 @@
                 <span class="h r">Harga</span>
                 <span class="h r">+/-</span>
                 <button class="h r" type="button" @click="setStockSort('top')">
-                  Porsi Terbesar <span x-show="stockSortKey === 'top'">↓</span>
+                  <span>Porsi Terbesar</span><span x-show="stockSortKey === 'top'">&nbsp;↓</span>
                 </button>
                 <button class="h r opt1" type="button" @click="setStockSort('holders')">
-                  Pemegang ≥1% <span x-show="stockSortKey === 'holders'">↓</span>
+                  <span>Pemegang ≥1%</span><span x-show="stockSortKey === 'holders'">&nbsp;↓</span>
                 </button>
                 <span class="h opt2">Pemegang Saham Terbesar</span>
                 <button class="h r opt3" type="button" @click="setStockSort('local')">
-                  Porsi Domestik <span x-show="stockSortKey === 'local'">↓</span>
+                  <span>Porsi Domestik</span><span x-show="stockSortKey === 'local'">&nbsp;↓</span>
                 </button>
               </div>
 
@@ -282,7 +282,7 @@
                 <button class="row" type="button" @click="openStock(s.code)" :aria-current="cur && cur.kind === 'stock' && cur.arg === s.code ? 'true' : 'false'">
                   <span class="id">
                     <span class="code" x-text="s.code"></span>
-                    <span class="iss" x-text="toTitleCase(s.issuer)"></span>
+                    <span class="iss" :title="s.issuer" x-text="toTitleCase(s.issuer)"></span>
                   </span>
 
                   <!-- Price -->
@@ -299,6 +299,7 @@
                           :class="fmtChangePct(priceMap[s.code]?.change_pct)?.cls"
                           x-text="fmtChangePct(priceMap[s.code]?.change_pct)?.text">
                     </span>
+                    <span x-show="!fmtChangePct(priceMap[s.code]?.change_pct)" class="chg flat">-</span>
                   </span>
 
                   <!-- Mobile 3rd Line Info -->
@@ -307,9 +308,12 @@
                   </span>
 
                   <!-- Desktop Container Query Cells -->
-                  <span class="cell r v num" x-text="fmtPct(s.topHolder ? s.topHolder.percentage : s.holders[0]?.percentage)"></span>
+                  <div class="cell r v num holder-cell">
+                    <span class="num bold" x-text="fmtPct(s.topHolder ? s.topHolder.percentage : s.holders[0]?.percentage)"></span>
+                    <span class="sub-hname" :title="s.topHolder ? s.topHolder.investor : s.holders[0]?.investor" x-text="toTitleCase(s.topHolder ? s.topHolder.investor : s.holders[0]?.investor)"></span>
+                  </div>
                   <span class="cell r v num opt1" x-text="s.holders.length"></span>
-                  <span class="cell nm opt2" x-text="toTitleCase(s.topHolder ? s.topHolder.investor : s.holders[0]?.investor)"></span>
+                  <span class="cell nm opt2" :title="s.topHolder ? s.topHolder.investor : s.holders[0]?.investor" x-text="toTitleCase(s.topHolder ? s.topHolder.investor : s.holders[0]?.investor)"></span>
                   <span class="cell r v num opt3" x-text="fmtPct(s.holders.filter(h => h.local_foreign === 'L').reduce((sum, h) => sum + h.percentage, 0))"></span>
                 </button>
               </template>
@@ -542,8 +546,8 @@
               </div>
             </div>
 
-            <!-- Help Contact Box -->
-            <div class="card" style="margin-top:20px;text-align:center;padding:28px">
+            <!-- Help Contact Box (B2 Gated) -->
+            <div class="card" x-show="feedbackAvailable" style="margin-top:20px;text-align:center;padding:28px">
               <h3 style="font-size:18px">Menemukan Ketidaksesuaian Data atau Ada Pertanyaan Lain?</h3>
               <p class="sub" style="margin:8px auto 16px;max-width:440px">Bantu kami menjaga akurasi transparansi data pasar modal Indonesia.</p>
               <button class="btn pri" type="button" @click="openFeedbackModal()">
@@ -653,8 +657,8 @@
                   </div>
                 </div>
 
-                <!-- Feedback Button -->
-                <div style="margin-top:20px;border-top:1px solid var(--line);padding-top:14px">
+                <!-- Feedback Button (B2 Gated) -->
+                <div x-show="feedbackAvailable" style="margin-top:20px;border-top:1px solid var(--line);padding-top:14px">
                   <button class="btn sec" type="button" style="width:100%;font-size:13px" @click="openFeedbackModal({ code: detailStock.code, name: detailStock.issuer })">
                     Laporkan Ketidaksesuaian Saham Ini
                   </button>
@@ -718,7 +722,7 @@
                   </div>
                 </div>
 
-                <div style="margin-top:20px;border-top:1px solid var(--line);padding-top:14px">
+                <div x-show="feedbackAvailable" style="margin-top:20px;border-top:1px solid var(--line);padding-top:14px">
                   <button class="btn sec" type="button" style="width:100%;font-size:13px" @click="openFeedbackModal({ name: detailInvestor.name })">
                     Laporkan Ketidaksesuaian Investor Ini
                   </button>
@@ -732,7 +736,7 @@
 
     <!-- One-Line Footer -->
     <footer class="shell foot">
-      <span>© 2026 IHSG Storm · by BAD.AI · Bukan saran investasi · <a href="#/faq" @click="setTab('faq')">Pusat Bantuan & FAQ</a> · <a href="javascript:void(0)" @click="openFeedbackModal()">Laporkan Data</a></span>
+      <span>© 2026 IHSG Storm · by BAD.AI · Bukan saran investasi · <a href="#/faq" @click="setTab('faq')">Pusat Bantuan & FAQ</a><template x-if="feedbackAvailable"> · <a href="javascript:void(0)" @click="openFeedbackModal()">Laporkan Data</a></template></span>
     </footer>
   </div>
 
@@ -847,7 +851,7 @@
             </div>
           </div>
 
-          <div style="margin-top:20px;border-top:1px solid var(--line);padding-top:14px">
+          <div x-show="feedbackAvailable" style="margin-top:20px;border-top:1px solid var(--line);padding-top:14px">
             <button class="btn sec" type="button" style="width:100%;font-size:13px" @click="openFeedbackModal({ code: detailStock.code, name: detailStock.issuer })">
               Laporkan Ketidaksesuaian Saham Ini
             </button>
@@ -911,7 +915,7 @@
             </div>
           </div>
 
-          <div style="margin-top:20px;border-top:1px solid var(--line);padding-top:14px">
+          <div x-show="feedbackAvailable" style="margin-top:20px;border-top:1px solid var(--line);padding-top:14px">
             <button class="btn sec" type="button" style="width:100%;font-size:13px" @click="openFeedbackModal({ name: detailInvestor.name })">
               Laporkan Ketidaksesuaian Investor Ini
             </button>
@@ -975,7 +979,7 @@
           <div class="state">
             <b>Tidak Ditemukan</b>
             <p x-text="`Tidak ada saham atau investor yang cocok dengan '${searchQuery}'.`"></p>
-            <button class="btn sec" type="button" @click="openFeedbackModal({ description: `Emiten atau investor belum ada: ${searchQuery}` }); closeSearch()">
+            <button x-show="feedbackAvailable" class="btn sec" type="button" @click="openFeedbackModal({ description: `Emiten atau investor belum ada: ${searchQuery}` }); closeSearch()">
               Emiten atau investor belum ada? Laporkan di sini
             </button>
           </div>
@@ -998,18 +1002,14 @@
         <h2 style="font-size:22px;line-height:1.25;letter-spacing:-.02em;font-weight:800">Investasi Lebih Percaya Diri dengan Data Investor Kakap</h2>
         <p class="sub" style="margin-top:8px">Ketahui langkah konglomerat, investor institusi, dan pengendali sebelum pasar bereaksi luas.</p>
 
-        <!-- 2 Paid Tier Stat Cards -->
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:18px 0">
-          <div class="stat">
-            <span style="font-weight:700">Paket Investor</span>
-            <b class="num">Rp 19.000</b>
-            <span style="font-size:11px;color:var(--ink3);margin-top:2px">/ bulan · Rp 190.000 / thn</span>
+        <!-- Pro Plan Coming Soon Notice (B3 Hardening) -->
+        <div class="card" style="margin:16px 0;padding:20px;text-align:center;background:var(--sunk);border:1px solid var(--line2)">
+          <div style="display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:99px;background:var(--card);font-weight:700;font-size:12px;color:var(--accent-text);margin-bottom:10px">
+            <svg class="i s"><use href="#i-lock"/></svg>
+            <span>SEGERA HADIR</span>
           </div>
-          <div class="stat" style="outline:2px solid var(--accent-text)">
-            <span style="font-weight:700">Paket Pakar / Trader</span>
-            <b class="num">Rp 49.000</b>
-            <span style="font-size:11px;color:var(--ink3);margin-top:2px">/ bulan · Rp 490.000 / thn</span>
-          </div>
+          <h3 style="font-size:16px;font-weight:800;margin-bottom:6px">Layanan Berlangganan Segera Hadir</h3>
+          <p class="sub" style="font-size:13px;max-width:380px;margin:0 auto">Akses screener canggih, histori akumulasi paus, dan peringatan kepemilikan saham sedang dalam tahap pengembangan.</p>
         </div>
 
         <!-- Comparison Table -->
@@ -1038,9 +1038,9 @@
 
         <p class="note" style="margin-top:14px" x-text="C.pro_sheet.pricing_note"></p>
 
-        <!-- Waitlist Action -->
-        <button class="btn pri" type="button" style="width:100%;margin-top:16px" @click="openFeedbackModal({ category: 'feature_request', description: 'Tertarik mendaftar akses awal paket Pro IHSG Storm.' }); closePro()">
-          Daftar Tunggu Akses Awal Pro
+        <!-- Close Action -->
+        <button class="btn sec" type="button" style="width:100%;margin-top:16px" @click="closePro()">
+          Tutup
         </button>
       </div>
     </div>

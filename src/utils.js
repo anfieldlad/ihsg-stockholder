@@ -47,13 +47,32 @@ export function fmtChangePct(pct) {
 
 export function toTitleCase(n) {
     if (!n) return '';
-    return String(n)
-        .replace(/^PT\s+/i, '')
-        .split(' ')
-        .map(w => {
-            if (/^\(?[A-Z]{1,3}\)?$/.test(w)) return w;
-            return w.charAt(0).toUpperCase() + w.slice(1).toLowerCase();
-        })
-        .join(' ')
-        .replace(/Tbk/i, 'Tbk');
+    let s = String(n).trim();
+    // Normalize 'PT.' or 'PT ' with space separator
+    s = s.replace(/^PT\.?\s*/i, 'PT ');
+    
+    const words = s.split(/\s+/).map((w, idx) => {
+        if (!w) return '';
+        const upper = w.toUpperCase();
+        if (upper === 'PT' || upper === 'PT.') return 'PT';
+        if (upper === 'TBK' || upper === 'TBK.') return 'Tbk';
+        if (upper === 'CV' || upper === 'CV.') return 'CV';
+        if (upper === 'UD' || upper === 'UD.') return 'UD';
+        if (upper === 'LTD' || upper === 'LTD.') return 'Ltd.';
+        if (upper === 'PTE' || upper === 'PTE.') return 'Pte.';
+        if (upper === '(PERSERO)') return '(Persero)';
+        
+        // Minor connecting words in lowercase unless at start of string
+        const lower = w.toLowerCase();
+        if (idx > 0 && ['of', 'and', 'dan', 'di', 'de', 'the'].includes(lower)) {
+            return lower;
+        }
+
+        if (/^\(?[A-Z0-9]{1,3}\)?$/.test(w) && !['OF', 'DE', 'DI'].includes(upper)) {
+            return w; // Acronyms / short codes
+        }
+        
+        return w.charAt(0).toUpperCase() + w.slice(1).toLowerCase();
+    });
+    return words.filter(Boolean).join(' ');
 }
