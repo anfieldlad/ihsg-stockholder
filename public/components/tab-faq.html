@@ -397,14 +397,38 @@
       </div>
     </div>
 
-    <!-- ITEM 12 -->
+    <!-- ITEM 12 (PRIVACY & COOKIELESS ANALYTICS) -->
+    <div x-show="matchQuery({ cat: 'legal', q: 'Bagaimana kebijakan privasi dan analitik data pengunjung di IHSG Storm?', a: 'IHSG Storm mengutamakan privasi pengguna. Layanan ini sepenuhnya cookieless (tanpa cookie pelacak), tidak mengumpulkan Data Pribadi (PII), menghormati sinyal Do-Not-Track (DNT), dan bebas dari pelacak iklan pihak ketiga sesuai prinsip UU PDP No. 27/2022.', keywords: 'privasi privacy cookie cookieless pii dnt do not track pelacak uu pdp analitik' })"
+      class="glass-panel rounded-2xl border border-white/[0.05] overflow-hidden transition-all duration-200"
+      :class="openItem === 'legal-4' ? 'border-blue-500/40 bg-slate-800/40' : 'hover:border-white/10'">
+      <button @click="openItem = openItem === 'legal-4' ? null : 'legal-4'"
+        class="w-full px-5 py-4 sm:px-6 sm:py-5 flex items-center justify-between gap-4 text-left">
+        <div class="flex items-center gap-3">
+          <span class="w-6 h-6 rounded-md bg-purple-500/20 text-purple-400 text-xs font-bold flex items-center justify-center shrink-0">12</span>
+          <span class="text-sm sm:text-base font-semibold text-slate-100">Bagaimana kebijakan privasi dan analitik data pengunjung di IHSG Storm?</span>
+        </div>
+        <svg class="w-5 h-5 text-slate-400 transition-transform duration-200 shrink-0" :class="openItem === 'legal-4' ? 'rotate-180 text-blue-400' : ''" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+      <div x-show="openItem === 'legal-4'" x-collapse class="px-5 pb-5 sm:px-6 sm:pb-6 text-sm text-slate-300 leading-relaxed border-t border-white/[0.04] pt-4">
+        <p class="mb-2">
+          IHSG Storm mengedepankan privasi pengunjung. Analitik platform dirancang sepenuhnya <strong>cookieless</strong> (tanpa cookie pelacak), tidak menyimpan alamat IP, tidak mengumpulkan data pribadi (PII), dan otomatis mematuhi setelan <em>Do-Not-Track (DNT)</em> pada peramban Anda.
+        </p>
+        <p class="text-xs text-slate-400">
+          Bebas pelacak iklan pihak ketiga sesuai prinsip Undang-Undang Pelindungan Data Pribadi (UU PDP No. 27/2022).
+        </p>
+      </div>
+    </div>
+
+    <!-- ITEM 13 -->
     <div x-show="matchQuery({ cat: 'report', q: 'Saya menemukan nama investor yang terpotong atau menempel dengan nama emiten. Mengapa?', a: 'Format PDF KSEI unruled table columns. Jika nama emiten berakhiran Tbk sangat panjang teks dapat menempel. Parser kami memiliki regex recovery.', keywords: 'glued tokens tbk menempel terpotong parsing glitch ksei pdf regex' })"
       class="glass-panel rounded-2xl border border-white/[0.05] overflow-hidden transition-all duration-200"
       :class="openItem === 'report-1' ? 'border-blue-500/40 bg-slate-800/40' : 'hover:border-white/10'">
       <button @click="openItem = openItem === 'report-1' ? null : 'report-1'"
         class="w-full px-5 py-4 sm:px-6 sm:py-5 flex items-center justify-between gap-4 text-left">
         <div class="flex items-center gap-3">
-          <span class="w-6 h-6 rounded-md bg-emerald-500/20 text-emerald-400 text-xs font-bold flex items-center justify-center shrink-0">12</span>
+          <span class="w-6 h-6 rounded-md bg-emerald-500/20 text-emerald-400 text-xs font-bold flex items-center justify-center shrink-0">13</span>
           <span class="text-sm sm:text-base font-semibold text-slate-100">Saya menemukan nama investor menempel dengan nama emiten. Mengapa hal itu terjadi?</span>
         </div>
         <svg class="w-5 h-5 text-slate-400 transition-transform duration-200 shrink-0" :class="openItem === 'report-1' ? 'rotate-180 text-blue-400' : ''" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -421,14 +445,14 @@
       </div>
     </div>
 
-    <!-- ITEM 13 -->
+    <!-- ITEM 14 -->
     <div x-show="matchQuery({ cat: 'report', q: 'Berapa lama laporan koreksi data saya akan diproses?', a: 'Laporan kesalahan parsing ditinjau dalam 1x24 hingga 48 jam kerja. Koreksi langsung dimasukkan ke basis kode penguraian dan diperbarui pada update bulanan.', keywords: 'sla respon proses berapa lama hari kerja verifikasi tiket' })"
       class="glass-panel rounded-2xl border border-white/[0.05] overflow-hidden transition-all duration-200"
       :class="openItem === 'report-2' ? 'border-blue-500/40 bg-slate-800/40' : 'hover:border-white/10'">
       <button @click="openItem = openItem === 'report-2' ? null : 'report-2'"
         class="w-full px-5 py-4 sm:px-6 sm:py-5 flex items-center justify-between gap-4 text-left">
         <div class="flex items-center gap-3">
-          <span class="w-6 h-6 rounded-md bg-emerald-500/20 text-emerald-400 text-xs font-bold flex items-center justify-center shrink-0">13</span>
+          <span class="w-6 h-6 rounded-md bg-emerald-500/20 text-emerald-400 text-xs font-bold flex items-center justify-center shrink-0">14</span>
           <span class="text-sm sm:text-base font-semibold text-slate-100">Berapa lama laporan koreksi data saya akan diproses?</span>
         </div>
         <svg class="w-5 h-5 text-slate-400 transition-transform duration-200 shrink-0" :class="openItem === 'report-2' ? 'rotate-180 text-blue-400' : ''" fill="none" viewBox="0 0 24 24" stroke="currentColor">
