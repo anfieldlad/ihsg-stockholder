@@ -3,6 +3,15 @@ import { COPY } from './copy.js';
 import { toTitleCase, fmtNum, fmtShares, fmtPrice, fmtRp, fmtPct, fmtChangePct } from './utils.js';
 import { canonicalInvestorKey } from './normalize.js';
 import { renderWhaleChart } from './charts.js';
+import {
+    initAnalytics,
+    trackPageview,
+    trackSearch,
+    trackOpenStock,
+    trackOpenInvestor,
+    trackLockedClick,
+    trackFeedbackOpen
+} from './analytics.js';
 
 export const storeConfig = {
     // Copy reference
@@ -109,6 +118,10 @@ export const storeConfig = {
 
         // Keyboard navigation setup
         this.setupKeyboardListeners();
+
+        // Initialize cookieless analytics
+        initAnalytics();
+        trackPageview(this.currentTab || 'stocks');
 
         // Load Data
         try {
@@ -272,6 +285,7 @@ export const storeConfig = {
             this.cur = null;
             this.detailStack = [];
         }
+        trackPageview(tab);
         window.scrollTo({ top: 0, behavior: 'smooth' });
     },
 
@@ -381,6 +395,8 @@ export const storeConfig = {
         const s = this.stockMap[code];
         if (!s) return;
 
+        trackOpenStock(code);
+
         if (isDrilldown && this.cur) {
             this.detailStack.push({ ...this.cur });
         } else if (!isDrilldown) {
@@ -406,6 +422,9 @@ export const storeConfig = {
     openInvestor(name, isDrilldown = false) {
         const inv = this.investorMap[name];
         if (!inv) return;
+
+        const invType = inv ? this.getTypeName(inv.type || (inv.holdings && inv.holdings[0] && inv.holdings[0].investor_type) || '') : 'Lainnya';
+        trackOpenInvestor(invType);
 
         if (isDrilldown && this.cur) {
             this.detailStack.push({ ...this.cur });
@@ -656,6 +675,9 @@ export const storeConfig = {
     },
 
     selectSearchResult(item, kind) {
+        if (this.searchQuery) {
+            trackSearch(this.searchQuery, (this.searchResults.stocks.length + this.searchResults.investors.length));
+        }
         this.closeSearch();
         if (kind === 'stock') {
             this.openStock(item.code);
@@ -664,10 +686,23 @@ export const storeConfig = {
         }
     },
 
+    handleSearchSubmit() {
+        const q = this.searchQuery.trim();
+        if (!q) return;
+        const res = this.searchResults;
+        trackSearch(q, (res.stocks.length + res.investors.length));
+        if (res.stocks.length > 0) {
+            this.selectSearchResult(res.stocks[0], 'stock');
+        } else if (res.investors.length > 0) {
+            this.selectSearchResult(res.investors[0], 'investor');
+        }
+    },
+
     // Pro Gates & Freemium v2
     openPro(why = 'general') {
         this.proWhy = why;
         this.proOpen = true;
+        trackLockedClick(why);
         if (window.location.hash !== `#/pro/${why}`) {
             history.pushState(null, '', `#/pro/${why}`);
         }
@@ -699,6 +734,7 @@ export const storeConfig = {
         if (!this.feedbackAvailable) {
             return;
         }
+        trackFeedbackOpen(context.category || 'general');
         this.feedbackSuccess = false;
         this.feedbackError = null;
         this.feedbackTicketId = null;

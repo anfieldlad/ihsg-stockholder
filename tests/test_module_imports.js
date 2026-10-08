@@ -31,6 +31,21 @@ const requiredModules = [
   {
     path: `${srcPrefix}normalize.js`,
     exports: ['normalizeInvestorName', 'canonicalInvestorKey', 'isSameInvestor', 'canonical_investor_key']
+  },
+  {
+    path: 'src/analytics.js',
+    exports: [
+      'ANALYTICS_CONFIG',
+      'initAnalytics',
+      'trackEvent',
+      'trackPageview',
+      'trackSearch',
+      'trackOpenStock',
+      'trackOpenInvestor',
+      'trackLockedClick',
+      'trackFeedbackOpen',
+      'isDntEnabled'
+    ]
   }
 ];
 

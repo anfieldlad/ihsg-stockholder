@@ -736,7 +736,7 @@
 
     <!-- One-Line Footer -->
     <footer class="shell foot">
-      <span>© 2026 IHSG Storm · by BAD.AI · Bukan saran investasi · <a href="#/faq" @click="setTab('faq')">Pusat Bantuan & FAQ</a><template x-if="feedbackAvailable"> · <a href="javascript:void(0)" @click="openFeedbackModal()">Laporkan Data</a></template></span>
+      <span>© 2026 IHSG Storm · by BAD.AI · Bebas pelacak &amp; tanpa cookie iklan · Bukan saran investasi · <a href="#/faq" @click="setTab('faq')">Pusat Bantuan &amp; FAQ</a><template x-if="feedbackAvailable"> · <a href="javascript:void(0)" @click="openFeedbackModal()">Laporkan Data</a></template></span>
     </footer>
   </div>
 
@@ -929,7 +929,7 @@
   <div class="pal" id="pal" :class="{ on: searchOpen }" role="dialog" aria-modal="true" aria-label="Cari">
     <div class="pal-box">
       <div class="pal-h">
-        <input id="searchPaletteInput" type="search" autocomplete="off" placeholder="Ketik kode saham (misal: BBCA) atau nama investor" x-model="searchQuery" aria-label="Cari saham atau investor">
+        <input id="searchPaletteInput" type="search" autocomplete="off" placeholder="Ketik kode saham (misal: BBCA) atau nama investor" x-model="searchQuery" @keydown.enter="handleSearchSubmit()" aria-label="Cari saham atau investor">
         <button class="btn sec" type="button" @click="closeSearch()">Batal</button>
       </div>
 

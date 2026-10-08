@@ -9,8 +9,7 @@ except ImportError:
 try:
     import playwright
 except ImportError:
-    if pytest is not None:
-        pytestmark = pytest.mark.skip(reason="playwright not installed in standard test environment")
+    playwright = None
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
@@ -26,3 +25,7 @@ def test_csp_header_in_vercel_json():
                 csp_header = h.get("value")
     assert csp_header is not None
     assert "'unsafe-inline'" in csp_header
+    assert "https://cloud.umami.is" in csp_header
+    assert "https://gateway.umami.is" in csp_header
+    assert "https://api-gateway.umami.dev" in csp_header
+    assert "https://static.cloudflareinsights.com" in csp_header
