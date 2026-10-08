@@ -148,7 +148,7 @@
     </button>
 
     <div class="rail-bottom">
-      <button class="theme-btn" type="button" @click="toggleTheme()" :title="theme === 'a' ? 'Beralih ke Mode Malam' : 'Beralih ke Mode Terang'">
+      <button class="theme-btn" type="button" @click="toggleTheme()" :title="theme === 'a' ? 'Beralih ke Mode Malam' : 'Beralih ke Mode Terang'" :aria-label="theme === 'a' ? 'Beralih ke mode malam' : 'Beralih ke mode terang'">
         <svg class="i s" x-show="theme === 'a'"><use href="#i-moon"/></svg>
         <svg class="i s" x-show="theme === 'b'"><use href="#i-sun"/></svg>
       </button>
@@ -167,12 +167,12 @@
           <kbd>Ctrl K</kbd>
         </button>
 
-        <button class="theme-btn" type="button" @click="toggleTheme()" :title="theme === 'a' ? 'Mode Malam' : 'Mode Terang'">
+        <button class="theme-btn" type="button" @click="toggleTheme()" :title="theme === 'a' ? 'Mode Malam' : 'Mode Terang'" :aria-label="theme === 'a' ? 'Beralih ke mode malam' : 'Beralih ke mode terang'">
           <svg class="i s" x-show="theme === 'a'"><use href="#i-moon"/></svg>
           <svg class="i s" x-show="theme === 'b'"><use href="#i-sun"/></svg>
         </button>
 
-        <button class="pro" type="button" @click="openPro('top')" x-text="C.nav.pro_pill">PRO</button>
+        <button class="pro" type="button" @click="openPro('top')" aria-label="Fitur PRO" x-text="C.nav.pro_pill">PRO</button>
       </div>
     </header>
 
@@ -206,27 +206,29 @@
 
           <!-- VIEW: STOCKS -->
           <section class="view" :class="{ on: currentTab === 'stocks' }" id="v-stocks" aria-labelledby="h-stocks">
-            <h1 id="h-stocks" x-text="C.stocks.title">Saham</h1>
-            <p class="sub" id="sub-stocks" x-text="`${fmtNum(totalStocks)} emiten dengan pemegang saham ≥1%`"></p>
+            <div class="view-head">
+              <h1 id="h-stocks" x-text="C.stocks.title">Saham</h1>
+              <p class="sub" id="sub-stocks" x-text="`${fmtNum(totalStocks)} emiten dengan pemegang saham ≥1%`"></p>
 
-            <div class="tools">
-              <div class="chips" role="group" id="chips-stocks">
-                <button class="chip" type="button" @click="setStockFilter('all')" :aria-pressed="stockFilter === 'all'">Semua</button>
-                <button class="chip" type="button" @click="setStockFilter('foreign')" :aria-pressed="stockFilter === 'foreign'">Dominasi Asing</button>
-                <button class="chip" type="button" @click="setStockFilter('many')" :aria-pressed="stockFilter === 'many'">Pemegang Terbanyak</button>
-                <button class="chip" type="button" @click="setStockFilter('scrip')" :aria-pressed="stockFilter === 'scrip'">Warkat / Scrip</button>
-                <button class="chip" type="button" @click="openPro('screener')">
-                  <svg class="i s"><use href="#i-lock"/></svg>
-                  <span>Screener</span>
-                </button>
+              <div class="tools">
+                <div class="chips" role="group" id="chips-stocks">
+                  <button class="chip" type="button" @click="setStockFilter('all')" :aria-pressed="stockFilter === 'all'">Semua</button>
+                  <button class="chip" type="button" @click="setStockFilter('foreign')" :aria-pressed="stockFilter === 'foreign'">Dominasi Asing</button>
+                  <button class="chip" type="button" @click="setStockFilter('many')" :aria-pressed="stockFilter === 'many'">Pemegang Terbanyak</button>
+                  <button class="chip" type="button" @click="setStockFilter('scrip')" :aria-pressed="stockFilter === 'scrip'">Warkat / Scrip</button>
+                  <button class="chip" type="button" @click="openPro('screener')" aria-label="Screener saham (Fitur PRO)">
+                    <svg class="i s"><use href="#i-lock"/></svg>
+                    <span>Screener</span>
+                  </button>
+                </div>
+
+                <select class="sortsel" :value="stockSortKey" @change="setStockSort($event.target.value)" aria-label="Urutkan Saham">
+                  <option value="code">Urutkan: Kode (A-Z)</option>
+                  <option value="top">Urutkan: Porsi Terbesar</option>
+                  <option value="holders">Urutkan: Jumlah Pemegang</option>
+                  <option value="local">Urutkan: Porsi Domestik</option>
+                </select>
               </div>
-
-              <select class="sortsel" :value="stockSortKey" @change="setStockSort($event.target.value)" aria-label="Urutkan Saham">
-                <option value="code">Urutkan: Kode (A-Z)</option>
-                <option value="top">Urutkan: Porsi Terbesar</option>
-                <option value="holders">Urutkan: Jumlah Pemegang</option>
-                <option value="local">Urutkan: Porsi Domestik</option>
-              </select>
             </div>
 
             <!-- Stock List -->
@@ -284,24 +286,30 @@
                   </span>
 
                   <!-- Price -->
-                  <span class="px num" x-text="priceMap[s.code] && priceMap[s.code].last_price != null ? fmtPrice(priceMap[s.code].last_price) : '-'"></span>
+                  <span class="px num">
+                    <span x-show="priceLoadingBatch && !priceMap[s.code]" class="skel-px sk" aria-hidden="true"></span>
+                    <span x-show="priceMap[s.code] && priceMap[s.code].last_price != null" x-text="fmtPrice(priceMap[s.code]?.last_price)"></span>
+                    <span x-show="(!priceLoadingBatch && !priceMap[s.code]) || (priceMap[s.code] && priceMap[s.code].last_price == null)" class="na-badge">n/a</span>
+                  </span>
 
                   <!-- Change Chip -->
                   <span class="ch">
-                    <span class="chg" :class="fmtChangePct(priceMap[s.code] ? priceMap[s.code].change_pct : null).cls"
-                          x-text="fmtChangePct(priceMap[s.code] ? priceMap[s.code].change_pct : null).text">
+                    <span x-show="fmtChangePct(priceMap[s.code]?.change_pct)"
+                          class="chg"
+                          :class="fmtChangePct(priceMap[s.code]?.change_pct)?.cls"
+                          x-text="fmtChangePct(priceMap[s.code]?.change_pct)?.text">
                     </span>
                   </span>
 
                   <!-- Mobile 3rd Line Info -->
                   <span class="m3">
-                    <span x-text="`Pemegang terbesar ${fmtPct(s.holders[0]?.percentage)} · ${toTitleCase(s.holders[0]?.investor)}`"></span>
+                    <span x-text="`Pemegang terbesar ${fmtPct(s.topHolder ? s.topHolder.percentage : s.holders[0]?.percentage)} · ${toTitleCase(s.topHolder ? s.topHolder.investor : s.holders[0]?.investor)}`"></span>
                   </span>
 
                   <!-- Desktop Container Query Cells -->
-                  <span class="cell r v num" x-text="fmtPct(s.holders[0]?.percentage)"></span>
+                  <span class="cell r v num" x-text="fmtPct(s.topHolder ? s.topHolder.percentage : s.holders[0]?.percentage)"></span>
                   <span class="cell r v num opt1" x-text="s.holders.length"></span>
-                  <span class="cell nm opt2" x-text="toTitleCase(s.holders[0]?.investor)"></span>
+                  <span class="cell nm opt2" x-text="toTitleCase(s.topHolder ? s.topHolder.investor : s.holders[0]?.investor)"></span>
                   <span class="cell r v num opt3" x-text="fmtPct(s.holders.filter(h => h.local_foreign === 'L').reduce((sum, h) => sum + h.percentage, 0))"></span>
                 </button>
               </template>
@@ -316,16 +324,18 @@
 
           <!-- VIEW: INVESTORS -->
           <section class="view" :class="{ on: currentTab === 'investors' }" id="v-investors" aria-labelledby="h-inv">
-            <h1 id="h-inv" x-text="C.investors.title">Investor</h1>
-            <p class="sub" id="sub-inv" x-text="C.investors.subtitle"></p>
+            <div class="view-head">
+              <h1 id="h-inv" x-text="C.investors.title">Investor</h1>
+              <p class="sub" id="sub-inv" x-text="C.investors.subtitle"></p>
 
-            <div class="tools">
-              <div class="chips" role="group" id="chips-inv">
-                <button class="chip" type="button" @click="setInvFilter('all')" :aria-pressed="invFilter === 'all'">Semua</button>
-                <button class="chip" type="button" @click="setInvFilter('ID')" :aria-pressed="invFilter === 'ID'">Individu</button>
-                <button class="chip" type="button" @click="setInvFilter('CP')" :aria-pressed="invFilter === 'CP'">Korporasi</button>
-                <button class="chip" type="button" @click="setInvFilter('F')" :aria-pressed="invFilter === 'F'">Asing</button>
-                <button class="chip" type="button" @click="setInvFilter('scrip')" :aria-pressed="invFilter === 'scrip'">Warkat</button>
+              <div class="tools">
+                <div class="chips" role="group" id="chips-inv">
+                  <button class="chip" type="button" @click="setInvFilter('all')" :aria-pressed="invFilter === 'all'">Semua</button>
+                  <button class="chip" type="button" @click="setInvFilter('ID')" :aria-pressed="invFilter === 'ID'">Individu</button>
+                  <button class="chip" type="button" @click="setInvFilter('CP')" :aria-pressed="invFilter === 'CP'">Korporasi</button>
+                  <button class="chip" type="button" @click="setInvFilter('F')" :aria-pressed="invFilter === 'F'">Asing</button>
+                  <button class="chip" type="button" @click="setInvFilter('scrip')" :aria-pressed="invFilter === 'scrip'">Warkat</button>
+                </div>
               </div>
             </div>
 
@@ -549,8 +559,8 @@
           <!-- Empty Pane Placeholder -->
           <div class="pane-empty" x-show="!cur">
             <svg class="i"><use href="#i-cursor"/></svg>
-            <p>Pilih saham atau investor untuk melihat detail.</p>
-            <p>↑ ↓ navigasi · Enter buka · Ctrl K cari</p>
+            <p>Pilih emiten untuk melihat detail</p>
+            <p style="font-size:12px;margin-top:6px;color:var(--ink3)">↑ ↓ navigasi · Enter buka · Ctrl K cari</p>
           </div>
 
           <!-- Stock Detail Pane -->
@@ -571,8 +581,10 @@
                 <div class="d-iss" x-text="detailStock.issuerFormatted"></div>
 
                 <div class="pline">
-                  <span class="pr num" x-text="detailStock.price != null ? fmtRp(detailStock.price) : '-'"></span>
-                  <span class="chg" :class="fmtChangePct(detailStock.changePct).cls" x-text="fmtChangePct(detailStock.changePct).text"></span>
+                  <span class="pr num" x-text="detailStock.price != null ? fmtRp(detailStock.price) : 'n/a'"></span>
+                  <template x-if="fmtChangePct(detailStock.changePct)">
+                    <span class="chg" :class="fmtChangePct(detailStock.changePct).cls" x-text="fmtChangePct(detailStock.changePct).text"></span>
+                  </template>
                 </div>
                 <p class="note" style="margin-top:4px">Harga bursa tertunda ±15 mnt</p>
 
@@ -768,8 +780,10 @@
           <div class="d-iss" x-text="detailStock.issuerFormatted"></div>
 
           <div class="pline">
-            <span class="pr num" x-text="detailStock.price != null ? fmtRp(detailStock.price) : '-'"></span>
-            <span class="chg" :class="fmtChangePct(detailStock.changePct).cls" x-text="fmtChangePct(detailStock.changePct).text"></span>
+            <span class="pr num" x-text="detailStock.price != null ? fmtRp(detailStock.price) : 'n/a'"></span>
+            <template x-if="fmtChangePct(detailStock.changePct)">
+              <span class="chg" :class="fmtChangePct(detailStock.changePct).cls" x-text="fmtChangePct(detailStock.changePct).text"></span>
+            </template>
           </div>
           <p class="note" style="margin-top:4px">Harga bursa tertunda ±15 mnt</p>
 
