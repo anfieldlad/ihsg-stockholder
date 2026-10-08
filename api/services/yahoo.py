@@ -26,8 +26,8 @@ def fetch_single_price(code: str) -> Dict[str, Any]:
             change_pct = round((last_price - prev_close) / prev_close * 100, 2)
             change_abs = round(last_price - prev_close, 2)
         else:
-            change_pct = 0
-            change_abs = 0
+            change_pct = 0 if last_price is not None else None
+            change_abs = 0 if last_price is not None else None
 
         return {
             "code": code,
@@ -46,8 +46,8 @@ def fetch_single_price(code: str) -> Dict[str, Any]:
             "code": code,
             "last_price": None,
             "previous_close": None,
-            "change_pct": 0,
-            "change_abs": 0,
+            "change_pct": None,
+            "change_abs": None,
             "market_cap": None,
             "volume": None,
             "currency": "IDR",
@@ -74,7 +74,7 @@ def fetch_batch_prices(codes: List[str]) -> Dict[str, Dict[str, Any]]:
                 if ticker is None:
                     results[code] = {
                         "code": code, "last_price": None, "previous_close": None,
-                        "change_pct": 0, "change_abs": 0, "market_cap": None,
+                        "change_pct": None, "change_abs": None, "market_cap": None,
                         "volume": None, "currency": "IDR", "error": "not_found",
                         "_fetched_at": time.time(),
                     }
@@ -91,8 +91,8 @@ def fetch_batch_prices(codes: List[str]) -> Dict[str, Dict[str, Any]]:
                     change_pct = round((last_price - prev_close) / prev_close * 100, 2)
                     change_abs = round(last_price - prev_close, 2)
                 else:
-                    change_pct = 0
-                    change_abs = 0
+                    change_pct = 0 if last_price is not None else None
+                    change_abs = 0 if last_price is not None else None
 
                 results[code] = {
                     "code": code,
@@ -109,7 +109,7 @@ def fetch_batch_prices(codes: List[str]) -> Dict[str, Dict[str, Any]]:
             except Exception as e:
                 results[code] = {
                     "code": code, "last_price": None, "previous_close": None,
-                    "change_pct": 0, "change_abs": 0, "market_cap": None,
+                    "change_pct": None, "change_abs": None, "market_cap": None,
                     "volume": None, "currency": "IDR", "error": str(e),
                     "_fetched_at": time.time(),
                 }
@@ -118,7 +118,7 @@ def fetch_batch_prices(codes: List[str]) -> Dict[str, Dict[str, Any]]:
             if code not in results:
                 results[code] = {
                     "code": code, "last_price": None, "previous_close": None,
-                    "change_pct": 0, "change_abs": 0, "market_cap": None,
+                    "change_pct": None, "change_abs": None, "market_cap": None,
                     "volume": None, "currency": "IDR", "error": f"batch_error: {e}",
                     "_fetched_at": time.time(),
                 }

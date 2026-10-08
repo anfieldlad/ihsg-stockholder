@@ -30,13 +30,17 @@ export function fmtPct(p) {
 }
 
 export function fmtChangePct(pct) {
-    if (pct == null || pct === 0 || isNaN(pct)) {
+    if (pct == null || isNaN(pct)) {
+        return null;
+    }
+    const num = Number(pct);
+    if (num === 0) {
         return { text: '0,00%', cls: 'flat' };
     }
-    const sign = pct > 0 ? '+' : '';
-    const cls = pct > 0 ? 'up' : 'down';
+    const sign = num > 0 ? '+' : '';
+    const cls = num > 0 ? 'up' : 'down';
     return {
-        text: `${sign}${Number(pct).toFixed(2).replace('.', ',')}%`,
+        text: `${sign}${num.toFixed(2).replace('.', ',')}%`,
         cls
     };
 }
