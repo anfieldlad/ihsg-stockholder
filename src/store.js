@@ -17,6 +17,7 @@ export const storeConfig = {
     investorMap: {},
     investorList: [],
     priceMap: {},
+    priceLoadingBatch: false,
     loading: true,
     error: null,
     sourceDate: '',
@@ -189,6 +190,20 @@ export const storeConfig = {
             });
         }
 
+        // Sort holders of each stock descending by percentage (guarantees holders[0] is max holder)
+        for (const s of Object.values(sMap)) {
+            s.holders.sort((a, b) => (b.percentage || 0) - (a.percentage || 0));
+            s.topHolder = s.holders[0] || null;
+            s.maxPercentage = s.topHolder ? (s.topHolder.percentage || 0) : 0;
+        }
+
+        // Sort holdings of each investor descending by percentage
+        for (const inv of Object.values(iMap)) {
+            inv.holdings.sort((a, b) => (b.percentage || b.p || 0) - (a.percentage || a.p || 0));
+            inv.maxHolding = inv.holdings[0] || null;
+            inv.maxPercentage = inv.maxHolding ? (inv.maxHolding.percentage || inv.maxHolding.p || 0) : 0;
+        }
+
         this.stockMap = sMap;
         this.investorMap = iMap;
 
@@ -197,8 +212,8 @@ export const storeConfig = {
             if (b.holdings.length !== a.holdings.length) {
                 return b.holdings.length - a.holdings.length;
             }
-            const maxA = Math.max(...a.holdings.map(h => h.p || h.percentage));
-            const maxB = Math.max(...b.holdings.map(h => h.p || h.percentage));
+            const maxA = a.maxPercentage || Math.max(...a.holdings.map(h => h.p || h.percentage));
+            const maxB = b.maxPercentage || Math.max(...b.holdings.map(h => h.p || h.percentage));
             return maxB - maxA;
         });
     },
@@ -276,14 +291,16 @@ export const storeConfig = {
 
         // Sorting
         stocks.sort((a, b) => {
-            const topA = a.holders.reduce((m, h) => h.percentage > m.percentage ? h : m, a.holders[0]);
-            const topB = b.holders.reduce((m, h) => h.percentage > m.percentage ? h : m, b.holders[0]);
+            const topA = a.topHolder || a.holders[0];
+            const topB = b.topHolder || b.holders[0];
 
             if (this.stockSortKey === 'code') {
                 return this.stockSortAsc ? a.code.localeCompare(b.code) : b.code.localeCompare(a.code);
             }
             if (this.stockSortKey === 'top') {
-                return this.stockSortAsc ? topA.percentage - topB.percentage : topB.percentage - topA.percentage;
+                const pctA = topA ? topA.percentage : 0;
+                const pctB = topB ? topB.percentage : 0;
+                return this.stockSortAsc ? pctA - pctB : pctB - pctA;
             }
             if (this.stockSortKey === 'holders') {
                 return this.stockSortAsc ? a.holders.length - b.holders.length : b.holders.length - a.holders.length;
@@ -529,21 +546,45 @@ export const storeConfig = {
         if (this._priceDebounceTimer) clearTimeout(this._priceDebounceTimer);
         this._priceDebounceTimer = setTimeout(async () => {
             const codes = this.visibleStocks.map(s => s.code);
-            const needed = codes.filter(c => !this.priceMap[c] || this.priceMap[c].last_price == null);
+            const needed = codes.filter(c => !this.priceMap[c] || (this.priceMap[c].last_price === undefined && !this.priceMap[c].failed));
             if (needed.length > 0) {
-                // Batch up to 50
                 const batch = needed.slice(0, 50);
-                const result = await fetchPricesBatch(batch);
-                this.priceMap = { ...this.priceMap, ...result };
+                this.priceLoadingBatch = true;
+                try {
+                    const result = await fetchPricesBatch(batch);
+                    const updated = { ...this.priceMap };
+                    for (const code of batch) {
+                        if (result && result[code] && result[code].last_price != null) {
+                            updated[code] = result[code];
+                        } else {
+                            updated[code] = { code, last_price: null, change_pct: null, failed: true };
+                        }
+                    }
+                    this.priceMap = updated;
+                } catch (e) {
+                    const updated = { ...this.priceMap };
+                    for (const code of batch) {
+                        updated[code] = { code, last_price: null, change_pct: null, failed: true };
+                    }
+                    this.priceMap = updated;
+                } finally {
+                    this.priceLoadingBatch = false;
+                }
             }
         }, 150);
     },
 
     async fetchSingleModalPrice(code) {
         if (!this.priceMap[code] || this.priceMap[code].last_price == null) {
-            const p = await fetchSinglePrice(code);
-            if (p) {
-                this.priceMap = { ...this.priceMap, [code]: p };
+            try {
+                const p = await fetchSinglePrice(code);
+                if (p && p.last_price != null) {
+                    this.priceMap = { ...this.priceMap, [code]: p };
+                } else {
+                    this.priceMap = { ...this.priceMap, [code]: { code, last_price: null, change_pct: null, failed: true } };
+                }
+            } catch (e) {
+                this.priceMap = { ...this.priceMap, [code]: { code, last_price: null, change_pct: null, failed: true } };
             }
         }
     },

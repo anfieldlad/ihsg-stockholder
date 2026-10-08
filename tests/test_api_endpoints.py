@@ -67,3 +67,15 @@ def test_node_module_imports():
     )
     assert res.returncode == 0, f"Node module imports failed:\n{res.stdout}\n{res.stderr}"
 
+
+def test_node_max_holders_and_aadi():
+    import subprocess
+    res = subprocess.run(
+        ["node", "tests/test_max_holders.js"],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert res.returncode == 0, f"Node max holders verification failed:\n{res.stdout}\n{res.stderr}"
+
+
