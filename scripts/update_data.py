@@ -1,56 +1,65 @@
 """
 IHSG Storm - Update Shareholder Data
 ======================================
-Single script to check, download, and parse the latest shareholder data from IDX/KSEI.
+Single script to check, download, and parse the latest shareholder data (>1%) from IDX/KSEI.
+
+Since mid-2026 IDX no longer posts this file as a PDF announcement. It is published as an
+Excel (.xlsx) file on the "Data Kepemilikan Saham" page:
+    https://www.idx.co.id/id/perusahaan-tercatat/data-kepemilikan-saham/
+as the row "Pemegang Saham di Atas 1% per <date>" (monthly, usually posted on the first
+business days after month end).
 
 Flow:
   1. Read current shareholder_data.json to check what month the data is from
   2. If data is already from last month (relative to today), skip - already latest
-  3. If not latest, use Playwright (headless browser) to bypass Cloudflare and:
-     a. Fetch the IDX announcement API for latest shareholder PDF
-     b. Download the PDF attachment
-  4. Rename old shareholder_data.pdf to shareholder_data_{MONTH}{YEAR}.pdf as archive
-  5. Save new PDF as shareholder_data.pdf
-  6. Parse the PDF into shareholder_data.json using parse_pdf logic
+  3. Otherwise use Playwright to open the IDX page, find the latest "Pemegang Saham di Atas 1%"
+     row and download its .xlsx
+  4. Save it as scripts/shareholder_data_{MON}{YEAR}.xlsx (archive, one per month)
+  5. Parse the xlsx into shareholder_data.json
+
+IDX sits behind Cloudflare, which sometimes shows a "Just a moment..." challenge to headless
+browsers. This script does not try to defeat it. If that happens, download the 1% file manually
+from the page above and pass it in:
+
+    python scripts/update_data.py --file ~/Downloads/peng-2026-09-00024-satu-persen.xlsx
 
 Usage:
-    python scripts/update_data.py           # Check & update if needed
-    python scripts/update_data.py --force   # Force download & parse even if data is current
+    python scripts/update_data.py                 # Check & update if needed
+    python scripts/update_data.py --force         # Force download & parse even if data is current
+    python scripts/update_data.py --file X.xlsx   # Skip download, parse a local xlsx
 
 Requirements:
-    pip install pdfplumber playwright
+    pip install openpyxl playwright
     python -m playwright install chromium
 """
 
+import argparse
+import base64
 import json
 import os
-import sys
 import re
-import argparse
-from datetime import datetime, date
+import shutil
+import sys
+from datetime import date, datetime
 
 # ── Paths ──
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_DIR = os.path.dirname(SCRIPT_DIR)
 JSON_PATH = os.path.join(PROJECT_DIR, "shareholder_data.json")
-PDF_PATH = os.path.join(SCRIPT_DIR, "shareholder_data.pdf")
 
-# ── IDX API ──
-API_URL = "https://www.idx.co.id/primary/NewsAnnouncement/GetAllAnnouncement"
-SEARCH_KEYWORDS = "Pemegang Saham di atas 1% (KSEI) [Semua Emiten Saham ]"
+# ── IDX page ──
+PAGE_URL = "https://www.idx.co.id/id/perusahaan-tercatat/data-kepemilikan-saham/"
+ROW_PREFIX = "Pemegang Saham di Atas 1%"
 
 # Month mappings
 MONTH_EN_TO_NUM = {
     "Jan": 1, "Feb": 2, "Mar": 3, "Apr": 4, "May": 5, "Jun": 6,
     "Jul": 7, "Aug": 8, "Sep": 9, "Oct": 10, "Nov": 11, "Dec": 12,
 }
+MONTH_NUM_TO_EN = {v: k for k, v in MONTH_EN_TO_NUM.items()}
 MONTH_NUM_TO_ID = {
     1: "Januari", 2: "Februari", 3: "Maret", 4: "April", 5: "Mei", 6: "Juni",
     7: "Juli", 8: "Agustus", 9: "September", 10: "Oktober", 11: "November", 12: "Desember",
-}
-MONTH_NUM_TO_SHORT = {
-    1: "JAN", 2: "FEB", 3: "MAR", 4: "APR", 5: "MAY", 6: "JUN",
-    7: "JUL", 8: "AUG", 9: "SEP", 10: "OCT", 11: "NOV", 12: "DEC",
 }
 
 
@@ -114,11 +123,14 @@ def is_data_current(data_month):
 
 
 # ======================================================================
-# STEP 2: Download PDF from IDX using Playwright
+# STEP 2: Download xlsx from IDX using Playwright
 # ======================================================================
 
 def fetch_and_download():
-    """Use Playwright to bypass Cloudflare, fetch API, and download PDF."""
+    """Open the IDX page, locate the latest 1% row and download its xlsx.
+
+    Returns the xlsx bytes. Exits with a hint to use --file if IDX blocks the browser.
+    """
     try:
         from playwright.sync_api import sync_playwright
     except ImportError:
@@ -137,281 +149,124 @@ def fetch_and_download():
         )
         page = context.new_page()
 
-        # First visit IDX to get Cloudflare cookies
-        print("[*] Visiting IDX to establish session...")
-        page.goto("https://www.idx.co.id/id/berita/pengumuman/", wait_until="domcontentloaded", timeout=30000)
-        page.wait_for_timeout(2000)  # Let Cloudflare resolve
+        rows = []
+        for attempt in range(1, 4):
+            print(f"[*] Opening IDX data page (attempt {attempt}/3)...")
+            page.goto(PAGE_URL, wait_until="domcontentloaded", timeout=30000)
+            try:
+                page.wait_for_selector("table tbody tr", timeout=20000)
+            except Exception:
+                print(f"    No table (page title: {page.title()!r})")
+                continue
+            rows = page.evaluate(
+                "[...document.querySelectorAll('table tbody tr')].map(tr => ({"
+                "text: tr.innerText.replace(/\\s+/g, ' ').trim(),"
+                "href: (tr.querySelector('a') || {}).href || null}))"
+            )
+            if rows:
+                break
 
-        # Now call the API
-        print(f"[*] Fetching announcement API...")
-        api_url = (
-            f"{API_URL}?"
-            f"keywords={SEARCH_KEYWORDS.replace(' ', '+').replace('%', '%25').replace('[', '%5B').replace(']', '%5D')}"
-            f"&pageNumber=1&pageSize=5&lang=id"
-        )
-
-        response = page.goto(api_url, wait_until="domcontentloaded", timeout=15000)
-
-        if response.status != 200:
-            print(f"[ERROR] API returned status {response.status}")
+        if not rows:
             browser.close()
+            print("[ERROR] Could not load the IDX table (probably blocked by Cloudflare).")
+            print("        Download the 'Pemegang Saham di Atas 1%' file manually from:")
+            print(f"        {PAGE_URL}")
+            print("        then run: python scripts/update_data.py --file <path-to.xlsx>")
             sys.exit(1)
 
-        body = page.inner_text("body")
-        data = json.loads(body)
-
-        items = data.get("Items", [])
-        total = data.get("ItemCount", 0)
-        print(f"[*] Found {total} announcement(s)")
-
-        if not items:
-            print("[ERROR] No announcements found")
+        # Rows are listed newest first; take the first 1% row.
+        target = next((r for r in rows if ROW_PREFIX in r["text"] and r["href"]), None)
+        if not target:
             browser.close()
+            print(f"[ERROR] No row starting with '{ROW_PREFIX}' on the first page of the table")
             sys.exit(1)
 
-        # Find attachment in latest item
-        item = items[0]
-        title = item.get("Title", "Unknown")
-        pub_date = item.get("PublishDate", "")
-        print(f"[*] Latest: {title}")
-        print(f"    Published: {pub_date}")
+        print(f"[*] Latest: {target['text']}")
+        print(f"[*] URL: {target['href']}")
 
-        att_url, att_name = _find_attachment(item)
-        if not att_url:
-            print("[ERROR] No attachment found in announcement")
-            browser.close()
-            sys.exit(1)
-
-        print(f"[*] Attachment: {att_name}")
-        print(f"[*] URL: {att_url}")
-
-        # Download the PDF via browser-native fetch to bypass CF & navigation issues
-        print("[>] Downloading PDF...")
+        print("[>] Downloading xlsx...")
         try:
-            js = f"""
-            async () => {{
-                const resp = await fetch("{att_url}");
-                if (!resp.ok) throw new Error("Status: " + resp.status);
-                const buffer = await resp.arrayBuffer();
-                const bytes = new Uint8Array(buffer);
-                let binary = '';
-                for (let i = 0; i < bytes.byteLength; i++) {{
-                    binary += String.fromCharCode(bytes[i]);
-                }}
-                return window.btoa(binary);
-            }}
-            """
-            pdf_base64 = page.evaluate(js)
-            import base64
-            pdf_bytes = base64.b64decode(pdf_base64)
-            
+            b64 = page.evaluate(
+                """async (u) => {
+                    const r = await fetch(u);
+                    if (!r.ok) throw new Error('Status: ' + r.status);
+                    const a = new Uint8Array(await r.arrayBuffer());
+                    let s = '';
+                    for (let i = 0; i < a.length; i += 0x8000)
+                        s += String.fromCharCode.apply(null, a.subarray(i, i + 0x8000));
+                    return btoa(s);
+                }""",
+                target["href"],
+            )
+            data = base64.b64decode(b64)
         except Exception as e:
             print(f"[ERROR] Download failed: {e}")
-            browser.close()
             sys.exit(1)
-        browser.close()
+        finally:
+            browser.close()
 
-        print(f"[OK] Downloaded {len(pdf_bytes):,} bytes ({len(pdf_bytes) / 1024 / 1024:.1f} MB)")
-        return pdf_bytes
-
-
-def _find_attachment(item):
-    """Extract the lampiran PDF URL from an announcement item."""
-    attachments = item.get("Attachments", [])
-
-    if not attachments and item.get("PdfPath"):
-        try:
-            attachments = json.loads(item["PdfPath"])
-        except (json.JSONDecodeError, TypeError):
-            pass
-
-    if not attachments:
-        return None, None
-
-    # Prefer IsAttachment=1 (lampiran)
-    for att in attachments:
-        if att.get("IsAttachment") == 1:
-            return att.get("FullSavePath"), att.get("OriginalFilename", "attachment.pdf")
-
-    # Fallback: look for "lamp" in filename
-    for att in attachments:
-        filename = att.get("OriginalFilename", "")
-        if "lamp" in filename.lower():
-            return att.get("FullSavePath"), filename
-
-    # Last resort
-    att = attachments[0]
-    return att.get("FullSavePath"), att.get("OriginalFilename", "attachment.pdf")
+        print(f"[OK] Downloaded {len(data):,} bytes ({len(data) / 1024:.0f} KB)")
+        return data
 
 
 # ======================================================================
-# STEP 3: Archive old PDF & save new one
+# STEP 3: Parse xlsx into JSON
 # ======================================================================
 
-def archive_and_save(pdf_bytes):
-    """Rename old shareholder_data.pdf to include month label, save new one."""
-    # Archive old PDF if it exists
-    if os.path.exists(PDF_PATH):
-        old_month = get_current_data_month()
-        if old_month:
-            year, month = old_month
-            short = MONTH_NUM_TO_SHORT.get(month, f"M{month}")
-            archive_name = f"shareholder_data_{short}{year}.pdf"
-        else:
-            archive_name = f"shareholder_data_old_{datetime.now().strftime('%Y%m%d')}.pdf"
-
-        archive_path = os.path.join(SCRIPT_DIR, archive_name)
-
-        # Don't overwrite existing archive
-        if os.path.exists(archive_path):
-            print(f"[*] Archive already exists: {archive_name}")
-        else:
-            os.rename(PDF_PATH, archive_path)
-            print(f"[*] Archived old PDF as: {archive_name}")
-
-    # Save new PDF
-    with open(PDF_PATH, "wb") as f:
-        f.write(pdf_bytes)
-
-    file_size = os.path.getsize(PDF_PATH)
-    print(f"[OK] Saved new shareholder_data.pdf ({file_size:,} bytes)")
-
-
-# ======================================================================
-# STEP 4: Parse PDF into JSON (inline from parse_pdf.py logic)
-# ======================================================================
-
-# Column layout (left-edge x ranges in PDF points). The IDX/KSEI PDFs render
-# as positioned text without ruled table lines, so we bucket each word into a
-# column by its x0 coordinate. The date and share code are rendered glued
-# together as a single token (e.g. "29-May-2026ALTO"), split via DATE_RE below.
-#   DATE+CODE | ISSUER | INVESTOR | CLASSIFICATION | LOCAL/FOREIGN |
-#   NATIONALITY+DOMICILE | SCRIPLESS | SCRIP | TOTAL_HOLDING | PERCENTAGE
-COLUMN_BOUNDS = [
-    ("code", 0, 90),
-    ("issuer", 90, 145),
-    ("investor", 145, 270),
-    ("investor_type", 270, 328),
-    ("local_foreign", 328, 345),
-    ("natdom", 345, 430),   # nationality + domicile (not exported)
-    ("scripless", 430, 472),  # holdings scripless (not exported)
-    ("scrip", 472, 500),      # holdings scrip (not exported)
-    ("shares", 500, 535),     # total holding shares
-    ("percentage", 535, 99999),
-]
-DATE_CODE_RE = re.compile(r'^(\d{1,2}-[A-Za-z]{3}-\d{4})(.*)$')
-
-# When an issuer name is long, the source PDF glues the start of the investor
-# name directly onto the issuer's "Tbk" suffix as a single token with no space
-# (e.g. "TbkDRS.JOHNNY", "TbkKINGSWOOD"), which lands in the issuer column. All
-# listed-company issuers end in "Tbk", so split such a token: the part up to and
-# including "Tbk" is the issuer, the trailing capitalised remainder is the start
-# of the investor name. The [A-Z] guard avoids splitting legitimate endings like
-# "Tbk," (trailing comma).
-ISSUER_INVESTOR_SPLIT_RE = re.compile(r'^(.*Tbk)([A-Z].*)$')
-
-# Likewise, a long investor-classification (e.g. "...Limited Partnership") can
-# overflow rightward and glue the single-letter Local/Foreign flag onto its last
-# word as one token (e.g. "PartnershipL", "PartnershipF"). Split off a trailing
-# capital L/F that follows a lowercase letter — no real classification word ends
-# that way, so this only fires on the glued case.
-TYPE_LF_SPLIT_RE = re.compile(r'^(.*[a-z])([LF])$')
-
-
-def _column_for(x0):
-    """Return the column name whose x-range contains x0, or None."""
-    for name, lo, hi in COLUMN_BOUNDS:
-        if lo <= x0 < hi:
-            return name
-    return None
-
-
-def parse_pdf():
-    """Parse shareholder_data.pdf into shareholder_data.json."""
+def parse_xlsx(path):
+    """Parse the KSEI >1% xlsx into shareholder_data.json. Returns the record count."""
     try:
-        import pdfplumber
+        import openpyxl
     except ImportError:
-        print("[ERROR] pdfplumber not installed. Run: pip install pdfplumber")
+        print("[ERROR] openpyxl not installed. Run: pip install openpyxl")
         sys.exit(1)
 
-    print("\n[*] Parsing PDF...")
+    print(f"\n[*] Parsing {os.path.basename(path)}...")
 
+    wb = openpyxl.load_workbook(path, read_only=True, data_only=True)
+    ws = wb.worksheets[0]
+
+    columns = None
     items = []
     source_date = None
 
-    with pdfplumber.open(PDF_PATH) as pdf:
-        for page in pdf.pages:
-            # Group words into rows by their vertical position, then bucket
-            # each word into a column by its x0 coordinate.
-            rows = {}
-            for w in page.extract_words():
-                rows.setdefault(round(w["top"]), []).append(w)
+    for row in ws.iter_rows(values_only=True):
+        # The sheet starts with disclaimer rows; the header row begins with DATE/SHARE_CODE.
+        if columns is None:
+            if row and row[0] == "DATE" and row[1] == "SHARE_CODE":
+                columns = {name: i for i, name in enumerate(row) if name}
+            continue
 
-            for top in sorted(rows):
-                cells = {}
-                for w in sorted(rows[top], key=lambda w: w["x0"]):
-                    col = _column_for(w["x0"])
-                    if not col:
-                        continue
-                    text = w["text"]
-                    # Recover an investor name glued onto the issuer's "Tbk" suffix.
-                    if col == "issuer":
-                        split = ISSUER_INVESTOR_SPLIT_RE.match(text)
-                        if split:
-                            cells.setdefault("issuer", []).append(split.group(1))
-                            cells.setdefault("investor", []).append(split.group(2))
-                            continue
-                    # Recover a Local/Foreign flag glued onto a long classification.
-                    if col == "investor_type":
-                        split = TYPE_LF_SPLIT_RE.match(text)
-                        if split:
-                            cells.setdefault("investor_type", []).append(split.group(1))
-                            cells.setdefault("local_foreign", []).append(split.group(2))
-                            continue
-                    cells.setdefault(col, []).append(text)
+        raw_date = row[columns["DATE"]]
+        code = row[columns["SHARE_CODE"]]
+        if not raw_date or not code:
+            continue  # blank/footer row
 
-                code_raw = " ".join(cells.get("code", []))
-                match = DATE_CODE_RE.match(code_raw)
-                if not match:
-                    continue  # not a data row (header, blank, etc.)
+        date_str = _format_date(raw_date)
+        items.append({
+            "date": date_str,
+            "code": _code(code),
+            "issuer": _text(row[columns["ISSUER_NAME"]]),
+            "investor": _text(row[columns["INVESTOR_NAME"]]),
+            "shares": int(row[columns["TOTAL_HOLDING_SHARES"]] or 0),
+            "percentage": round(float(row[columns["PERCENTAGE"]] or 0.0), 2),
+            "local_foreign": _text(row[columns["LOCAL_FOREIGN"]]),
+            "investor_type": _text(row[columns["INVESTOR_CLASSIFICATION"]]),
+        })
 
-                date_str = match.group(1)
-                share_code = match.group(2).strip()
+        if not source_date:
+            source_date = date_str
 
-                issuer = " ".join(cells.get("issuer", []))
-                investor = " ".join(cells.get("investor", []))
-                investor_type = " ".join(cells.get("investor_type", []))
-                local_foreign = " ".join(cells.get("local_foreign", []))
+    wb.close()
 
-                shares = _clean_number(" ".join(cells.get("shares", [])))
-                percentage = _clean_float(" ".join(cells.get("percentage", [])))
+    if columns is None:
+        print("[ERROR] Header row (DATE, SHARE_CODE, ...) not found - has the file layout changed?")
+        sys.exit(1)
 
-                items.append({
-                    "date": date_str,
-                    "code": share_code,
-                    "issuer": issuer,
-                    "investor": investor,
-                    "shares": shares,
-                    "percentage": percentage,
-                    "local_foreign": local_foreign,
-                    "investor_type": investor_type,
-                })
-
-                if not source_date:
-                    source_date = date_str
-
-    # Generate as_of_label
     as_of_label = source_date or "Unknown"
     if source_date:
-        try:
-            parts = source_date.split("-")
-            day = int(parts[0])
-            month_num = MONTH_EN_TO_NUM.get(parts[1])
-            month_id = MONTH_NUM_TO_ID.get(month_num, parts[1])
-            year = parts[2]
-            as_of_label = f"{day} {month_id} {year}"
-        except (IndexError, ValueError):
-            as_of_label = source_date
+        day, mon, year = source_date.split("-")
+        as_of_label = f"{int(day)} {MONTH_NUM_TO_ID[MONTH_EN_TO_NUM[mon]]} {year}"
 
     output = {
         "as_of_label": as_of_label,
@@ -427,25 +282,37 @@ def parse_pdf():
     print(f"     as_of_label: {as_of_label}")
     print(f"     Saved to: {JSON_PATH}")
 
-    return len(items)
+    return len(items), source_date
 
 
-def _clean_number(s):
-    if not s:
-        return 0
-    try:
-        return int(s.replace('.', '').strip())
-    except ValueError:
-        return 0
+def _format_date(value):
+    """Return a date cell as 'DD-Mon-YYYY' (e.g. '30-Sep-2026')."""
+    if isinstance(value, (datetime, date)):
+        return f"{value.day:02d}-{MONTH_NUM_TO_EN[value.month]}-{value.year}"
+    return str(value).strip()
 
 
-def _clean_float(s):
-    if not s:
-        return 0.0
-    try:
-        return float(s.replace(',', '.').strip())
-    except ValueError:
-        return 0.0
+def _code(value):
+    """Share code as text. Excel stores the ticker TRUE as a boolean cell."""
+    if isinstance(value, bool):
+        return str(value).upper()
+    return str(value).strip()
+
+
+def _text(value):
+    return "" if value is None else str(value).strip()
+
+
+def archive_xlsx(src_bytes_or_path, source_date):
+    """Store the xlsx as scripts/shareholder_data_{MON}{YEAR}.xlsx."""
+    day, mon, year = source_date.split("-")
+    dest = os.path.join(SCRIPT_DIR, f"shareholder_data_{mon.upper()}{year}.xlsx")
+    if isinstance(src_bytes_or_path, bytes):
+        with open(dest, "wb") as f:
+            f.write(src_bytes_or_path)
+    elif os.path.abspath(src_bytes_or_path) != dest:
+        shutil.copyfile(src_bytes_or_path, dest)
+    print(f"[OK] Archived source as {os.path.relpath(dest, PROJECT_DIR)}")
 
 
 # ======================================================================
@@ -458,6 +325,8 @@ def main():
     )
     parser.add_argument("--force", action="store_true",
                         help="Force update even if data appears current")
+    parser.add_argument("--file", metavar="XLSX",
+                        help="Parse this local 'Pemegang Saham di Atas 1%%' xlsx instead of downloading")
     args = parser.parse_args()
 
     print("=" * 60)
@@ -465,32 +334,43 @@ def main():
     print("=" * 60)
     print()
 
-    # Step 1: Check if update is needed
-    data_month = get_current_data_month()
+    if args.file:
+        source = os.path.expanduser(args.file)
+        if not os.path.isfile(source):
+            print(f"[ERROR] File not found: {source}")
+            sys.exit(1)
+    else:
+        data_month = get_current_data_month()
+        if not args.force and is_data_current(data_month):
+            print("\n[DONE] Data is already up to date. Use --force to re-download.")
+            return
 
-    if not args.force and is_data_current(data_month):
-        print("\n[DONE] Data is already up to date. Use --force to re-download.")
-        return
+        print("\n" + "-" * 60)
+        print("  Downloading from IDX...")
+        print("-" * 60)
+        source = fetch_and_download()
 
-    # Step 2: Download from IDX
+    # Parse (from a temp copy when we only have bytes)
+    if isinstance(source, bytes):
+        tmp_path = os.path.join(SCRIPT_DIR, ".download.xlsx")
+        with open(tmp_path, "wb") as f:
+            f.write(source)
+        parse_path = tmp_path
+    else:
+        parse_path = source
+
     print("\n" + "-" * 60)
-    print("  Downloading from IDX...")
+    print("  Parsing xlsx...")
     print("-" * 60)
-    pdf_bytes = fetch_and_download()
+    try:
+        count, source_date = parse_xlsx(parse_path)
+    finally:
+        if isinstance(source, bytes) and os.path.exists(parse_path):
+            os.remove(parse_path)
 
-    # Step 3: Archive old & save new
-    print("\n" + "-" * 60)
-    print("  Saving PDF...")
-    print("-" * 60)
-    archive_and_save(pdf_bytes)
+    if count > 0 and source_date:
+        archive_xlsx(source, source_date)
 
-    # Step 4: Parse PDF into JSON
-    print("\n" + "-" * 60)
-    print("  Parsing PDF...")
-    print("-" * 60)
-    count = parse_pdf()
-
-    # Summary
     print("\n" + "=" * 60)
     if count > 0:
         print(f"  [DONE] Successfully updated with {count:,} records!")
