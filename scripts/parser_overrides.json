@@ -1,0 +1,22 @@
+{
+  "version": "1.0.0",
+  "description": "IHSG Storm PDF parser overrides and corrections dictionary",
+  "updated_at": "2026-10-08",
+  "exact_token_splits": {
+    "TbkDRS.JOHNNY": {
+      "issuer_suffix": "Tbk",
+      "investor_prefix": "DRS. JOHNNY"
+    },
+    "PartnershipL": {
+      "investor_type": "Partnership",
+      "local_foreign": "L"
+    }
+  },
+  "issuer_code_aliases": {
+    "BRPT": "BARITO PACIFIC TBK"
+  },
+  "known_ignored_headers": [
+    "DAFTAR PEMEGANG SAHAM DI ATAS 1%",
+    "PT KUSTODIAN SENTRAL EFEK INDONESIA"
+  ]
+}

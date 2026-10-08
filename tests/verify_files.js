@@ -2,13 +2,20 @@ import fs from 'node:fs';
 
 const files = [
   'index.html',
+  'assets/css/style.css',
+  'assets/fonts/fonts.css',
   'components/tab-stocks.html',
   'components/tab-investors.html',
+  'components/tab-analytics.html',
+  'components/tab-faq.html',
   'components/modal-stock.html',
   'components/modal-investor.html',
+  'components/modal-feedback.html',
   'src/store.js',
   'src/charts.js',
   'src/normalize.js',
+  'src/copy.js',
+  'src/utils.js',
   'vercel.json'
 ];
 

@@ -7,7 +7,9 @@ Usage: python server.py
 """
 
 import json
+import os
 import time
+import uuid
 from datetime import datetime
 from typing import Dict, Any, Optional, List
 
@@ -136,6 +138,124 @@ def cache_stats() -> Response:
         "total_entries": len(price_cache),
         "active_entries": active,
         "ttl_seconds": CACHE_TTL,
+    })
+
+
+# ── Customer Success & Feedback routes ──
+
+FEEDBACK_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "feedback_submissions.json")
+FALLBACK_FEEDBACK_FILE = "/tmp/feedback_submissions.json"
+COMPANY_FEEDBACK_FILE = "/home/hermes/company/ihsg/feedback_submissions.json"
+
+
+@app.route("/api/feedback", methods=["POST"])
+def submit_feedback() -> Response:
+    """
+    Handle user feedback & data correction reports.
+    Accepts JSON with keys:
+      category, context_type, entity_code, entity_name,
+      error_type, description, reference_url, reporter_contact, client_info
+    """
+    try:
+        data = request.get_json(silent=True) or {}
+    except Exception:
+        return jsonify({"error": "Payload JSON tidak valid"}), 400
+
+    description = (data.get("description") or "").strip()
+    if not description:
+        return jsonify({"error": "Harap isi deskripsi laporan atau kendala yang ditemukan."}), 400
+
+    ticket_id = f"TICK-{int(time.time())}-{uuid.uuid4().hex[:6].upper()}"
+    timestamp = data.get("timestamp") or datetime.utcnow().isoformat() + "Z"
+
+    entry = {
+        "ticket_id": ticket_id,
+        "timestamp": timestamp,
+        "category": data.get("category", "data_error"),
+        "context_type": data.get("context_type", "general"),
+        "entity_code": (data.get("entity_code") or "").strip().upper(),
+        "entity_name": (data.get("entity_name") or "").strip(),
+        "data_as_of": data.get("data_as_of", "Unknown"),
+        "error_type": data.get("error_type", "glued_token"),
+        "description": description,
+        "reference_url": (data.get("reference_url") or "").strip(),
+        "reporter_contact": (data.get("reporter_contact") or "").strip(),
+        "client_info": data.get("client_info") or {},
+        "status": "pending_triage",
+        "received_at": datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC")
+    }
+
+    # Persist entry to primary file with fallback to /tmp
+    for path in [FEEDBACK_FILE, FALLBACK_FEEDBACK_FILE]:
+        try:
+            records = []
+            if os.path.exists(path):
+                try:
+                    with open(path, "r", encoding="utf-8") as f:
+                        records = json.load(f)
+                    if not isinstance(records, list):
+                        records = []
+                except Exception:
+                    records = []
+            records.append(entry)
+            with open(path, "w", encoding="utf-8") as f:
+                json.dump(records, f, indent=2, ensure_ascii=False)
+            break
+        except Exception:
+            continue
+
+    # Also sync to company logs if directory exists
+    try:
+        if os.path.isdir("/home/hermes/company/ihsg"):
+            company_records = []
+            if os.path.exists(COMPANY_FEEDBACK_FILE):
+                try:
+                    with open(COMPANY_FEEDBACK_FILE, "r", encoding="utf-8") as f:
+                        company_records = json.load(f)
+                    if not isinstance(company_records, list):
+                        company_records = []
+                except Exception:
+                    company_records = []
+            company_records.append(entry)
+            with open(COMPANY_FEEDBACK_FILE, "w", encoding="utf-8") as f:
+                json.dump(company_records, f, indent=2, ensure_ascii=False)
+    except Exception:
+        pass
+
+    return jsonify({
+        "success": True,
+        "ticket_id": ticket_id,
+        "message": "Laporan berhasil diterima dan masuk ke antrean audit data.",
+        "entry": entry
+    }), 201
+
+
+@app.route("/api/feedback", methods=["GET"])
+def list_feedback() -> Response:
+    """
+    List logged feedback entries for triage (internal query).
+    Optional query params: category, status, limit
+    """
+    records = []
+    for path in [FEEDBACK_FILE, FALLBACK_FEEDBACK_FILE, COMPANY_FEEDBACK_FILE]:
+        if os.path.exists(path):
+            try:
+                with open(path, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                    if isinstance(data, list) and data:
+                        records = data
+                        break
+            except Exception:
+                pass
+
+    category = request.args.get("category")
+    if category:
+        records = [r for r in records if r.get("category") == category]
+
+    limit = request.args.get("limit", 50, type=int)
+    return jsonify({
+        "count": len(records),
+        "feedback": records[-limit:]
     })
 
 
