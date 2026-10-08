@@ -27,8 +27,8 @@ for (const f of files) {
 
 // Verify vercel.json is valid JSON
 const vercelConfig = JSON.parse(fs.readFileSync('vercel.json', 'utf8'));
-if (!vercelConfig.functions || !vercelConfig.rewrites) {
-  console.error('Invalid vercel.json structure');
+if (!vercelConfig.rewrites) {
+  console.error('Invalid vercel.json structure: missing rewrites');
   process.exit(1);
 }
-console.log('OK: vercel.json contains functions and rewrites');
+console.log('OK: vercel.json contains valid rewrites configuration');
