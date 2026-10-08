@@ -277,6 +277,13 @@
             <span class="w-2 h-2 rounded-full bg-blue-400"></span>
             <span class="tracking-wide" x-text="sourceDate ? `Data KSEI: ${sourceDate}` : `Memuat data...`"></span>
           </div>
+          <button @click="openFeedbackModal()"
+            class="flex items-center gap-1.5 bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700/80 hover:border-blue-500/50 rounded-full px-3 py-1.5 shadow-sm backdrop-blur-md text-slate-300 hover:text-white transition-all cursor-pointer">
+            <svg class="w-3.5 h-3.5 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+            </svg>
+            <span class="tracking-wide">Bantuan & Lapor</span>
+          </button>
         </div>
       </div>
 
@@ -327,6 +334,13 @@
               </svg>
               <p class="text-sm font-medium text-slate-400">Tidak ada data ditemukan untuk "<span x-text="searchQuery"
                   class="text-slate-300"></span>"</p>
+              <button @click="openFeedbackModal({ category: 'data_error', entity_code: searchQuery.toUpperCase(), description: 'Pencarian tidak menemukan emiten/investor: ' + searchQuery }); showAutocomplete = false;"
+                class="mt-1 px-3.5 py-1.5 text-xs font-semibold bg-blue-600/20 hover:bg-blue-600/30 border border-blue-500/40 text-blue-300 hover:text-white rounded-lg transition-all inline-flex items-center gap-1.5">
+                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+                <span>Emiten atau investor tidak ditemukan? Laporkan ke tim kami</span>
+              </button>
             </div>
           </template>
 
@@ -424,7 +438,8 @@
         <template x-for="tab in [
           { id: 'stocks', label: 'Daftar Saham' },
           { id: 'investors', label: 'Top Investor' },
-          { id: 'analytics', label: 'Analitik' }
+          { id: 'analytics', label: 'Analitik' },
+          { id: 'faq', label: 'Bantuan & FAQ' }
         ]" :key="tab.id">
           <button @click="currentTab = tab.id"
             :class="currentTab === tab.id ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30' : 'text-slate-400 hover:text-white hover:bg-white/5'"
@@ -448,6 +463,11 @@
       <section x-show="currentTab === 'analytics'" x-cloak id="comp-analytics" role="tabpanel" aria-label="Analitik"
         x-init="loadComponent('comp-analytics', '/components/tab-analytics.html')">
       </section>
+
+      <!-- TAB: FAQ & HELP -->
+      <section x-show="currentTab === 'faq'" x-cloak id="comp-faq" role="tabpanel" aria-label="Bantuan & FAQ"
+        x-init="loadComponent('comp-faq', '/components/tab-faq.html')">
+      </section>
     </main>
 
 
@@ -460,6 +480,11 @@
     <aside x-show="modalType === 'investor'" x-cloak id="comp-modal-investor" role="dialog" aria-label="Detail Investor"
       x-init="loadComponent('comp-modal-investor', '/components/modal-investor.html')">
     </aside>
+
+    <!-- MODAL: FEEDBACK VIEW -->
+    <aside x-show="showFeedbackModal" x-cloak id="comp-modal-feedback" role="dialog" aria-label="Formulir Feedback"
+      x-init="loadComponent('comp-modal-feedback', '/components/modal-feedback.html')">
+    </aside>
   </div>
 
 
@@ -471,9 +496,19 @@
       bersifat <em>delayed</em> dan data pemegang saham didasarkan pada rilis publik dari KSEI. Keputusan investasi
       sepenuhnya adalah tanggung jawab masing-masing individu.
     </div>
-    <nav aria-label="Footer links" class="text-sm text-slate-400 font-medium">
-      &copy; 2026 Crafted by <a href="https://badai.tech" target="_blank" rel="noopener noreferrer"
-        class="text-blue-400 hover:text-blue-300 transition-colors">BAD AI</a>
+    <nav aria-label="Footer links" class="text-sm text-slate-400 font-medium flex flex-wrap items-center justify-center gap-4">
+      <span>&copy; 2026 Crafted by <a href="https://badai.tech" target="_blank" rel="noopener noreferrer"
+        class="text-blue-400 hover:text-blue-300 transition-colors">BAD AI</a></span>
+      <span class="text-slate-600 hidden sm:inline">•</span>
+      <button @click="currentTab = 'faq'; window.scrollTo({ top: 0, behavior: 'smooth' })"
+        class="hover:text-white transition-colors cursor-pointer">
+        Pusat Bantuan & FAQ
+      </button>
+      <span class="text-slate-600 hidden sm:inline">•</span>
+      <button @click="openFeedbackModal({ category: 'data_error' })"
+        class="hover:text-blue-400 transition-colors cursor-pointer">
+        Laporkan Kesalahan Data
+      </button>
     </nav>
   </footer>
 

@@ -1,0 +1,484 @@
+<div x-data="{
+  activeCategory: 'all',
+  openItem: 'ksei-1',
+  faqSearch: '',
+  categories: [
+    { id: 'all', label: 'Semua Topik' },
+    { id: 'ksei', label: 'Data KSEI >1%' },
+    { id: 'lag', label: 'Jadwal & Data Lag' },
+    { id: 'legal', label: 'Legalitas & DYOR' },
+    { id: 'report', label: 'Pelaporan Kesalahan' }
+  ],
+  matchQuery(item) {
+    if (this.activeCategory !== 'all' && item.cat !== this.activeCategory) return false;
+    if (!this.faqSearch.trim()) return true;
+    const q = this.faqSearch.toLowerCase();
+    return item.q.toLowerCase().includes(q) || item.a.toLowerCase().includes(q) || (item.keywords && item.keywords.toLowerCase().includes(q));
+  }
+}" class="space-y-6">
+
+  <!-- HERO / BANNER -->
+  <div class="glass-panel rounded-3xl p-6 sm:p-8 border border-white/[0.08] relative overflow-hidden shadow-xl">
+    <div class="absolute -right-16 -top-16 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl pointer-events-none"></div>
+    <div class="absolute -left-16 -bottom-16 w-64 h-64 bg-purple-500/10 rounded-full blur-3xl pointer-events-none"></div>
+
+    <div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+      <div class="max-w-2xl">
+        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs font-semibold uppercase tracking-wider mb-3">
+          <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+          Pusat Bantuan & Edukasi
+        </div>
+        <h2 class="text-2xl sm:text-3xl font-extrabold text-white tracking-tight mb-2">
+          Frequently Asked Questions (FAQ)
+        </h2>
+        <p class="text-sm sm:text-base text-slate-300/90 leading-relaxed">
+          Panduan lengkap memahami data kepemilikan saham KSEI >1%, klasifikasi investor, siklus update bulanan, serta kanal pelaporan data tidak akurat.
+        </p>
+      </div>
+
+      <!-- Action buttons -->
+      <div class="flex flex-wrap sm:flex-nowrap gap-3 shrink-0">
+        <button @click="openFeedbackModal({ category: 'data_error' })"
+          class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-sm font-semibold shadow-lg shadow-blue-500/20 transition-all border border-blue-400/20">
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+          <span>Lapor Kesalahan Data</span>
+        </button>
+        <button @click="openFeedbackModal({ category: 'feature_request' })"
+          class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700 text-slate-200 text-sm font-medium transition-all">
+          <svg class="w-4 h-4 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" /></svg>
+          <span>Usulkan Fitur</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- FILTER & SEARCH BAR -->
+    <div class="mt-8 pt-6 border-t border-white/[0.06] flex flex-col sm:flex-row gap-4 items-stretch sm:items-center justify-between">
+      <!-- Category pills -->
+      <div class="flex flex-wrap gap-2">
+        <template x-for="c in categories" :key="c.id">
+          <button @click="activeCategory = c.id"
+            :class="activeCategory === c.id ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20 border-blue-500' : 'bg-slate-800/60 text-slate-400 hover:text-slate-200 border-white/[0.05]'"
+            class="px-3.5 py-1.5 rounded-lg text-xs font-semibold border transition-all"
+            x-text="c.label">
+          </button>
+        </template>
+      </div>
+
+      <!-- Live Search Input -->
+      <div class="relative w-full sm:w-72">
+        <svg class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+        </svg>
+        <input type="text" x-model="faqSearch" placeholder="Cari pertanyaan FAQ..."
+          class="w-full bg-slate-900/80 border border-white/10 rounded-xl pl-10 pr-4 py-2 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-blue-500 transition-all">
+        <button x-show="faqSearch" @click="faqSearch = ''" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white text-xs">&times;</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- FAQ ACCORDION LIST -->
+  <div class="space-y-3">
+
+    <!-- ITEM 1 -->
+    <div x-show="matchQuery({ cat: 'ksei', q: 'Apa itu IHSG Storm dan dari mana sumber datanya?', a: 'IHSG Storm adalah platform analitik independen untuk memantau struktur kepemilikan saham di Bursa Efek Indonesia (BEI/IDX). Data kepemilikan saham diekstraksi langsung dari publikasi resmi bulanan KSEI.', keywords: 'sumber data ksei idx bei yahoo finance delay 15 menit' })"
+      class="glass-panel rounded-2xl border border-white/[0.05] overflow-hidden transition-all duration-200"
+      :class="openItem === 'ksei-1' ? 'border-blue-500/40 bg-slate-800/40' : 'hover:border-white/10'">
+      <button @click="openItem = openItem === 'ksei-1' ? null : 'ksei-1'"
+        class="w-full px-5 py-4 sm:px-6 sm:py-5 flex items-center justify-between gap-4 text-left">
+        <div class="flex items-center gap-3">
+          <span class="w-6 h-6 rounded-md bg-blue-500/20 text-blue-400 text-xs font-bold flex items-center justify-center shrink-0">1</span>
+          <span class="text-sm sm:text-base font-semibold text-slate-100">Apa itu IHSG Storm dan dari mana sumber datanya?</span>
+        </div>
+        <svg class="w-5 h-5 text-slate-400 transition-transform duration-200 shrink-0" :class="openItem === 'ksei-1' ? 'rotate-180 text-blue-400' : ''" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+      <div x-show="openItem === 'ksei-1'" x-collapse class="px-5 pb-5 sm:px-6 sm:pb-6 text-sm text-slate-300 leading-relaxed border-t border-white/[0.04] pt-4">
+        <p class="mb-2">
+          <strong>IHSG Storm</strong> adalah platform analitik independen untuk memantau struktur kepemilikan saham di Bursa Efek Indonesia (BEI/IDX).
+        </p>
+        <ul class="list-disc pl-5 space-y-1.5 text-slate-300">
+          <li><strong>Data Kepemilikan Saham:</strong> Diekstraksi langsung dari publikasi resmi bulanan PT Kustodian Sentral Efek Indonesia (KSEI) mengenai <em>"Daftar Pemegang Saham di atas 1% untuk Seluruh Emiten Saham"</em>.</li>
+          <li><strong>Data Harga Live & Metrik Pasar:</strong> Bersumber secara <em>near real-time</em> dengan delay standar ~15 menit dari Yahoo Finance API.</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- ITEM 2 -->
+    <div x-show="matchQuery({ cat: 'ksei', q: 'Mengapa batas kepemilikan yang ditampilkan adalah di atas 1%, bukan 5%?', a: 'Berdasarkan regulasi OJK pemegang saham wajib menyampaikan laporan keterbukaan jika kepemilikan mencapai 5%. KSEI menerbitkan daftar saldo efek di atas 1%.', keywords: '1% 5% ambang batas threshold pojk 11 ojk akumulasi konglomerasi' })"
+      class="glass-panel rounded-2xl border border-white/[0.05] overflow-hidden transition-all duration-200"
+      :class="openItem === 'ksei-2' ? 'border-blue-500/40 bg-slate-800/40' : 'hover:border-white/10'">
+      <button @click="openItem = openItem === 'ksei-2' ? null : 'ksei-2'"
+        class="w-full px-5 py-4 sm:px-6 sm:py-5 flex items-center justify-between gap-4 text-left">
+        <div class="flex items-center gap-3">
+          <span class="w-6 h-6 rounded-md bg-blue-500/20 text-blue-400 text-xs font-bold flex items-center justify-center shrink-0">2</span>
+          <span class="text-sm sm:text-base font-semibold text-slate-100">Mengapa batas kepemilikan yang ditampilkan di atas 1%, bukan 5%?</span>
+        </div>
+        <svg class="w-5 h-5 text-slate-400 transition-transform duration-200 shrink-0" :class="openItem === 'ksei-2' ? 'rotate-180 text-blue-400' : ''" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+      <div x-show="openItem === 'ksei-2'" x-collapse class="px-5 pb-5 sm:px-6 sm:pb-6 text-sm text-slate-300 leading-relaxed border-t border-white/[0.04] pt-4">
+        <p class="mb-2">
+          Berdasarkan regulasi Otoritas Jasa Keuangan (<strong>POJK No. 11/POJK.04/2017</strong>), pemegang saham wajib menyampaikan laporan keterbukaan informasi publik apabila kepemilikannya mencapai <strong>5% atau lebih</strong>.
+        </p>
+        <p>
+          Namun, KSEI secara berkala menerbitkan arsip kepemilikan yang jauh lebih mendalam, mencakup seluruh akun rekening efek dengan saldo <strong>&ge; 1%</strong> dari total saham tercatat. Ambang batas 1% ini memberikan visibilitas tinggi bagi investor untuk mendeteksi akumulasi posisi oleh *smart money*, konglomerasi, *family office*, dan manajer investasi jauh sebelum menyentuh batas keterbukaan publik 5%.
+        </p>
+      </div>
+    </div>
+
+    <!-- ITEM 3 -->
+    <div x-show="matchQuery({ cat: 'ksei', q: 'Apa arti singkatan kode tipe investor (CP, ID, MF, SC, dll)?', a: 'KSEI mengelompokkan investor ke dalam 10 klasifikasi resmi: CP Corporate, ID Individual, MF Reksa Dana, SC Sekuritas, IS Asuransi, PF Dana Pensiun, IB Bank Investasi, FD Yayasan, OT Lainnya.', keywords: 'tipe kode investor cp id mf sc is pf ib fd yy ot klasifikasi ksei' })"
+      class="glass-panel rounded-2xl border border-white/[0.05] overflow-hidden transition-all duration-200"
+      :class="openItem === 'ksei-3' ? 'border-blue-500/40 bg-slate-800/40' : 'hover:border-white/10'">
+      <button @click="openItem = openItem === 'ksei-3' ? null : 'ksei-3'"
+        class="w-full px-5 py-4 sm:px-6 sm:py-5 flex items-center justify-between gap-4 text-left">
+        <div class="flex items-center gap-3">
+          <span class="w-6 h-6 rounded-md bg-blue-500/20 text-blue-400 text-xs font-bold flex items-center justify-center shrink-0">3</span>
+          <span class="text-sm sm:text-base font-semibold text-slate-100">Apa arti singkatan kode tipe investor (CP, ID, MF, SC, dll)?</span>
+        </div>
+        <svg class="w-5 h-5 text-slate-400 transition-transform duration-200 shrink-0" :class="openItem === 'ksei-3' ? 'rotate-180 text-blue-400' : ''" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+      <div x-show="openItem === 'ksei-3'" x-collapse class="px-5 pb-5 sm:px-6 sm:pb-6 text-sm text-slate-300 leading-relaxed border-t border-white/[0.04] pt-4">
+        <p class="mb-3">
+          KSEI mengelompokkan investor ke dalam <strong>10 klasifikasi resmi</strong>:
+        </p>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+          <div class="bg-slate-900/60 p-3 rounded-xl border border-white/[0.04]">
+            <div class="flex items-center gap-2 mb-1">
+              <span class="px-2 py-0.5 rounded text-xs font-bold bg-blue-500/20 text-blue-400">CP</span>
+              <span class="font-semibold text-white">Corporate / Perusahaan</span>
+            </div>
+            <p class="text-xs text-slate-400">Badan usaha, perseroan terbatas (PT), atau holding korporasi domestik/asing.</p>
+          </div>
+          <div class="bg-slate-900/60 p-3 rounded-xl border border-white/[0.04]">
+            <div class="flex items-center gap-2 mb-1">
+              <span class="px-2 py-0.5 rounded text-xs font-bold bg-purple-500/20 text-purple-400">ID</span>
+              <span class="font-semibold text-white">Individual / Perorangan</span>
+            </div>
+            <p class="text-xs text-slate-400">Rekening individu ritel, High Net Worth Individual (HNWI), pendiri, atau direksi.</p>
+          </div>
+          <div class="bg-slate-900/60 p-3 rounded-xl border border-white/[0.04]">
+            <div class="flex items-center gap-2 mb-1">
+              <span class="px-2 py-0.5 rounded text-xs font-bold bg-emerald-500/20 text-emerald-400">MF</span>
+              <span class="font-semibold text-white">Mutual Fund / Reksa Dana</span>
+            </div>
+            <p class="text-xs text-slate-400">Kontrak Investasi Kolektif (KIK) Reksa Dana oleh Manajer Investasi terdaftar.</p>
+          </div>
+          <div class="bg-slate-900/60 p-3 rounded-xl border border-white/[0.04]">
+            <div class="flex items-center gap-2 mb-1">
+              <span class="px-2 py-0.5 rounded text-xs font-bold bg-cyan-500/20 text-cyan-400">SC</span>
+              <span class="font-semibold text-white">Securities / Perusahaan Efek</span>
+            </div>
+            <p class="text-xs text-slate-400">Rekening milik perantara pedagang efek atau broker sekuritas.</p>
+          </div>
+          <div class="bg-slate-900/60 p-3 rounded-xl border border-white/[0.04]">
+            <div class="flex items-center gap-2 mb-1">
+              <span class="px-2 py-0.5 rounded text-xs font-bold bg-pink-500/20 text-pink-400">IS</span>
+              <span class="font-semibold text-white">Insurance / Asuransi</span>
+            </div>
+            <p class="text-xs text-slate-400">Perusahaan asuransi jiwa atau umum yang menempatkan cadangan premi.</p>
+          </div>
+          <div class="bg-slate-900/60 p-3 rounded-xl border border-white/[0.04]">
+            <div class="flex items-center gap-2 mb-1">
+              <span class="px-2 py-0.5 rounded text-xs font-bold bg-orange-500/20 text-orange-400">PF</span>
+              <span class="font-semibold text-white">Pension Fund / Dana Pensiun</span>
+            </div>
+            <p class="text-xs text-slate-400">Lembaga pengelola dana pensiun pemberi kerja atau lembaga keuangan.</p>
+          </div>
+          <div class="bg-slate-900/60 p-3 rounded-xl border border-white/[0.04]">
+            <div class="flex items-center gap-2 mb-1">
+              <span class="px-2 py-0.5 rounded text-xs font-bold bg-amber-500/20 text-amber-400">IB</span>
+              <span class="font-semibold text-white">Investment Bank</span>
+            </div>
+            <p class="text-xs text-slate-400">Lembaga perbankan investasi dan konsorsium pembiayaan institusional.</p>
+          </div>
+          <div class="bg-slate-900/60 p-3 rounded-xl border border-white/[0.04]">
+            <div class="flex items-center gap-2 mb-1">
+              <span class="px-2 py-0.5 rounded text-xs font-bold bg-violet-500/20 text-violet-400">FD / YY</span>
+              <span class="font-semibold text-white">Foundation / Yayasan</span>
+            </div>
+            <p class="text-xs text-slate-400">Lembaga nirlaba, yayasan sosial, atau pengelola dana abadi (endowment).</p>
+          </div>
+          <div class="bg-slate-900/60 p-3 rounded-xl border border-white/[0.04] sm:col-span-2">
+            <div class="flex items-center gap-2 mb-1">
+              <span class="px-2 py-0.5 rounded text-xs font-bold bg-slate-500/20 text-slate-400">OT</span>
+              <span class="font-semibold text-white">Others / Lainnya</span>
+            </div>
+            <p class="text-xs text-slate-400">Badan pemerintah, perwalian (trustee), atau rekening penampung khusus.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ITEM 4 -->
+    <div x-show="matchQuery({ cat: 'ksei', q: 'Apa arti label L (Lokal) dan A/F (Asing)?', a: 'Label mengindikasikan status domisili hukum pemilik akun efek: L Lokal WNI atau korporasi Indonesia, A/F Asing investor WNA atau badan hukum internasional.', keywords: 'l a asing lokal foreign domestic rasio arus dana' })"
+      class="glass-panel rounded-2xl border border-white/[0.05] overflow-hidden transition-all duration-200"
+      :class="openItem === 'ksei-4' ? 'border-blue-500/40 bg-slate-800/40' : 'hover:border-white/10'">
+      <button @click="openItem = openItem === 'ksei-4' ? null : 'ksei-4'"
+        class="w-full px-5 py-4 sm:px-6 sm:py-5 flex items-center justify-between gap-4 text-left">
+        <div class="flex items-center gap-3">
+          <span class="w-6 h-6 rounded-md bg-blue-500/20 text-blue-400 text-xs font-bold flex items-center justify-center shrink-0">4</span>
+          <span class="text-sm sm:text-base font-semibold text-slate-100">Apa arti label L (Lokal) dan A/F (Asing)?</span>
+        </div>
+        <svg class="w-5 h-5 text-slate-400 transition-transform duration-200 shrink-0" :class="openItem === 'ksei-4' ? 'rotate-180 text-blue-400' : ''" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+      <div x-show="openItem === 'ksei-4'" x-collapse class="px-5 pb-5 sm:px-6 sm:pb-6 text-sm text-slate-300 leading-relaxed border-t border-white/[0.04] pt-4">
+        <p class="mb-2">Label domisili mengindikasikan yurisdiksi hukum pemilik rekening efek:</p>
+        <ul class="list-disc pl-5 space-y-1.5">
+          <li><span class="text-emerald-400 font-bold">L (Lokal):</span> Investor individu Warga Negara Indonesia (WNI) atau entitas korporasi yang berbadan hukum di Indonesia.</li>
+          <li><span class="text-rose-400 font-bold">A / F (Asing / Foreign):</span> Investor individu WNA atau badan hukum/institusi di luar yurisdiksi Republik Indonesia.</li>
+        </ul>
+        <p class="mt-2 text-xs text-slate-400">
+          Perbandingan rasio Lokal vs Asing memberikan indikasi penting mengenai konsentrasi arus dana asing (*foreign flow*) pada suatu saham.
+        </p>
+      </div>
+    </div>
+
+    <!-- ITEM 5 -->
+    <div x-show="matchQuery({ cat: 'ksei', q: 'Mengapa sebagian nama pemegang saham tertulis nama Bank (misal: KUSTODIAN atau CITIBANK S/A...)?', a: 'Banyak investor institusi maupun individu menggunakan jasa Bank Kustodian untuk mengadministrasikan efek mereka. Nama tercantum adalah nominee holder atau custodian account. Tanda S/A singkatan Sub-Account.', keywords: 'kustodian custodian sub account nominee beneficial owner bank bca bri citibank' })"
+      class="glass-panel rounded-2xl border border-white/[0.05] overflow-hidden transition-all duration-200"
+      :class="openItem === 'ksei-5' ? 'border-blue-500/40 bg-slate-800/40' : 'hover:border-white/10'">
+      <button @click="openItem = openItem === 'ksei-5' ? null : 'ksei-5'"
+        class="w-full px-5 py-4 sm:px-6 sm:py-5 flex items-center justify-between gap-4 text-left">
+        <div class="flex items-center gap-3">
+          <span class="w-6 h-6 rounded-md bg-blue-500/20 text-blue-400 text-xs font-bold flex items-center justify-center shrink-0">5</span>
+          <span class="text-sm sm:text-base font-semibold text-slate-100">Mengapa sebagian nama pemegang saham tertulis nama Bank Kustodian?</span>
+        </div>
+        <svg class="w-5 h-5 text-slate-400 transition-transform duration-200 shrink-0" :class="openItem === 'ksei-5' ? 'rotate-180 text-blue-400' : ''" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+      <div x-show="openItem === 'ksei-5'" x-collapse class="px-5 pb-5 sm:px-6 sm:pb-6 text-sm text-slate-300 leading-relaxed border-t border-white/[0.04] pt-4">
+        <p class="mb-2">
+          Di pasar modal modern, banyak investor institusi global maupun individu menggunakan jasa <strong>Bank Kustodian</strong> untuk penitipan dan pengadministrasian efek (*custody services*).
+        </p>
+        <p class="mb-2">
+          Nama yang tercantum pada dokumen KSEI adalah nama pemegang rekening terdaftar (*nominee holder*). Tanda <code>S/A</code> merupakan singkatan dari <em>"Sub-Account"</em> atau <em>"Subject to Account"</em>, yang menandakan bahwa bank kustodian bertindak sebagai perwakilan penyimpanan atas nama pemilik manfaat sebenarnya (*beneficial owner*).
+        </p>
+      </div>
+    </div>
+
+    <!-- ITEM 6 -->
+    <div x-show="matchQuery({ cat: 'lag', q: 'Mengapa tanggal data kepemilikan tertulis snapshot bulan lalu?', a: 'Dokumen resmi kepemilikan saham >1% diterbitkan oleh KSEI melalui pengumuman Bursa Efek Indonesia dalam bentuk arsip bulanan bukan streaming real-time.', keywords: 'data lag snapshot tanggal mei juni juli agustus september oktober 2026 update delay' })"
+      class="glass-panel rounded-2xl border border-white/[0.05] overflow-hidden transition-all duration-200"
+      :class="openItem === 'lag-1' ? 'border-blue-500/40 bg-slate-800/40' : 'hover:border-white/10'">
+      <button @click="openItem = openItem === 'lag-1' ? null : 'lag-1'"
+        class="w-full px-5 py-4 sm:px-6 sm:py-5 flex items-center justify-between gap-4 text-left">
+        <div class="flex items-center gap-3">
+          <span class="w-6 h-6 rounded-md bg-amber-500/20 text-amber-400 text-xs font-bold flex items-center justify-center shrink-0">6</span>
+          <span class="text-sm sm:text-base font-semibold text-slate-100">Mengapa tanggal data kepemilikan tertulis rekaman (snapshot) bulan lalu?</span>
+        </div>
+        <svg class="w-5 h-5 text-slate-400 transition-transform duration-200 shrink-0" :class="openItem === 'lag-1' ? 'rotate-180 text-blue-400' : ''" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+      <div x-show="openItem === 'lag-1'" x-collapse class="px-5 pb-5 sm:px-6 sm:pb-6 text-sm text-slate-300 leading-relaxed border-t border-white/[0.04] pt-4">
+        <p class="mb-2">
+          Dokumen resmi kepemilikan efek >1% diterbitkan oleh KSEI melalui pengumuman berkala Bursa Efek Indonesia dalam bentuk <strong>dokumen arsip bulanan</strong> (bukan *live stream API* per detik).
+        </p>
+        <p>
+          Penerbitan dokumen biasanya memerlukan waktu penutupan buku pada akhir bulan berjalan. Oleh sebab itu, data kepemilikan bersifat <strong>rekaman historis (snapshot)</strong> per tanggal penutupan buku tersebut. Tim kami menjalankan otomasi penarikan data segera setelah KSEI merilis dokumen resmi terbaru.
+        </p>
+      </div>
+    </div>
+
+    <!-- ITEM 7 -->
+    <div x-show="matchQuery({ cat: 'lag', q: 'Seberapa sering data pemegang saham diperbarui?', a: 'Pembaruan dilakukan secara bulanan. Begitu IDX dan KSEI merilis laporan penutupan bulan baru di portal pengumuman BEI, skrip otomasi mengunduh dan memproses PDF.', keywords: 'siklus pembaruan jadwal update bulanan pdfplumber idx ksei' })"
+      class="glass-panel rounded-2xl border border-white/[0.05] overflow-hidden transition-all duration-200"
+      :class="openItem === 'lag-2' ? 'border-blue-500/40 bg-slate-800/40' : 'hover:border-white/10'">
+      <button @click="openItem = openItem === 'lag-2' ? null : 'lag-2'"
+        class="w-full px-5 py-4 sm:px-6 sm:py-5 flex items-center justify-between gap-4 text-left">
+        <div class="flex items-center gap-3">
+          <span class="w-6 h-6 rounded-md bg-amber-500/20 text-amber-400 text-xs font-bold flex items-center justify-center shrink-0">7</span>
+          <span class="text-sm sm:text-base font-semibold text-slate-100">Seberapa sering data pemegang saham diperbarui?</span>
+        </div>
+        <svg class="w-5 h-5 text-slate-400 transition-transform duration-200 shrink-0" :class="openItem === 'lag-2' ? 'rotate-180 text-blue-400' : ''" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+      <div x-show="openItem === 'lag-2'" x-collapse class="px-5 pb-5 sm:px-6 sm:pb-6 text-sm text-slate-300 leading-relaxed border-t border-white/[0.04] pt-4">
+        <p>
+          Pembaruan dilakukan secara <strong>bulanan</strong>. Begitu IDX dan KSEI mempublikasikan laporan rekapitulasi penutupan bulan baru di portal pengumuman resmi BEI, skrip otomasi kami (<code>scripts/update_data.py</code>) mengunduh dokumen, memverifikasi integritas angka, melakukan parsing tabel PDF ratusan halaman, dan memperbarui dataset dashboard.
+        </p>
+      </div>
+    </div>
+
+    <!-- ITEM 8 -->
+    <div x-show="matchQuery({ cat: 'lag', q: 'Mengapa harga saham live berbeda dengan harga di aplikasi sekuritas saya?', a: 'Harga saham pada dashboard IHSG Storm diambil melalui integrasi Yahoo Finance yang memiliki jeda waktu delayed feed sekitar 15 menit selama jam bursa.', keywords: 'harga live delayed delay 15 menit yahoo finance sekuritas real-time' })"
+      class="glass-panel rounded-2xl border border-white/[0.05] overflow-hidden transition-all duration-200"
+      :class="openItem === 'lag-3' ? 'border-blue-500/40 bg-slate-800/40' : 'hover:border-white/10'">
+      <button @click="openItem = openItem === 'lag-3' ? null : 'lag-3'"
+        class="w-full px-5 py-4 sm:px-6 sm:py-5 flex items-center justify-between gap-4 text-left">
+        <div class="flex items-center gap-3">
+          <span class="w-6 h-6 rounded-md bg-amber-500/20 text-amber-400 text-xs font-bold flex items-center justify-center shrink-0">8</span>
+          <span class="text-sm sm:text-base font-semibold text-slate-100">Mengapa harga saham berbeda dengan aplikasi sekuritas saya?</span>
+        </div>
+        <svg class="w-5 h-5 text-slate-400 transition-transform duration-200 shrink-0" :class="openItem === 'lag-3' ? 'rotate-180 text-blue-400' : ''" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+      <div x-show="openItem === 'lag-3'" x-collapse class="px-5 pb-5 sm:px-6 sm:pb-6 text-sm text-slate-300 leading-relaxed border-t border-white/[0.04] pt-4">
+        <p>
+          Harga saham pada dashboard IHSG Storm diambil melalui integrasi Yahoo Finance yang memiliki jeda waktu (*delayed feed*) sekitar <strong>15 menit</strong> selama jam perdagangan bursa berlangsung. Harga ini ditujukan untuk estimasi nilai pasar portofolio (*portfolio valuation approximation*), bukan sebagai terminal eksekusi *order trading real-time*.
+        </p>
+      </div>
+    </div>
+
+    <!-- ITEM 9 -->
+    <div x-show="matchQuery({ cat: 'legal', q: 'Apakah informasi di IHSG Storm merupakan rekomendasi jual/beli saham?', a: 'Sama sekali bukan. Semua data visualisasi dan estimasi valuasi disajikan murni untuk tujuan edukasi transparansi informasi dan riset independen.', keywords: 'rekomendasi saran investasi financial advice edukasi dyor' })"
+      class="glass-panel rounded-2xl border border-white/[0.05] overflow-hidden transition-all duration-200"
+      :class="openItem === 'legal-1' ? 'border-blue-500/40 bg-slate-800/40' : 'hover:border-white/10'">
+      <button @click="openItem = openItem === 'legal-1' ? null : 'legal-1'"
+        class="w-full px-5 py-4 sm:px-6 sm:py-5 flex items-center justify-between gap-4 text-left">
+        <div class="flex items-center gap-3">
+          <span class="w-6 h-6 rounded-md bg-rose-500/20 text-rose-400 text-xs font-bold flex items-center justify-center shrink-0">9</span>
+          <span class="text-sm sm:text-base font-semibold text-slate-100">Apakah informasi di IHSG Storm merupakan rekomendasi investasi?</span>
+        </div>
+        <svg class="w-5 h-5 text-slate-400 transition-transform duration-200 shrink-0" :class="openItem === 'legal-1' ? 'rotate-180 text-blue-400' : ''" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+      <div x-show="openItem === 'legal-1'" x-collapse class="px-5 pb-5 sm:px-6 sm:pb-6 text-sm text-slate-300 leading-relaxed border-t border-white/[0.04] pt-4">
+        <p class="font-semibold text-rose-400 mb-2">Sama sekali bukan.</p>
+        <p>
+          Semua data, visualisasi, dan estimasi valuasi pada IHSG Storm disajikan murni untuk tujuan edukasi, transparansi informasi, dan riset independen. Informasi ini tidak dapat dianggap sebagai nasihat keuangan (*financial advice*), rekomendasi investasi, atau ajakan untuk membeli maupun menjual instrumen efek apapun.
+        </p>
+      </div>
+    </div>
+
+    <!-- ITEM 10 -->
+    <div x-show="matchQuery({ cat: 'legal', q: 'Bagaimana jika ada keputusan investasi yang merugi berdasarkan data ini?', a: 'Segala keputusan investasi keuntungan maupun kerugian finansial yang timbul adalah tanggung jawab mutlak pribadi masing-masing investor. Pengguna diwajibkan selalu DYOR.', keywords: 'tanggung jawab rugi kerugian risiko dyor disclaimer idx' })"
+      class="glass-panel rounded-2xl border border-white/[0.05] overflow-hidden transition-all duration-200"
+      :class="openItem === 'legal-2' ? 'border-blue-500/40 bg-slate-800/40' : 'hover:border-white/10'">
+      <button @click="openItem = openItem === 'legal-2' ? null : 'legal-2'"
+        class="w-full px-5 py-4 sm:px-6 sm:py-5 flex items-center justify-between gap-4 text-left">
+        <div class="flex items-center gap-3">
+          <span class="w-6 h-6 rounded-md bg-rose-500/20 text-rose-400 text-xs font-bold flex items-center justify-center shrink-0">10</span>
+          <span class="text-sm sm:text-base font-semibold text-slate-100">Bagaimana tanggung jawab atas risiko dan keputusan investasi?</span>
+        </div>
+        <svg class="w-5 h-5 text-slate-400 transition-transform duration-200 shrink-0" :class="openItem === 'legal-2' ? 'rotate-180 text-blue-400' : ''" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+      <div x-show="openItem === 'legal-2'" x-collapse class="px-5 pb-5 sm:px-6 sm:pb-6 text-sm text-slate-300 leading-relaxed border-t border-white/[0.04] pt-4">
+        <p>
+          Segala keputusan transaksi, keuntungan, maupun kerugian finansial adalah <strong>tanggung jawab mutlak pribadi masing-masing investor</strong>. Pasar modal mengandung risiko fluktuasi harga yang dinamis. Pengguna diwajibkan untuk selalu melakukan analisis mandiri (<em>Do Your Own Research / DYOR</em>) dan memverifikasi ke sumber primer keterbukaan informasi di situs resmi BEI (<a href="https://www.idx.co.id" target="_blank" rel="noopener noreferrer" class="text-blue-400 underline">idx.co.id</a>) sebelum mengambil keputusan finansial.
+        </p>
+      </div>
+    </div>
+
+    <!-- ITEM 11 -->
+    <div x-show="matchQuery({ cat: 'legal', q: 'Apakah data pemegang saham dijamin 100% bebas kesalahan?', a: 'Kami berupaya maksimal menjaga akurasi konversi data dari dokumen PDF ratusan halaman. Namun format tata letak teks PDF terkadang mengalami pergeseran posisi koordinat atau kata yang menempel.', keywords: 'akurasi 100% garansi error pdf parsing glued token verifikasi' })"
+      class="glass-panel rounded-2xl border border-white/[0.05] overflow-hidden transition-all duration-200"
+      :class="openItem === 'legal-3' ? 'border-blue-500/40 bg-slate-800/40' : 'hover:border-white/10'">
+      <button @click="openItem = openItem === 'legal-3' ? null : 'legal-3'"
+        class="w-full px-5 py-4 sm:px-6 sm:py-5 flex items-center justify-between gap-4 text-left">
+        <div class="flex items-center gap-3">
+          <span class="w-6 h-6 rounded-md bg-rose-500/20 text-rose-400 text-xs font-bold flex items-center justify-center shrink-0">11</span>
+          <span class="text-sm sm:text-base font-semibold text-slate-100">Apakah data pemegang saham dijamin 100% bebas kesalahan?</span>
+        </div>
+        <svg class="w-5 h-5 text-slate-400 transition-transform duration-200 shrink-0" :class="openItem === 'legal-3' ? 'rotate-180 text-blue-400' : ''" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+      <div x-show="openItem === 'legal-3'" x-collapse class="px-5 pb-5 sm:px-6 sm:pb-6 text-sm text-slate-300 leading-relaxed border-t border-white/[0.04] pt-4">
+        <p class="mb-2">
+          Kami berupaya maksimal menjaga akurasi konversi data dari dokumen PDF setebal ratusan halaman. Namun, karena format publikasi KSEI menggunakan tata letak tanpa garis batas sel, potensi pergeseran posisi koordinat atau kata yang menempel (*glued tokens*) dapat terjadi.
+        </p>
+        <p>
+          Apabila Anda menemukan anomali angka atau teks, mohon gunakan tombol <strong>"Laporkan Kesalahan Data"</strong> agar tim pengembang kami segera memverifikasi dan memperbarui aturan ekstraksi.
+        </p>
+      </div>
+    </div>
+
+    <!-- ITEM 12 -->
+    <div x-show="matchQuery({ cat: 'report', q: 'Saya menemukan nama investor yang terpotong atau menempel dengan nama emiten. Mengapa?', a: 'Format PDF KSEI unruled table columns. Jika nama emiten berakhiran Tbk sangat panjang teks dapat menempel. Parser kami memiliki regex recovery.', keywords: 'glued tokens tbk menempel terpotong parsing glitch ksei pdf regex' })"
+      class="glass-panel rounded-2xl border border-white/[0.05] overflow-hidden transition-all duration-200"
+      :class="openItem === 'report-1' ? 'border-blue-500/40 bg-slate-800/40' : 'hover:border-white/10'">
+      <button @click="openItem = openItem === 'report-1' ? null : 'report-1'"
+        class="w-full px-5 py-4 sm:px-6 sm:py-5 flex items-center justify-between gap-4 text-left">
+        <div class="flex items-center gap-3">
+          <span class="w-6 h-6 rounded-md bg-emerald-500/20 text-emerald-400 text-xs font-bold flex items-center justify-center shrink-0">12</span>
+          <span class="text-sm sm:text-base font-semibold text-slate-100">Saya menemukan nama investor menempel dengan nama emiten. Mengapa hal itu terjadi?</span>
+        </div>
+        <svg class="w-5 h-5 text-slate-400 transition-transform duration-200 shrink-0" :class="openItem === 'report-1' ? 'rotate-180 text-blue-400' : ''" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+      <div x-show="openItem === 'report-1'" x-collapse class="px-5 pb-5 sm:px-6 sm:pb-6 text-sm text-slate-300 leading-relaxed border-t border-white/[0.04] pt-4">
+        <p class="mb-2">
+          Format dokumen PDF resmi KSEI menggunakan tata letak tabel tanpa garis pemisah sel (*unruled table columns*). Apabila nama emiten berakhiran kata "Tbk" sangat panjang atau nama investor melebihi koordinat standar, mesin PDF menggabungkan teks tersebut menjadi satu kata (misal: <code>TbkDRS.JOHNNY</code> atau <code>PartnershipL</code>).
+        </p>
+        <p>
+          Parser kami dilengkapi logika pemulihan (*regex recovery*), namun beberapa kombinasi nama unik baru dapat terlewat. Melalui laporan Anda, kami dapat menambahkan entri penimpa khusus di kamus <code>scripts/parser_overrides.json</code> agar data berikutnya 100% rapi.
+        </p>
+      </div>
+    </div>
+
+    <!-- ITEM 13 -->
+    <div x-show="matchQuery({ cat: 'report', q: 'Berapa lama laporan koreksi data saya akan diproses?', a: 'Laporan kesalahan parsing ditinjau dalam 1x24 hingga 48 jam kerja. Koreksi langsung dimasukkan ke basis kode penguraian dan diperbarui pada update bulanan.', keywords: 'sla respon proses berapa lama hari kerja verifikasi tiket' })"
+      class="glass-panel rounded-2xl border border-white/[0.05] overflow-hidden transition-all duration-200"
+      :class="openItem === 'report-2' ? 'border-blue-500/40 bg-slate-800/40' : 'hover:border-white/10'">
+      <button @click="openItem = openItem === 'report-2' ? null : 'report-2'"
+        class="w-full px-5 py-4 sm:px-6 sm:py-5 flex items-center justify-between gap-4 text-left">
+        <div class="flex items-center gap-3">
+          <span class="w-6 h-6 rounded-md bg-emerald-500/20 text-emerald-400 text-xs font-bold flex items-center justify-center shrink-0">13</span>
+          <span class="text-sm sm:text-base font-semibold text-slate-100">Berapa lama laporan koreksi data saya akan diproses?</span>
+        </div>
+        <svg class="w-5 h-5 text-slate-400 transition-transform duration-200 shrink-0" :class="openItem === 'report-2' ? 'rotate-180 text-blue-400' : ''" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+      <div x-show="openItem === 'report-2'" x-collapse class="px-5 pb-5 sm:px-6 sm:pb-6 text-sm text-slate-300 leading-relaxed border-t border-white/[0.04] pt-4">
+        <p class="mb-2">
+          Laporan kesalahan data ditinjau dalam rentang <strong>1x24 hingga 48 jam kerja</strong>.
+        </p>
+        <p>
+          Koreksi yang telah diverifikasi akan langsung dicatat ke file penimpa dan diperbarui pada sinkronisasi data bulanan berikutnya atau dirilis lebih cepat melalui pembaruan *patch* berkala.
+        </p>
+      </div>
+    </div>
+
+  </div> <!-- End accordion -->
+
+  <!-- SUPPORT MATRIX & CHANNELS CARD -->
+  <div class="glass-panel rounded-3xl p-6 sm:p-8 border border-white/[0.08] mt-8">
+    <h3 class="text-lg font-bold text-white mb-2 flex items-center gap-2">
+      <span class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
+      Matriks Layanan & Saluran Komunikasi (One-Person Company)
+    </h3>
+    <p class="text-xs sm:text-sm text-slate-400 mb-6">
+      IHSG Storm dikelola dalam model efisien One-Person Company (OPC) dengan otomasi agen AI. Kami memastikan setiap pertanyaan tertangani dengan standar terukur:
+    </p>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div class="bg-slate-900/60 p-4 rounded-xl border border-white/[0.05]">
+        <div class="text-xs font-bold text-blue-400 uppercase tracking-wider mb-1">Tier 0 • Mandiri</div>
+        <div class="text-sm font-semibold text-white mb-1">In-App FAQ & Tooltip</div>
+        <div class="text-xs text-slate-400">Penjelasan istilah KSEI, panduan tipe investor, dan disclaimer instan di dashboard.</div>
+      </div>
+      <div class="bg-slate-900/60 p-4 rounded-xl border border-white/[0.05]">
+        <div class="text-xs font-bold text-emerald-400 uppercase tracking-wider mb-1">Tier 1 • Formulir</div>
+        <div class="text-sm font-semibold text-white mb-1">In-App Widget Lapor</div>
+        <div class="text-xs text-slate-400">Tangkapan konteks otomatis kode emiten & investor. Respon audit dalam 24–48 jam kerja.</div>
+      </div>
+      <div class="bg-slate-900/60 p-4 rounded-xl border border-white/[0.05]">
+        <div class="text-xs font-bold text-purple-400 uppercase tracking-wider mb-1">Tier 2 • Komunitas</div>
+        <div class="text-sm font-semibold text-white mb-1">Kanal Update Telegram</div>
+        <div class="text-xs text-slate-400">Siaran rilis data bulanan KSEI dan diskusi sesama investor pasar modal.</div>
+      </div>
+      <div class="bg-slate-900/60 p-4 rounded-xl border border-white/[0.05]">
+        <div class="text-xs font-bold text-amber-400 uppercase tracking-wider mb-1">Tier 3 • Eskalasi</div>
+        <div class="text-sm font-semibold text-white mb-1">help@badai.tech</div>
+        <div class="text-xs text-slate-400">Khusus pertanyaan lisensi komersial, integrasi API, atau bug kritis P1.</div>
+      </div>
+    </div>
+  </div>
+
+</div>
