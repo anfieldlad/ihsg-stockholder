@@ -248,7 +248,7 @@ def parse_xlsx(path):
             "code": _code(code),
             "issuer": _text(row[columns["ISSUER_NAME"]]),
             "investor": _text(row[columns["INVESTOR_NAME"]]),
-            "shares": int(row[columns["TOTAL_HOLDING_SHARES"]] or 0),
+            "shares": int(float(row[columns["TOTAL_HOLDING_SHARES"]] or 0)),
             "percentage": round(float(row[columns["PERCENTAGE"]] or 0.0), 2),
             "local_foreign": _text(row[columns["LOCAL_FOREIGN"]]),
             "investor_type": _text(row[columns["INVESTOR_CLASSIFICATION"]]),
@@ -265,8 +265,10 @@ def parse_xlsx(path):
 
     as_of_label = source_date or "Unknown"
     if source_date:
-        day, mon, year = source_date.split("-")
-        as_of_label = f"{int(day)} {MONTH_NUM_TO_ID[MONTH_EN_TO_NUM[mon]]} {year}"
+        day, mon, year = _parse_date_components(source_date)
+        mon_num = MONTH_EN_TO_NUM.get(mon.capitalize(), 1)
+        mon_id = MONTH_NUM_TO_ID.get(mon_num, mon)
+        as_of_label = f"{int(day)} {mon_id} {year}"
 
     output = {
         "as_of_label": as_of_label,
@@ -285,11 +287,64 @@ def parse_xlsx(path):
     return len(items), source_date
 
 
+def _parse_date_components(date_val):
+    """Safely parse a date value into (day_str, mon_en_str, year_str).
+    Tolerates 'DD-Mon-YYYY', 'DD/MM/YYYY', 'YYYY-MM-DD', datetime/date objects, etc.
+    """
+    if isinstance(date_val, (datetime, date)):
+        return f"{date_val.day:02d}", MONTH_NUM_TO_EN[date_val.month], str(date_val.year)
+
+    val_str = str(date_val).strip()
+
+    # Match DD-Mon-YYYY or DD-MM-YYYY or with slashes (e.g. 30-Sep-2026, 30/09/2026)
+    m = re.match(r"^(\d{1,2})[-/](\w{3}|\d{1,2})[-/](\d{4})$", val_str)
+    if m:
+        d, m_part, y = m.groups()
+        if m_part.isdigit():
+            m_num = int(m_part)
+            mon_en = MONTH_NUM_TO_EN.get(m_num, "Jan")
+        else:
+            mon_en = m_part.capitalize()
+        return f"{int(d):02d}", mon_en, y
+
+    # Match YYYY-MM-DD or YYYY/MM/DD
+    m = re.match(r"^(\d{4})[-/](\w{3}|\d{1,2})[-/](\d{1,2})$", val_str)
+    if m:
+        y, m_part, d = m.groups()
+        if m_part.isdigit():
+            m_num = int(m_part)
+            mon_en = MONTH_NUM_TO_EN.get(m_num, "Jan")
+        else:
+            mon_en = m_part.capitalize()
+        return f"{int(d):02d}", mon_en, y
+
+    # Fallback splitting by punctuation
+    parts = re.split(r"[-/.\s]+", val_str)
+    if len(parts) >= 3:
+        p0, p1, p2 = parts[0], parts[1], parts[2]
+        if len(p0) == 4 and p0.isdigit():  # YYYY-MM-DD
+            y, m_part, d = p0, p1, p2
+        else:
+            d, m_part, y = p0, p1, p2
+        if m_part.isdigit():
+            mon_en = MONTH_NUM_TO_EN.get(int(m_part), "Jan")
+        else:
+            mon_en = m_part.capitalize()
+        return f"{int(d):02d}", mon_en, y
+
+    return "01", "Jan", "2026"
+
+
 def _format_date(value):
     """Return a date cell as 'DD-Mon-YYYY' (e.g. '30-Sep-2026')."""
     if isinstance(value, (datetime, date)):
         return f"{value.day:02d}-{MONTH_NUM_TO_EN[value.month]}-{value.year}"
-    return str(value).strip()
+    val_str = str(value).strip()
+    try:
+        d, m, y = _parse_date_components(val_str)
+        return f"{d}-{m}-{y}"
+    except Exception:
+        return val_str
 
 
 def _code(value):
@@ -305,7 +360,7 @@ def _text(value):
 
 def archive_xlsx(src_bytes_or_path, source_date):
     """Store the xlsx as scripts/shareholder_data_{MON}{YEAR}.xlsx."""
-    day, mon, year = source_date.split("-")
+    day, mon, year = _parse_date_components(source_date)
     dest = os.path.join(SCRIPT_DIR, f"shareholder_data_{mon.upper()}{year}.xlsx")
     if isinstance(src_bytes_or_path, bytes):
         with open(dest, "wb") as f:

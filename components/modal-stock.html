@@ -74,11 +74,11 @@
                     :title="h.investor" x-text="h.investor"></td>
                   <td class="py-3 px-4"><span class="px-2 py-1 rounded text-[11px] font-semibold"
                       :style="`background:${TYPE_COLORS[h.investor_type] || '#64748b'}22; color:${TYPE_COLORS[h.investor_type] || '#64748b'}`"
-                      x-text="TYPE_LABELS[h.investor_type] || h.investor_type"></span></td>
+                      x-text="TYPE_LABELS[h.investor_type] || (h.investor_type ? h.investor_type : 'Warkat / Tidak Terklasifikasi')"></span></td>
                   <td class="py-3 px-4"><span
-                      :class="h.local_foreign === 'L' ? 'text-emerald-400 bg-emerald-400/10' : 'text-rose-400 bg-rose-400/10'"
+                      :class="h.local_foreign === 'L' ? 'text-emerald-400 bg-emerald-400/10' : ((h.local_foreign === 'F' || h.local_foreign === 'A') ? 'text-rose-400 bg-rose-400/10' : 'text-slate-400 bg-slate-400/10')"
                       class="px-2 py-1 rounded text-[11px] font-semibold"
-                      x-text="h.local_foreign === 'L' ? 'Lokal' : 'Asing'"></span></td>
+                      x-text="h.local_foreign === 'L' ? 'Lokal' : ((h.local_foreign === 'F' || h.local_foreign === 'A') ? 'Asing' : 'Warkat / Scrip')"></span></td>
                   <td class="py-3 px-4 text-right tabular-nums text-slate-300" x-text="fmtShares(h.shares)"></td>
                   <td class="py-3 px-4 text-right font-bold text-white" x-text="h.percentage + '%'"></td>
                 </tr>

@@ -47,6 +47,18 @@ def static_files(filename: str) -> Response:
 
 # ── API routes ──
 
+@app.route("/api")
+@app.route("/api/index")
+@app.route("/api/health")
+def api_status() -> Response:
+    """API health and routing status endpoint."""
+    return jsonify({
+        "status": "ok",
+        "service": "IHSG Storm API",
+        "timestamp": datetime.now().isoformat()
+    })
+
+
 @app.route("/api/price/<code>")
 def get_price(code: str) -> Response:
     """Get live price for a single stock."""

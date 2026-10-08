@@ -31,6 +31,7 @@ export const storeConfig = {
     totalRecords: 0,
     localCount: 0,
     foreignCount: 0,
+    scripCount: 0,
 
     // Autocomplete
     autocompleteStocks: [],
@@ -47,13 +48,19 @@ export const storeConfig = {
     TYPE_LABELS: {
         CP: 'Corporate', ID: 'Individual', IB: 'Inv. Bank', SC: 'Sekuritas',
         MF: 'Reksa Dana', IS: 'Asuransi', PF: 'Dana Pensiun', OT: 'Lainnya',
-        FD: 'Foundation', YY: 'Yayasan'
+        FD: 'Foundation', YY: 'Yayasan',
+        '': 'Warkat / Tidak Terklasifikasi',
+        UNKNOWN: 'Warkat / Tidak Terklasifikasi',
+        'Warkat / Tidak Terklasifikasi': 'Warkat / Tidak Terklasifikasi'
     },
 
     TYPE_COLORS: {
         CP: '#3b82f6', ID: '#8b5cf6', IB: '#f59e0b', SC: '#06b6d4',
         MF: '#10b981', IS: '#ec4899', PF: '#f97316', OT: '#64748b',
-        FD: '#a78bfa', YY: '#34d399'
+        FD: '#a78bfa', YY: '#34d399',
+        '': '#64748b',
+        UNKNOWN: '#64748b',
+        'Warkat / Tidak Terklasifikasi': '#64748b'
     },
 
     async init() {
@@ -111,12 +118,31 @@ export const storeConfig = {
         this.totalInvestors = Object.keys(this.investorMap).length;
         this.totalRecords = items.length;
 
-        let loc = 0; let nloc = 0;
+        let loc = 0; let fgn = 0; let scrip = 0;
         for (const item of items) {
-            item.local_foreign === 'L' ? loc++ : nloc++;
+            if (item.local_foreign === 'L') {
+                loc++;
+            } else if (item.local_foreign === 'F' || item.local_foreign === 'A') {
+                fgn++;
+            } else {
+                scrip++;
+            }
         }
         this.localCount = loc;
-        this.foreignCount = nloc;
+        this.foreignCount = fgn;
+        this.scripCount = scrip;
+    },
+
+    getLFLabel(lf) {
+        if (lf === 'L') return 'Lokal';
+        if (lf === 'F' || lf === 'A') return 'Asing';
+        return 'Warkat / Scrip';
+    },
+
+    getLFClass(lf) {
+        if (lf === 'L') return 'text-emerald-400 bg-emerald-400/10';
+        if (lf === 'F' || lf === 'A') return 'text-rose-400 bg-rose-400/10';
+        return 'text-slate-400 bg-slate-400/10';
     },
 
     async loadComponent(id, url) {
@@ -155,7 +181,15 @@ export const storeConfig = {
         let rows = Object.entries(this.stockMap).map(([code, data]) => {
             let holders = data.holders;
             if (this.filterType) holders = holders.filter(h => h.investor_type === this.filterType);
-            if (this.filterLF) holders = holders.filter(h => h.local_foreign === this.filterLF);
+            if (this.filterLF) {
+                if (this.filterLF === 'L') {
+                    holders = holders.filter(h => h.local_foreign === 'L');
+                } else if (this.filterLF === 'F' || this.filterLF === 'A') {
+                    holders = holders.filter(h => h.local_foreign === 'F' || h.local_foreign === 'A');
+                } else if (this.filterLF === 'SCRIP' || this.filterLF === 'W') {
+                    holders = holders.filter(h => !h.local_foreign || (h.local_foreign !== 'L' && h.local_foreign !== 'F' && h.local_foreign !== 'A'));
+                }
+            }
 
             if (holders.length === 0 && (this.filterType || this.filterLF)) return null;
 

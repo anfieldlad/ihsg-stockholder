@@ -1,13 +1,19 @@
 const TYPE_COLORS = {
     CP: '#3b82f6', ID: '#8b5cf6', IB: '#f59e0b', SC: '#06b6d4',
     MF: '#10b981', IS: '#ec4899', PF: '#f97316', OT: '#64748b',
-    FD: '#a78bfa', YY: '#34d399'
+    FD: '#a78bfa', YY: '#34d399',
+    '': '#64748b',
+    UNKNOWN: '#64748b',
+    'Warkat / Tidak Terklasifikasi': '#64748b'
 };
 
 const TYPE_LABELS = {
     CP: 'Corporate', ID: 'Individual', IB: 'Inv. Bank', SC: 'Sekuritas',
     MF: 'Reksa Dana', IS: 'Asuransi', PF: 'Dana Pensiun', OT: 'Lainnya',
-    FD: 'Foundation', YY: 'Yayasan'
+    FD: 'Foundation', YY: 'Yayasan',
+    '': 'Warkat / Tidak Terklasifikasi',
+    UNKNOWN: 'Warkat / Tidak Terklasifikasi',
+    'Warkat / Tidak Terklasifikasi': 'Warkat / Tidak Terklasifikasi'
 };
 
 export function renderDashboardCharts(rawData, stockMap) {
@@ -26,7 +32,9 @@ export function renderDashboardCharts(rawData, stockMap) {
     if (typeCanvas) {
         const typeCounts = {};
         for (const item of rawData.items) {
-            typeCounts[item.investor_type] = (typeCounts[item.investor_type] || 0) + 1;
+            const rawType = item.investor_type ? item.investor_type.trim() : '';
+            const key = rawType || 'Warkat / Tidak Terklasifikasi';
+            typeCounts[key] = (typeCounts[key] || 0) + 1;
         }
         const labels = Object.keys(typeCounts).map(t => TYPE_LABELS[t] || t);
         const data = Object.values(typeCounts);
@@ -51,18 +59,28 @@ export function renderDashboardCharts(rawData, stockMap) {
         });
     }
 
-    // 2. Local vs Foreign
+    // 2. Local vs Foreign (tri-state: Lokal, Asing, Warkat/Scrip)
     const lfCanvas = document.getElementById('chartLF');
     if (lfCanvas) {
-        let localC = 0, foreignC = 0;
+        let localC = 0, foreignC = 0, scripC = 0;
         for (const item of rawData.items) {
-            if (item.local_foreign === 'L') localC++; else foreignC++;
+            if (item.local_foreign === 'L') {
+                localC++;
+            } else if (item.local_foreign === 'F' || item.local_foreign === 'A') {
+                foreignC++;
+            } else {
+                scripC++;
+            }
         }
+        const labels = scripC > 0 ? ['Lokal', 'Asing', 'Warkat / Scrip'] : ['Lokal', 'Asing'];
+        const data = scripC > 0 ? [localC, foreignC, scripC] : [localC, foreignC];
+        const colors = scripC > 0 ? ['#10b981', '#f43f5e', '#64748b'] : ['#10b981', '#f43f5e'];
+
         new Chart(lfCanvas, {
             type: 'doughnut',
             data: {
-                labels: ['Lokal', 'Asing'],
-                datasets: [{ data: [localC, foreignC], backgroundColor: ['#10b981', '#f43f5e'], borderWidth: 0, hoverOffset: 8 }]
+                labels: labels,
+                datasets: [{ data: data, backgroundColor: colors, borderWidth: 0, hoverOffset: 8 }]
             },
             options: {
                 responsive: true, maintainAspectRatio: false,
