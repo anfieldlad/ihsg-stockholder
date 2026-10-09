@@ -303,7 +303,7 @@ export const COPY = {
   states: {
     loading: "Memuat data kepemilikan saham...",
     loading_prices: "Memperbarui harga saham...",
-    error_load: "Gagal memuat data kepemilikan saham. Silakan periksa koneksi internet Anda.",
+    error_load: "Data belum bisa dimuat",
     btn_retry: "Coba Lagi",
     price_loading: "-",
     price_unavailable: "-",
@@ -315,9 +315,11 @@ export const COPY = {
     banner: "Disclaimer: Seluruh data disajikan untuk tujuan riset dan edukasi informasi publik, bukan rekomendasi beli atau jual saham. Keputusan investasi sepenuhnya menjadi tanggung jawab mandiri masing-masing investor (DYOR — Do Your Own Research).",
     footer_text: "Data bersumber dari publikasi resmi KSEI dan bursa dengan harga tertunda (delayed feed). Bukan merupakan nasihat keuangan atau anjuran transaksi.",
     footer_copy: "© 2026 IHSG Storm · by BAD.AI",
+    footer_privacy: "Bebas pelacak & tanpa cookie iklan",
     footer_disc: "Bukan saran investasi",
     footer_faq: "Pusat Bantuan & FAQ",
-    footer_report: "Laporkan Kesalahan Data"
+    footer_report: "Laporkan Kesalahan Data",
+    privacy_faq: "IHSG Storm mengutamakan privasi pengguna. Layanan ini sepenuhnya cookieless (tanpa cookie pelacak), tidak mengumpulkan Data Pribadi (PII), menghormati sinyal Do-Not-Track (DNT), dan bebas dari pelacak iklan pihak ketiga sesuai prinsip UU PDP."
   },
   investor_types: {
     CP: "Korporasi",

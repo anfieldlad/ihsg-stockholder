@@ -3,6 +3,16 @@ import { COPY } from './copy.js';
 import { toTitleCase, fmtNum, fmtShares, fmtPrice, fmtRp, fmtPct, fmtChangePct } from './utils.js';
 import { canonicalInvestorKey } from './normalize.js';
 import { renderWhaleChart } from './charts.js';
+import {
+    initAnalytics,
+    trackPageview,
+    trackSearch,
+    trackOpenStock,
+    trackOpenInvestor,
+    trackLockedClick,
+    trackFeedbackOpen,
+    trackFeedbackSubmit
+} from './analytics.js';
 
 export const storeConfig = {
     // Copy reference
@@ -87,10 +97,6 @@ export const storeConfig = {
     _priceDebounceTimer: null,
 
     async init() {
-        if (typeof window !== 'undefined' && typeof window.__markAppBooted === 'function') {
-            window.__markAppBooted();
-        }
-
         // Initialize Theme from localStorage or default 'a'
         try {
             const savedTheme = localStorage.getItem('ihsg-theme');
@@ -110,6 +116,10 @@ export const storeConfig = {
         // Keyboard navigation setup
         this.setupKeyboardListeners();
 
+        // Initialize cookieless analytics
+        initAnalytics();
+        trackPageview(this.currentTab || 'stocks');
+
         // Load Data
         try {
             this.loading = true;
@@ -121,9 +131,23 @@ export const storeConfig = {
             this.calculateStats();
             this.loading = false;
 
+            if (typeof window !== 'undefined' && typeof window.__markAppBooted === 'function') {
+                window.__markAppBooted();
+            }
+
             // Route handling
             this.handleHashRoute();
             window.addEventListener('hashchange', () => this.handleHashRoute());
+
+            // Window resize sync for active Whale Map
+            window.addEventListener('resize', () => {
+                if (this.showWhaleMap && this.cur) {
+                    if (this._whaleResizeTimer) clearTimeout(this._whaleResizeTimer);
+                    this._whaleResizeTimer = setTimeout(() => {
+                        this.renderActiveWhaleMap();
+                    }, 150);
+                }
+            });
 
             // Fetch prices for initial visible batch
             this.fetchVisiblePrices();
@@ -134,6 +158,9 @@ export const storeConfig = {
             console.error('Initialization error:', e);
             this.error = COPY.states.error_load;
             this.loading = false;
+            if (typeof window !== 'undefined' && typeof window.__triggerAppFallback === 'function') {
+                window.__triggerAppFallback('network_error', e);
+            }
         }
 
         // Online/Offline listeners
@@ -265,6 +292,18 @@ export const storeConfig = {
     },
 
     // Navigation & Tabs
+    goHome() {
+        if (this.currentTab !== 'stocks') {
+            this.setTab('stocks');
+        }
+        if (this.cur) {
+            this.closeDetail();
+        }
+        if (typeof window !== 'undefined') {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+    },
+
     setTab(tab) {
         this.currentTab = tab;
         this.showWhaleMap = false;
@@ -381,6 +420,8 @@ export const storeConfig = {
         const s = this.stockMap[code];
         if (!s) return;
 
+        trackOpenStock(code);
+
         if (isDrilldown && this.cur) {
             this.detailStack.push({ ...this.cur });
         } else if (!isDrilldown) {
@@ -406,6 +447,9 @@ export const storeConfig = {
     openInvestor(name, isDrilldown = false) {
         const inv = this.investorMap[name];
         if (!inv) return;
+
+        const invType = inv ? this.getTypeName(inv.type || (inv.holdings && inv.holdings[0] && inv.holdings[0].investor_type) || '') : 'Lainnya';
+        trackOpenInvestor(invType);
 
         if (isDrilldown && this.cur) {
             this.detailStack.push({ ...this.cur });
@@ -530,18 +574,84 @@ export const storeConfig = {
         };
     },
 
+    getVisibleWhaleContainer() {
+        const isDesktop = window.matchMedia('(min-width: 1024px)').matches;
+        const kind = this.cur ? this.cur.kind : 'stock';
+        const primaryId = kind === 'investor'
+            ? (isDesktop ? 'whaleMapContainerInv' : 'whaleMapContainerInvMobile')
+            : (isDesktop ? 'whaleMapContainer' : 'whaleMapContainerMobile');
+
+        // Check inside active root first (pane on desktop, sheet on mobile)
+        const root = isDesktop ? document.getElementById('pane') : document.getElementById('sheet');
+        if (root) {
+            const el = root.querySelector('#' + primaryId) || root.querySelector('.whale-map-container');
+            if (el) return el;
+        }
+
+        // Check any candidate that is actively visible
+        const candidateIds = kind === 'investor'
+            ? ['whaleMapContainerInvMobile', 'whaleMapContainerInv', 'whaleMapContainerMobile', 'whaleMapContainer']
+            : ['whaleMapContainerMobile', 'whaleMapContainer', 'whaleMapContainerInvMobile', 'whaleMapContainerInv'];
+        for (const id of candidateIds) {
+            const el = document.getElementById(id);
+            if (el && (el.offsetParent !== null || el.offsetWidth > 0 || el.offsetHeight > 0)) {
+                return el;
+            }
+        }
+
+        return document.getElementById(primaryId);
+    },
+
     toggleWhaleMap() {
         this.showWhaleMap = !this.showWhaleMap;
-        if (this.showWhaleMap && this.cur && this.cur.kind === 'stock') {
-            this.whaleLoading = true;
-            setTimeout(() => {
-                const el = document.getElementById('whaleMapContainer') || document.getElementById('whaleMapContainerMobile');
-                if (el) {
-                    const s = this.stockMap[this.cur.arg];
-                    renderWhaleChart(el, this.cur.arg, s ? s.holders : [], this.stockMap);
-                }
-                this.whaleLoading = false;
-            }, 50);
+        if (this.showWhaleMap) {
+            this.renderActiveWhaleMap();
+        } else {
+            this.whaleLoading = false;
+        }
+    },
+
+    async renderActiveWhaleMap() {
+        if (!this.cur || (this.cur.kind !== 'stock' && this.cur.kind !== 'investor')) {
+            return;
+        }
+
+        this.whaleLoading = true;
+
+        // Wait for Alpine DOM reactivity to apply x-show display state
+        await new Promise(resolve => requestAnimationFrame(resolve));
+        await new Promise(resolve => setTimeout(resolve, 30));
+
+        const el = this.getVisibleWhaleContainer();
+        if (!el) {
+            this.whaleLoading = false;
+            return;
+        }
+
+        try {
+            if (this.cur.kind === 'stock') {
+                const s = this.stockMap[this.cur.arg];
+                await renderWhaleChart(el, {
+                    kind: 'stock',
+                    code: this.cur.arg,
+                    holders: s ? s.holders : [],
+                    stockMap: this.stockMap,
+                    investorMap: this.investorMap,
+                    onRetry: () => this.renderActiveWhaleMap()
+                });
+            } else if (this.cur.kind === 'investor') {
+                const inv = this.investorMap[this.cur.arg];
+                await renderWhaleChart(el, {
+                    kind: 'investor',
+                    name: this.cur.arg,
+                    holdings: inv ? inv.holdings : [],
+                    stockMap: this.stockMap,
+                    investorMap: this.investorMap,
+                    onRetry: () => this.renderActiveWhaleMap()
+                });
+            }
+        } finally {
+            this.whaleLoading = false;
         }
     },
 
@@ -656,6 +766,9 @@ export const storeConfig = {
     },
 
     selectSearchResult(item, kind) {
+        if (this.searchQuery) {
+            trackSearch(this.searchQuery, (this.searchResults.stocks.length + this.searchResults.investors.length));
+        }
         this.closeSearch();
         if (kind === 'stock') {
             this.openStock(item.code);
@@ -664,10 +777,23 @@ export const storeConfig = {
         }
     },
 
+    handleSearchSubmit() {
+        const q = this.searchQuery.trim();
+        if (!q) return;
+        const res = this.searchResults;
+        trackSearch(q, (res.stocks.length + res.investors.length));
+        if (res.stocks.length > 0) {
+            this.selectSearchResult(res.stocks[0], 'stock');
+        } else if (res.investors.length > 0) {
+            this.selectSearchResult(res.investors[0], 'investor');
+        }
+    },
+
     // Pro Gates & Freemium v2
     openPro(why = 'general') {
         this.proWhy = why;
         this.proOpen = true;
+        trackLockedClick(why);
         if (window.location.hash !== `#/pro/${why}`) {
             history.pushState(null, '', `#/pro/${why}`);
         }
@@ -699,6 +825,7 @@ export const storeConfig = {
         if (!this.feedbackAvailable) {
             return;
         }
+        trackFeedbackOpen(context.category || 'general');
         this.feedbackSuccess = false;
         this.feedbackError = null;
         this.feedbackTicketId = null;
@@ -758,6 +885,7 @@ export const storeConfig = {
             const resData = await res.json().catch(() => ({}));
             this.feedbackTicketId = resData.ticket_id || `TICK-${Date.now()}`;
             this.feedbackSuccess = true;
+            trackFeedbackSubmit(this.feedbackForm.category || 'general');
         } catch (err) {
             console.warn('Feedback submission failed:', err);
             this.feedbackError = err.message || 'Gagal mengirim laporan ke server.';

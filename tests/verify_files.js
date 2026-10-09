@@ -18,6 +18,7 @@ const files = [
   `${prefix}src/store.js`,
   `${prefix}src/charts.js`,
   `${prefix}src/normalize.js`,
+  `${prefix}src/analytics.js`,
   `${prefix}src/copy.js`,
   `${prefix}src/utils.js`,
   'vercel.json'
@@ -46,7 +47,7 @@ console.log('OK: vercel.json contains valid rewrites configuration');
 
 // Run module import regression check
 const modPrefix = fs.existsSync('public/src') ? 'public/src/' : 'src/';
-const requiredModules = ['store.js', 'api.js', 'charts.js', 'copy.js', 'utils.js', 'normalize.js'].map(m => `${modPrefix}${m}`);
+const requiredModules = ['store.js', 'api.js', 'charts.js', 'copy.js', 'utils.js', 'normalize.js', 'analytics.js'].map(m => `${modPrefix}${m}`);
 for (const mod of requiredModules) {
   const fileUrl = pathToFileURL(path.resolve(process.cwd(), mod)).href;
   try {
@@ -57,4 +58,3 @@ for (const mod of requiredModules) {
     process.exit(1);
   }
 }
-

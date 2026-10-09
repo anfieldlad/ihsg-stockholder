@@ -8,7 +8,9 @@
   <meta name="robots" content="index, follow">
   <meta name="author" content="BAD AI">
   <link rel="canonical" href="https://ihsg.badai.tech/">
-  <link rel="icon" href="/favicon.ico" type="image/x-icon">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="alternate icon" href="/favicon.ico" type="image/x-icon">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="180x180">
 
   <!-- Open Graph -->
   <meta property="og:type" content="website">
@@ -52,36 +54,81 @@
   <!-- Self-hosted Scoped CSS (Zero Build Step, Tailwind CDN removed) -->
   <link rel="stylesheet" href="/assets/css/style.css">
 
-  <!-- Application Fallback Watcher (vanilla JS, runs before ES modules) -->
+  <!-- Application Watcher & Fallback (vanilla JS, runs before ES modules) -->
   <script>
     (function() {
       var booted = false;
+      var hintTimer = null;
+      var timeoutTimer = null;
+
+      function clearTimers() {
+        if (hintTimer) { clearTimeout(hintTimer); hintTimer = null; }
+        if (timeoutTimer) { clearTimeout(timeoutTimer); timeoutTimer = null; }
+      }
+
       window.__markAppBooted = function() {
+        if (booted) return;
         booted = true;
-        var el = document.getElementById('app-fallback');
-        if (el) el.style.display = 'none';
+        clearTimers();
+        var loadingEl = document.getElementById('app-loading');
+        if (loadingEl) loadingEl.style.display = 'none';
+        var fallbackEl = document.getElementById('app-fallback');
+        if (fallbackEl) fallbackEl.style.display = 'none';
+        var freshEl = document.getElementById('fresh');
+        if (freshEl) freshEl.style.display = '';
+        var layoutEl = document.getElementById('app-layout');
+        if (layoutEl) layoutEl.style.display = '';
       };
 
-      function triggerFallback(err) {
+      function triggerFallback(type, err) {
         if (booted) return;
-        var el = document.getElementById('app-fallback');
-        if (el) el.style.display = 'block';
-        var fresh = document.getElementById('fresh');
-        if (fresh) fresh.style.display = 'none';
-        if (err) console.error('IHSG Storm startup error / timeout:', err);
+        clearTimers();
+        var loadingEl = document.getElementById('app-loading');
+        if (loadingEl) loadingEl.style.display = 'none';
+        var freshEl = document.getElementById('fresh');
+        if (freshEl) freshEl.style.display = 'none';
+        var layoutEl = document.getElementById('app-layout');
+        if (layoutEl) layoutEl.style.display = 'none';
+
+        var fallbackEl = document.getElementById('app-fallback');
+        var msgEl = document.getElementById('app-fallback-msg');
+        var subEl = document.getElementById('app-fallback-sub');
+
+        if (type === 'script_error') {
+          if (msgEl) msgEl.textContent = 'Gagal memuat sistem aplikasi.';
+          if (subEl) subEl.textContent = 'Terjadi kendala teknis saat memuat komponen aplikasi. Silakan coba muat ulang halaman.';
+        } else {
+          // network_error, timeout, or general data failure
+          if (msgEl) msgEl.textContent = 'Data belum bisa dimuat';
+          if (subEl) subEl.textContent = 'Coba muat ulang. Jika tetap gagal, matikan pemblokir iklan atau coba beberapa menit lagi.';
+        }
+
+        if (fallbackEl) fallbackEl.style.display = 'block';
+        if (err) console.error('IHSG Storm startup error / fallback:', err);
       }
+
+      window.__triggerAppFallback = triggerFallback;
 
       window.addEventListener('error', function(event) {
         if (!booted) {
-          triggerFallback(event.error || event.message);
+          triggerFallback('script_error', event.error || event.message);
         }
       });
 
-      setTimeout(function() {
+      // Progress hint if loading takes longer than 8s ('Koneksi lambat, masih memuat...')
+      hintTimer = setTimeout(function() {
         if (!booted) {
-          triggerFallback('Alpine / module initialization timeout (>3s)');
+          var hintEl = document.getElementById('app-loading-hint');
+          if (hintEl) hintEl.style.display = 'block';
         }
-      }, 3000);
+      }, 8000);
+
+      // Long timeout (~25s) with no boot
+      timeoutTimer = setTimeout(function() {
+        if (!booted) {
+          triggerFallback('timeout', 'Batas waktu inisialisasi aplikasi terlampaui (>25s)');
+        }
+      }, 25000);
     })();
   </script>
 
@@ -100,9 +147,6 @@
 
     document.addEventListener('alpine:init', () => {
       Alpine.data('app', () => storeConfig);
-      if (typeof window.__markAppBooted === 'function') {
-        window.__markAppBooted();
-      }
     });
   </script>
   <script src="/assets/vendor/alpine.min.js" defer></script>
@@ -129,7 +173,14 @@
 
   <!-- Desktop Left Rail (>=1024px) -->
   <nav class="rail" id="rail" aria-label="Navigasi utama">
-    <div class="logo" aria-hidden="true">IH</div>
+    <!-- Brand Anchor: Vertical Lockup in 72px Rail -->
+    <a href="#/stocks" class="rail-brand" @click.prevent="goHome()" aria-label="IHSG Storm - Beranda">
+      <div class="logo" aria-hidden="true">IH</div>
+      <div class="rail-brand-text" aria-hidden="true">
+        <span class="rail-brand-name">IHSG</span>
+        <span class="rail-brand-sub">STORM</span>
+      </div>
+    </a>
     <button class="nb" type="button" @click="setTab('stocks')" :aria-current="currentTab === 'stocks' ? 'page' : null">
       <svg class="i"><use href="#i-list"/></svg>
       <span>Saham</span>
@@ -158,13 +209,20 @@
   <!-- App Wrapper -->
   <div class="page">
     <!-- Sticky Top Header -->
-    <header class="top">
+    <header class="top" role="banner">
       <div class="shell top-in">
-        <div class="logo" aria-hidden="true">IH</div>
+        <!-- Brand Lockup (Hidden on Desktop >=1024px) -->
+        <a href="#/stocks" class="top-brand" @click.prevent="goHome()" aria-label="IHSG Storm - Beranda">
+          <div class="logo" aria-hidden="true">IH</div>
+          <span class="top-brand-text"><b>IHSG</b> Storm</span>
+        </a>
+
+        <!-- Compact Search Trigger -->
         <button class="sbtn" type="button" @click="openSearch()" aria-label="Cari kode saham atau nama investor">
-          <svg class="i"><use href="#i-search"/></svg>
-          <span x-text="C.search.bar_placeholder">Cari kode saham atau investor...</span>
-          <kbd>Ctrl</kbd>&nbsp;<kbd>K</kbd>
+          <svg class="i s"><use href="#i-search"/></svg>
+          <span class="sbtn-text sbtn-short">Cari...</span>
+          <span class="sbtn-text sbtn-long" x-text="C.search.bar_placeholder">Cari kode saham atau investor...</span>
+          <kbd>Ctrl K</kbd>
         </button>
 
         <button class="theme-btn" type="button" @click="toggleTheme()" :title="theme === 'a' ? 'Mode Malam' : 'Mode Terang'" :aria-label="theme === 'a' ? 'Beralih ke mode malam' : 'Beralih ke mode terang'">
@@ -180,34 +238,53 @@
     <main class="shell">
       <!-- Fallback when JavaScript is disabled -->
       <noscript>
+        <style>#app-loading { display: none !important; }</style>
         <div class="state" style="margin: 40px auto; max-width: 480px;">
-          <b>Gagal memuat data kepemilikan saham. Silakan periksa koneksi internet Anda.</b>
+          <svg class="i" style="width:28px;height:28px;margin:0 auto 10px;color:var(--warn);display:block" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          <b>Data belum bisa dimuat</b>
           <p>JavaScript dinonaktifkan pada peramban Anda. Aktifkan JavaScript untuk memuat data IHSG Storm.</p>
         </div>
       </noscript>
 
-      <!-- Fallback when script fails or Alpine does not initialize within ~3s -->
+      <!-- Neutral Loading Panel (visible from first paint until booted) -->
+      <div id="app-loading" style="margin: 24px auto; max-width: 680px; padding: 0 16px;">
+        <div class="state" style="padding: 28px 16px 20px;">
+          <div class="loading-spinner" aria-hidden="true"></div>
+          <b id="app-loading-msg" style="font-size: 15px;">Memuat data kepemilikan saham...</b>
+          <p id="app-loading-hint" style="display: none; margin-top: 8px; font-size: 13px; color: var(--ink3);">Koneksi lambat, masih memuat...</p>
+        </div>
+        <div class="skel" aria-hidden="true"><div class="sk" style="width:38%"></div><div class="sk" style="width:62%;height:10px"></div></div>
+        <div class="skel" aria-hidden="true"><div class="sk" style="width:42%"></div><div class="sk" style="width:58%;height:10px"></div></div>
+        <div class="skel" aria-hidden="true"><div class="sk" style="width:35%"></div><div class="sk" style="width:65%;height:10px"></div></div>
+        <div class="skel" aria-hidden="true"><div class="sk" style="width:40%"></div><div class="sk" style="width:50%;height:10px"></div></div>
+      </div>
+
+      <!-- Fallback when script fails, network times out (~25s), or fetch rejects -->
       <div class="state" id="app-fallback" style="display: none; margin: 40px auto; max-width: 480px;">
-        <b id="app-fallback-msg">Gagal memuat data kepemilikan saham. Silakan periksa koneksi internet Anda.</b>
-        <p>Aplikasi belum berhasil diinisialisasi atau koneksi jaringan terputus.</p>
-        <button class="btn pri" type="button" onclick="location.reload()" style="margin: 0 auto; display: inline-flex;">Coba Lagi</button>
+        <svg class="i" style="width:28px;height:28px;margin:0 auto 10px;color:var(--warn);display:block" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        <b id="app-fallback-msg">Data belum bisa dimuat</b>
+        <p id="app-fallback-sub">Coba muat ulang. Jika tetap gagal, matikan pemblokir iklan atau coba beberapa menit lagi.</p>
+        <button class="btn pri" id="app-fallback-retry" type="button" onclick="location.reload()" style="margin: 0 auto; display: inline-flex;">Coba Lagi</button>
       </div>
 
       <!-- Freshness Indicator -->
-      <div class="fresh" role="status" id="fresh">
+      <div class="fresh" role="status" id="fresh" style="display: none;">
         <span class="dot"></span>
         <span>Data KSEI per <b x-text="asOfLabel || '30 September 2026'"></b> (pembaruan berkala) · Harga bursa tertunda 15 mnt</span>
         <button type="button" @click="openPro('freshness')">Info Pembaruan</button>
       </div>
 
       <!-- Master-Detail Layout -->
-      <div class="layout" :class="{ 'has-pane': currentTab !== 'analytics' && currentTab !== 'faq' }">
+      <div class="layout" id="app-layout" style="display: none;" :class="{ 'has-pane': currentTab !== 'analytics' && currentTab !== 'faq' }">
         <div class="col" id="col">
 
           <!-- VIEW: STOCKS -->
           <section class="view" :class="{ on: currentTab === 'stocks' }" id="v-stocks" aria-labelledby="h-stocks">
             <div class="view-head">
-              <h1 id="h-stocks" x-text="C.stocks.title">Saham</h1>
+              <div class="title-wrap">
+                <h1 id="h-stocks" x-text="C.stocks.title">Saham</h1>
+                <p class="tagline">Pantau kepemilikan saham dan pergerakan investor kakap</p>
+              </div>
               <p class="sub" id="sub-stocks" x-text="`${fmtNum(totalStocks)} emiten dengan pemegang saham ≥1%`"></p>
 
               <div class="tools">
@@ -569,7 +646,7 @@
 
           <!-- Stock Detail Pane -->
           <template x-if="cur && cur.kind === 'stock' && detailStock">
-            <div style="display:flex;flex-direction:column;height:100%">
+            <div class="pane-wrap" style="display:flex;flex-direction:column;height:100%;min-height:0">
               <div class="dh">
                 <button class="ib" type="button" x-show="detailStack.length > 0" @click="backDetail()" aria-label="Kembali">
                   <svg class="i"><use href="#i-back"/></svg>
@@ -580,7 +657,7 @@
                 </button>
               </div>
 
-              <div class="db">
+              <div class="db" tabindex="0" role="region" aria-label="Konten detail saham">
                 <div class="big" x-text="detailStock.code"></div>
                 <div class="d-iss" x-text="detailStock.issuerFormatted"></div>
 
@@ -642,7 +719,7 @@
                   <button class="btn sec" type="button" style="width:100%" @click="toggleWhaleMap()">
                     <span x-text="showWhaleMap ? 'Tutup Peta Relasi' : 'Peta Relasi Pemegang (Whale Map)'"></span>
                   </button>
-                  <div id="whaleMapContainer" x-show="showWhaleMap" style="width:100%;height:320px;margin-top:12px;border:1px solid var(--line);border-radius:var(--r-s)"></div>
+                  <div class="whale-map-container" id="whaleMapContainer" x-show="showWhaleMap" style="width:100%;height:320px;margin-top:12px;border:1px solid var(--line);border-radius:var(--r-s)"></div>
                 </div>
 
                 <!-- Lock Card for Remaining Holders -->
@@ -669,7 +746,7 @@
 
           <!-- Investor Detail Pane -->
           <template x-if="cur && cur.kind === 'investor' && detailInvestor">
-            <div style="display:flex;flex-direction:column;height:100%">
+            <div class="pane-wrap" style="display:flex;flex-direction:column;height:100%;min-height:0">
               <div class="dh">
                 <button class="ib" type="button" x-show="detailStack.length > 0" @click="backDetail()" aria-label="Kembali">
                   <svg class="i"><use href="#i-back"/></svg>
@@ -680,7 +757,7 @@
                 </button>
               </div>
 
-              <div class="db">
+              <div class="db" tabindex="0" role="region" aria-label="Konten profil investor">
                 <div class="big" style="font-size:24px" x-text="detailInvestor.nameFormatted"></div>
                 <div class="d-iss">
                   <span x-text="detailInvestor.typeName"></span> · <span class="tag" :class="getLFClass(detailInvestor.lf)" x-text="detailInvestor.lfLabel"></span>
@@ -711,6 +788,14 @@
                   </template>
                 </div>
 
+                <!-- Lazy Whale Map Button for Investor -->
+                <div style="margin-top:16px">
+                  <button class="btn sec" type="button" style="width:100%" @click="toggleWhaleMap()">
+                    <span x-text="showWhaleMap ? 'Tutup Peta Relasi' : 'Peta Relasi Pemegang (Whale Map)'"></span>
+                  </button>
+                  <div class="whale-map-container" id="whaleMapContainerInv" x-show="showWhaleMap" style="width:100%;height:320px;margin-top:12px;border:1px solid var(--line);border-radius:var(--r-s)"></div>
+                </div>
+
                 <div class="lock">
                   <svg class="i s"><use href="#i-lock"/></svg>
                   <div>
@@ -736,7 +821,7 @@
 
     <!-- One-Line Footer -->
     <footer class="shell foot">
-      <span>© 2026 IHSG Storm · by BAD.AI · Bukan saran investasi · <a href="#/faq" @click="setTab('faq')">Pusat Bantuan & FAQ</a><template x-if="feedbackAvailable"> · <a href="javascript:void(0)" @click="openFeedbackModal()">Laporkan Data</a></template></span>
+      <span>© 2026 IHSG Storm · by BAD.AI · Bebas pelacak &amp; tanpa cookie iklan · Bukan saran investasi · <a href="#/faq" @click="setTab('faq')">Pusat Bantuan &amp; FAQ</a><template x-if="feedbackAvailable"> · <a href="javascript:void(0)" @click="openFeedbackModal()">Laporkan Data</a></template></span>
     </footer>
   </div>
 
@@ -768,7 +853,7 @@
   <div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-label="Detail">
     <!-- Stock View in Sheet -->
     <template x-if="cur && cur.kind === 'stock' && detailStock">
-      <div style="display:flex;flex-direction:column;height:100%">
+      <div class="pane-wrap" style="display:flex;flex-direction:column;height:100%;min-height:0">
         <div class="dh">
           <button class="ib" type="button" x-show="detailStack.length > 0" @click="backDetail()" aria-label="Kembali">
             <svg class="i"><use href="#i-back"/></svg>
@@ -779,7 +864,7 @@
           </button>
         </div>
 
-        <div class="db">
+        <div class="db" tabindex="0" role="region" aria-label="Konten detail saham">
           <div class="big" x-text="detailStock.code"></div>
           <div class="d-iss" x-text="detailStock.issuerFormatted"></div>
 
@@ -837,7 +922,7 @@
             <button class="btn sec" type="button" style="width:100%" @click="toggleWhaleMap()">
               <span x-text="showWhaleMap ? 'Tutup Peta Relasi' : 'Peta Relasi Pemegang (Whale Map)'"></span>
             </button>
-            <div id="whaleMapContainerMobile" x-show="showWhaleMap" style="width:100%;height:280px;margin-top:12px;border:1px solid var(--line);border-radius:var(--r-s)"></div>
+            <div class="whale-map-container" id="whaleMapContainerMobile" x-show="showWhaleMap" style="width:100%;height:280px;margin-top:12px;border:1px solid var(--line);border-radius:var(--r-s)"></div>
           </div>
 
           <div class="lock" x-show="detailStock.holdersTotal > 5">
@@ -862,7 +947,7 @@
 
     <!-- Investor View in Sheet -->
     <template x-if="cur && cur.kind === 'investor' && detailInvestor">
-      <div style="display:flex;flex-direction:column;height:100%">
+      <div class="pane-wrap" style="display:flex;flex-direction:column;height:100%;min-height:0">
         <div class="dh">
           <button class="ib" type="button" x-show="detailStack.length > 0" @click="backDetail()" aria-label="Kembali">
             <svg class="i"><use href="#i-back"/></svg>
@@ -873,7 +958,7 @@
           </button>
         </div>
 
-        <div class="db">
+        <div class="db" tabindex="0" role="region" aria-label="Konten profil investor">
           <div class="big" style="font-size:24px" x-text="detailInvestor.nameFormatted"></div>
           <div class="d-iss">
             <span x-text="detailInvestor.typeName"></span> · <span class="tag" :class="getLFClass(detailInvestor.lf)" x-text="detailInvestor.lfLabel"></span>
@@ -904,6 +989,14 @@
             </template>
           </div>
 
+          <!-- Lazy Whale Map Button for Investor -->
+          <div style="margin-top:16px">
+            <button class="btn sec" type="button" style="width:100%" @click="toggleWhaleMap()">
+              <span x-text="showWhaleMap ? 'Tutup Peta Relasi' : 'Peta Relasi Pemegang (Whale Map)'"></span>
+            </button>
+            <div class="whale-map-container" id="whaleMapContainerInvMobile" x-show="showWhaleMap" style="width:100%;height:280px;margin-top:12px;border:1px solid var(--line);border-radius:var(--r-s)"></div>
+          </div>
+
           <div class="lock">
             <svg class="i s"><use href="#i-lock"/></svg>
             <div>
@@ -929,7 +1022,7 @@
   <div class="pal" id="pal" :class="{ on: searchOpen }" role="dialog" aria-modal="true" aria-label="Cari">
     <div class="pal-box">
       <div class="pal-h">
-        <input id="searchPaletteInput" type="search" autocomplete="off" placeholder="Ketik kode saham (misal: BBCA) atau nama investor" x-model="searchQuery" aria-label="Cari saham atau investor">
+        <input id="searchPaletteInput" type="search" autocomplete="off" placeholder="Ketik kode saham (misal: BBCA) atau nama investor" x-model="searchQuery" @keydown.enter="handleSearchSubmit()" aria-label="Cari saham atau investor">
         <button class="btn sec" type="button" @click="closeSearch()">Batal</button>
       </div>
 
@@ -990,7 +1083,7 @@
 
   <!-- Pro Plan Modal / Sheet (Oscar v2 Rp19k / Rp49k Tiers) -->
   <div class="sheet" id="proSheet" :class="{ on: proOpen }" role="dialog" aria-modal="true" aria-label="Paket Pro">
-    <div style="display:flex;flex-direction:column;height:100%">
+    <div class="pane-wrap" style="display:flex;flex-direction:column;height:100%;min-height:0">
       <div class="dh">
         <span class="tt" style="font-weight:800;letter-spacing:.05em">IHSG STORM PRO</span>
         <button class="ib" type="button" @click="closePro()" aria-label="Tutup">
@@ -998,7 +1091,7 @@
         </button>
       </div>
 
-      <div class="db">
+      <div class="db" tabindex="0" role="region" aria-label="Konten paket pro">
         <h2 style="font-size:22px;line-height:1.25;letter-spacing:-.02em;font-weight:800">Investasi Lebih Percaya Diri dengan Data Investor Kakap</h2>
         <p class="sub" style="margin-top:8px">Ketahui langkah konglomerat, investor institusi, dan pengendali sebelum pasar bereaksi luas.</p>
 
@@ -1048,7 +1141,7 @@
 
   <!-- Customer Success & Feedback Modal -->
   <div class="sheet" id="feedbackModal" :class="{ on: showFeedbackModal }" role="dialog" aria-modal="true" aria-label="Lapor Kesalahan Data">
-    <div style="display:flex;flex-direction:column;height:100%">
+    <div class="pane-wrap" style="display:flex;flex-direction:column;height:100%;min-height:0">
       <div class="dh">
         <span class="tt" style="font-weight:800">Laporkan Kesalahan Data atau Saran</span>
         <button class="ib" type="button" @click="closeFeedbackModal()" aria-label="Tutup">
@@ -1056,7 +1149,7 @@
         </button>
       </div>
 
-      <div class="db">
+      <div class="db" tabindex="0" role="region" aria-label="Konten laporan kendala">
         <!-- Success State -->
         <template x-if="feedbackSuccess">
           <div class="state" style="padding:20px 0">
