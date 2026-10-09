@@ -19,14 +19,21 @@ const noscriptMatch = indexHtml.match(/<noscript>([\s\S]*?)<\/noscript>/i);
 assert(noscriptMatch, '<noscript> block must be found in index.html');
 assert(noscriptMatch[1].includes(expectedErrorMsg), '<noscript> must contain states.error_load copy');
 
-// 3. Verify app-fallback element exists with error copy
+// 3. Verify neutral loading panel exists with states.loading copy
+const loadingMatch = indexHtml.match(/<div[^>]*id="app-loading"[^>]*>([\s\S]*?)<\/div>/i);
+assert(loadingMatch, '#app-loading container must exist in index.html');
+assert(indexHtml.includes(copyStrings.states.loading), 'index.html must contain states.loading copy in loading panel');
+
+// 4. Verify app-fallback element exists with error copy
 const fallbackMatch = indexHtml.match(/<div[^>]*id="app-fallback"[^>]*>([\s\S]*?)<\/div>/i);
 assert(fallbackMatch, '#app-fallback container must exist in index.html');
 assert(fallbackMatch[1].includes(expectedErrorMsg), '#app-fallback must contain states.error_load copy');
 
-// 4. Verify script watcher exists with 3000ms timeout and error listener
+// 5. Verify script watcher exists with error listener, 8s progress hint, 25s timeout, and boot hook
 assert(indexHtml.includes("window.addEventListener('error'"), 'index.html must attach unhandled error listener');
-assert(indexHtml.includes('3000'), 'index.html must specify ~3s (3000ms) fallback timeout');
+assert(indexHtml.includes('8000'), 'index.html must specify ~8s (8000ms) progress hint timeout');
+assert(indexHtml.includes('Koneksi lambat, masih memuat...'), 'index.html must include slow connection hint copy');
+assert(indexHtml.includes('25000'), 'index.html must specify ~25s (25000ms) long fallback timeout');
 assert(indexHtml.includes('__markAppBooted'), 'index.html must integrate __markAppBooted hook');
 
 console.log('[SUCCESS] Fallback markup and watcher verification PASSED!');
