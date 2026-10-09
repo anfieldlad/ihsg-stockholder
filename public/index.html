@@ -698,7 +698,7 @@
                   <button class="btn sec" type="button" style="width:100%" @click="toggleWhaleMap()">
                     <span x-text="showWhaleMap ? 'Tutup Peta Relasi' : 'Peta Relasi Pemegang (Whale Map)'"></span>
                   </button>
-                  <div id="whaleMapContainer" x-show="showWhaleMap" style="width:100%;height:320px;margin-top:12px;border:1px solid var(--line);border-radius:var(--r-s)"></div>
+                  <div class="whale-map-container" id="whaleMapContainer" x-show="showWhaleMap" style="width:100%;height:320px;margin-top:12px;border:1px solid var(--line);border-radius:var(--r-s)"></div>
                 </div>
 
                 <!-- Lock Card for Remaining Holders -->
@@ -765,6 +765,14 @@
                       <span class="m num" x-text="`${fmtNum(h.s || h.shares)} lbr`"></span>
                     </button>
                   </template>
+                </div>
+
+                <!-- Lazy Whale Map Button for Investor -->
+                <div style="margin-top:16px">
+                  <button class="btn sec" type="button" style="width:100%" @click="toggleWhaleMap()">
+                    <span x-text="showWhaleMap ? 'Tutup Peta Relasi' : 'Peta Relasi Pemegang (Whale Map)'"></span>
+                  </button>
+                  <div class="whale-map-container" id="whaleMapContainerInv" x-show="showWhaleMap" style="width:100%;height:320px;margin-top:12px;border:1px solid var(--line);border-radius:var(--r-s)"></div>
                 </div>
 
                 <div class="lock">
@@ -893,7 +901,7 @@
             <button class="btn sec" type="button" style="width:100%" @click="toggleWhaleMap()">
               <span x-text="showWhaleMap ? 'Tutup Peta Relasi' : 'Peta Relasi Pemegang (Whale Map)'"></span>
             </button>
-            <div id="whaleMapContainerMobile" x-show="showWhaleMap" style="width:100%;height:280px;margin-top:12px;border:1px solid var(--line);border-radius:var(--r-s)"></div>
+            <div class="whale-map-container" id="whaleMapContainerMobile" x-show="showWhaleMap" style="width:100%;height:280px;margin-top:12px;border:1px solid var(--line);border-radius:var(--r-s)"></div>
           </div>
 
           <div class="lock" x-show="detailStock.holdersTotal > 5">
@@ -958,6 +966,14 @@
                 <span class="m num" x-text="`${fmtNum(h.s || h.shares)} lbr`"></span>
               </button>
             </template>
+          </div>
+
+          <!-- Lazy Whale Map Button for Investor -->
+          <div style="margin-top:16px">
+            <button class="btn sec" type="button" style="width:100%" @click="toggleWhaleMap()">
+              <span x-text="showWhaleMap ? 'Tutup Peta Relasi' : 'Peta Relasi Pemegang (Whale Map)'"></span>
+            </button>
+            <div class="whale-map-container" id="whaleMapContainerInvMobile" x-show="showWhaleMap" style="width:100%;height:280px;margin-top:12px;border:1px solid var(--line);border-radius:var(--r-s)"></div>
           </div>
 
           <div class="lock">

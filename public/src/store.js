@@ -125,6 +125,16 @@ export const storeConfig = {
             this.handleHashRoute();
             window.addEventListener('hashchange', () => this.handleHashRoute());
 
+            // Window resize sync for active Whale Map
+            window.addEventListener('resize', () => {
+                if (this.showWhaleMap && this.cur) {
+                    if (this._whaleResizeTimer) clearTimeout(this._whaleResizeTimer);
+                    this._whaleResizeTimer = setTimeout(() => {
+                        this.renderActiveWhaleMap();
+                    }, 150);
+                }
+            });
+
             // Fetch prices for initial visible batch
             this.fetchVisiblePrices();
 
@@ -533,18 +543,84 @@ export const storeConfig = {
         };
     },
 
+    getVisibleWhaleContainer() {
+        const isDesktop = window.matchMedia('(min-width: 1024px)').matches;
+        const kind = this.cur ? this.cur.kind : 'stock';
+        const primaryId = kind === 'investor'
+            ? (isDesktop ? 'whaleMapContainerInv' : 'whaleMapContainerInvMobile')
+            : (isDesktop ? 'whaleMapContainer' : 'whaleMapContainerMobile');
+
+        // Check inside active root first (pane on desktop, sheet on mobile)
+        const root = isDesktop ? document.getElementById('pane') : document.getElementById('sheet');
+        if (root) {
+            const el = root.querySelector('#' + primaryId) || root.querySelector('.whale-map-container');
+            if (el) return el;
+        }
+
+        // Check any candidate that is actively visible
+        const candidateIds = kind === 'investor'
+            ? ['whaleMapContainerInvMobile', 'whaleMapContainerInv', 'whaleMapContainerMobile', 'whaleMapContainer']
+            : ['whaleMapContainerMobile', 'whaleMapContainer', 'whaleMapContainerInvMobile', 'whaleMapContainerInv'];
+        for (const id of candidateIds) {
+            const el = document.getElementById(id);
+            if (el && (el.offsetParent !== null || el.offsetWidth > 0 || el.offsetHeight > 0)) {
+                return el;
+            }
+        }
+
+        return document.getElementById(primaryId);
+    },
+
     toggleWhaleMap() {
         this.showWhaleMap = !this.showWhaleMap;
-        if (this.showWhaleMap && this.cur && this.cur.kind === 'stock') {
-            this.whaleLoading = true;
-            setTimeout(() => {
-                const el = document.getElementById('whaleMapContainer') || document.getElementById('whaleMapContainerMobile');
-                if (el) {
-                    const s = this.stockMap[this.cur.arg];
-                    renderWhaleChart(el, this.cur.arg, s ? s.holders : [], this.stockMap);
-                }
-                this.whaleLoading = false;
-            }, 50);
+        if (this.showWhaleMap) {
+            this.renderActiveWhaleMap();
+        } else {
+            this.whaleLoading = false;
+        }
+    },
+
+    async renderActiveWhaleMap() {
+        if (!this.cur || (this.cur.kind !== 'stock' && this.cur.kind !== 'investor')) {
+            return;
+        }
+
+        this.whaleLoading = true;
+
+        // Wait for Alpine DOM reactivity to apply x-show display state
+        await new Promise(resolve => requestAnimationFrame(resolve));
+        await new Promise(resolve => setTimeout(resolve, 30));
+
+        const el = this.getVisibleWhaleContainer();
+        if (!el) {
+            this.whaleLoading = false;
+            return;
+        }
+
+        try {
+            if (this.cur.kind === 'stock') {
+                const s = this.stockMap[this.cur.arg];
+                await renderWhaleChart(el, {
+                    kind: 'stock',
+                    code: this.cur.arg,
+                    holders: s ? s.holders : [],
+                    stockMap: this.stockMap,
+                    investorMap: this.investorMap,
+                    onRetry: () => this.renderActiveWhaleMap()
+                });
+            } else if (this.cur.kind === 'investor') {
+                const inv = this.investorMap[this.cur.arg];
+                await renderWhaleChart(el, {
+                    kind: 'investor',
+                    name: this.cur.arg,
+                    holdings: inv ? inv.holdings : [],
+                    stockMap: this.stockMap,
+                    investorMap: this.investorMap,
+                    onRetry: () => this.renderActiveWhaleMap()
+                });
+            }
+        } finally {
+            this.whaleLoading = false;
         }
     },
 
