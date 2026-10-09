@@ -625,7 +625,7 @@
 
           <!-- Stock Detail Pane -->
           <template x-if="cur && cur.kind === 'stock' && detailStock">
-            <div style="display:flex;flex-direction:column;height:100%">
+            <div class="pane-wrap" style="display:flex;flex-direction:column;height:100%;min-height:0">
               <div class="dh">
                 <button class="ib" type="button" x-show="detailStack.length > 0" @click="backDetail()" aria-label="Kembali">
                   <svg class="i"><use href="#i-back"/></svg>
@@ -636,7 +636,7 @@
                 </button>
               </div>
 
-              <div class="db">
+              <div class="db" tabindex="0" role="region" aria-label="Konten detail saham">
                 <div class="big" x-text="detailStock.code"></div>
                 <div class="d-iss" x-text="detailStock.issuerFormatted"></div>
 
@@ -725,7 +725,7 @@
 
           <!-- Investor Detail Pane -->
           <template x-if="cur && cur.kind === 'investor' && detailInvestor">
-            <div style="display:flex;flex-direction:column;height:100%">
+            <div class="pane-wrap" style="display:flex;flex-direction:column;height:100%;min-height:0">
               <div class="dh">
                 <button class="ib" type="button" x-show="detailStack.length > 0" @click="backDetail()" aria-label="Kembali">
                   <svg class="i"><use href="#i-back"/></svg>
@@ -736,7 +736,7 @@
                 </button>
               </div>
 
-              <div class="db">
+              <div class="db" tabindex="0" role="region" aria-label="Konten profil investor">
                 <div class="big" style="font-size:24px" x-text="detailInvestor.nameFormatted"></div>
                 <div class="d-iss">
                   <span x-text="detailInvestor.typeName"></span> · <span class="tag" :class="getLFClass(detailInvestor.lf)" x-text="detailInvestor.lfLabel"></span>
@@ -832,7 +832,7 @@
   <div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-label="Detail">
     <!-- Stock View in Sheet -->
     <template x-if="cur && cur.kind === 'stock' && detailStock">
-      <div style="display:flex;flex-direction:column;height:100%">
+      <div class="pane-wrap" style="display:flex;flex-direction:column;height:100%;min-height:0">
         <div class="dh">
           <button class="ib" type="button" x-show="detailStack.length > 0" @click="backDetail()" aria-label="Kembali">
             <svg class="i"><use href="#i-back"/></svg>
@@ -843,7 +843,7 @@
           </button>
         </div>
 
-        <div class="db">
+        <div class="db" tabindex="0" role="region" aria-label="Konten detail saham">
           <div class="big" x-text="detailStock.code"></div>
           <div class="d-iss" x-text="detailStock.issuerFormatted"></div>
 
@@ -926,7 +926,7 @@
 
     <!-- Investor View in Sheet -->
     <template x-if="cur && cur.kind === 'investor' && detailInvestor">
-      <div style="display:flex;flex-direction:column;height:100%">
+      <div class="pane-wrap" style="display:flex;flex-direction:column;height:100%;min-height:0">
         <div class="dh">
           <button class="ib" type="button" x-show="detailStack.length > 0" @click="backDetail()" aria-label="Kembali">
             <svg class="i"><use href="#i-back"/></svg>
@@ -937,7 +937,7 @@
           </button>
         </div>
 
-        <div class="db">
+        <div class="db" tabindex="0" role="region" aria-label="Konten profil investor">
           <div class="big" style="font-size:24px" x-text="detailInvestor.nameFormatted"></div>
           <div class="d-iss">
             <span x-text="detailInvestor.typeName"></span> · <span class="tag" :class="getLFClass(detailInvestor.lf)" x-text="detailInvestor.lfLabel"></span>
@@ -1062,7 +1062,7 @@
 
   <!-- Pro Plan Modal / Sheet (Oscar v2 Rp19k / Rp49k Tiers) -->
   <div class="sheet" id="proSheet" :class="{ on: proOpen }" role="dialog" aria-modal="true" aria-label="Paket Pro">
-    <div style="display:flex;flex-direction:column;height:100%">
+    <div class="pane-wrap" style="display:flex;flex-direction:column;height:100%;min-height:0">
       <div class="dh">
         <span class="tt" style="font-weight:800;letter-spacing:.05em">IHSG STORM PRO</span>
         <button class="ib" type="button" @click="closePro()" aria-label="Tutup">
@@ -1070,7 +1070,7 @@
         </button>
       </div>
 
-      <div class="db">
+      <div class="db" tabindex="0" role="region" aria-label="Konten paket pro">
         <h2 style="font-size:22px;line-height:1.25;letter-spacing:-.02em;font-weight:800">Investasi Lebih Percaya Diri dengan Data Investor Kakap</h2>
         <p class="sub" style="margin-top:8px">Ketahui langkah konglomerat, investor institusi, dan pengendali sebelum pasar bereaksi luas.</p>
 
@@ -1120,7 +1120,7 @@
 
   <!-- Customer Success & Feedback Modal -->
   <div class="sheet" id="feedbackModal" :class="{ on: showFeedbackModal }" role="dialog" aria-modal="true" aria-label="Lapor Kesalahan Data">
-    <div style="display:flex;flex-direction:column;height:100%">
+    <div class="pane-wrap" style="display:flex;flex-direction:column;height:100%;min-height:0">
       <div class="dh">
         <span class="tt" style="font-weight:800">Laporkan Kesalahan Data atau Saran</span>
         <button class="ib" type="button" @click="closeFeedbackModal()" aria-label="Tutup">
@@ -1128,7 +1128,7 @@
         </button>
       </div>
 
-      <div class="db">
+      <div class="db" tabindex="0" role="region" aria-label="Konten laporan kendala">
         <!-- Success State -->
         <template x-if="feedbackSuccess">
           <div class="state" style="padding:20px 0">
