@@ -202,3 +202,19 @@ export function trackFeedbackSubmit(category) {
     category: String(category || 'general')
   });
 }
+
+/**
+ * Funnel Event 8: Login Started (M1-3)
+ * Fired when user initiates Google Sign-In.
+ */
+export function trackLoginStart() {
+  trackEvent('login_start');
+}
+
+/**
+ * Funnel Event 9: Login Succeeded (M1-3)
+ * Strict privacy: records success signal only, NEVER user email, name or UID (No PII).
+ */
+export function trackLoginSuccess() {
+  trackEvent('login_success');
+}

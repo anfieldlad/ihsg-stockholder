@@ -20,6 +20,8 @@ const {
   trackLockedClick,
   trackFeedbackOpen,
   trackFeedbackSubmit,
+  trackLoginStart,
+  trackLoginSuccess,
   isDntEnabled
 } = await import(analyticsFileUrl);
 
@@ -129,7 +131,16 @@ assert.strictEqual(recordedEvents[6].name, 'feedback_submit');
 assert.deepStrictEqual(recordedEvents[6].data, { category: 'data_error' });
 assert.strictEqual(recordedEvents[6].data.message, undefined, 'Must not store feedback message to protect privacy');
 assert.strictEqual(recordedEvents[6].data.contact, undefined, 'Must not store contact info to protect privacy');
-console.log('  [PASS] All 7 funnel events verified with correct names and PII-free payloads');
+
+// Test trackLoginStart & trackLoginSuccess (M1-3 Auth Funnel Events)
+trackLoginStart();
+assert.strictEqual(recordedEvents.length, 8);
+assert.strictEqual(recordedEvents[7].name, 'login_start');
+
+trackLoginSuccess();
+assert.strictEqual(recordedEvents.length, 9);
+assert.strictEqual(recordedEvents[8].name, 'login_success');
+console.log('  [PASS] All 9 funnel events verified with correct names and PII-free payloads');
 
 // Test 5: Exception suppression (never throw if umami.track throws)
 console.log('[Test 5] Exception suppression...');
