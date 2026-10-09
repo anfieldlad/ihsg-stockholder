@@ -35,6 +35,8 @@ def test_worker_file_exists():
     assert "x-origin-auth" in content
     assert "x-client-ip" in content
     assert "x-forwarded-for" in content
+    assert "x-real-ip" in content
+    assert "forwarded" in content
     assert "private, no-store" in content
     assert "https://ihsg.badai.tech" in content
     assert "env.ASSETS.fetch(request)" in content
@@ -142,6 +144,8 @@ def test_worker_header_sanitization_rules():
         "X-Origin-Auth": "malicious-secret",
         "x-client-ip": "10.0.0.1",
         "X-Forwarded-For": "10.0.0.2",
+        "X-Real-IP": "10.0.0.3",
+        "Forwarded": "for=10.0.0.4",
         "cf-connecting-ip": "203.0.113.50",
         "User-Agent": "Mozilla/5.0",
     }
@@ -152,6 +156,8 @@ def test_worker_header_sanitization_rules():
     cleaned.pop("x-origin-auth", None)
     cleaned.pop("x-client-ip", None)
     cleaned.pop("x-forwarded-for", None)
+    cleaned.pop("x-real-ip", None)
+    cleaned.pop("forwarded", None)
 
     cleaned["x-origin-auth"] = secret
     cleaned["x-client-ip"] = raw_headers.get("cf-connecting-ip", "")
@@ -159,6 +165,8 @@ def test_worker_header_sanitization_rules():
     assert cleaned["x-origin-auth"] == "real-origin-secret-key"
     assert cleaned["x-client-ip"] == "203.0.113.50"
     assert "x-forwarded-for" not in cleaned
+    assert "x-real-ip" not in cleaned
+    assert "forwarded" not in cleaned
 
 
 def test_worker_leak_guard():

@@ -213,7 +213,7 @@ assert(worker && typeof worker.fetch === 'function', 'worker.js must export defa
   }
 }
 
-// Test 7: Strips client-supplied X-Origin-Auth, X-Client-IP, and X-Forwarded-For
+// Test 7: Strips client-supplied X-Origin-Auth, X-Client-IP, X-Forwarded-For, X-Real-IP, and Forwarded
 {
   let forwardedRequest = null;
   const originalFetch = globalThis.fetch;
@@ -233,6 +233,8 @@ assert(worker && typeof worker.fetch === 'function', 'worker.js must export defa
         'X-Origin-Auth': 'spoofed-attacker-secret',
         'x-client-ip': '1.2.3.4',
         'X-Forwarded-For': '198.51.100.1',
+        'X-Real-IP': '198.51.100.2',
+        'Forwarded': 'for=198.51.100.3',
         'CF-Connecting-IP': '198.51.100.99',
       },
     });
@@ -241,7 +243,9 @@ assert(worker && typeof worker.fetch === 'function', 'worker.js must export defa
     assert.strictEqual(forwardedRequest.headers.get('X-Origin-Auth'), 'legit-secret-key-abcdef');
     assert.strictEqual(forwardedRequest.headers.get('X-Client-IP'), '198.51.100.99');
     assert.strictEqual(forwardedRequest.headers.get('X-Forwarded-For'), null);
-    console.log('[PASS] Test 7: Client-supplied X-Origin-Auth, X-Client-IP, and X-Forwarded-For stripped');
+    assert.strictEqual(forwardedRequest.headers.get('X-Real-IP'), null);
+    assert.strictEqual(forwardedRequest.headers.get('Forwarded'), null);
+    console.log('[PASS] Test 7: Client-supplied X-Origin-Auth, X-Client-IP, X-Forwarded-For, X-Real-IP, and Forwarded stripped');
   } finally {
     globalThis.fetch = originalFetch;
   }

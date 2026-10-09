@@ -21,6 +21,8 @@ export default {
       newHeaders.delete('x-origin-auth');
       newHeaders.delete('x-client-ip');
       newHeaders.delete('x-forwarded-for');
+      newHeaders.delete('x-real-ip');
+      newHeaders.delete('forwarded');
       newHeaders.set('X-Origin-Auth', originSecret);
       newHeaders.set('X-Client-IP', request.headers.get('CF-Connecting-IP') ?? '');
 
