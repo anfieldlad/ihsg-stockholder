@@ -109,7 +109,8 @@ def test_uu_pdp_compliance_sections():
     assert "DELETE /api/v1/me" in content
     assert "10 tahun" in content or "10 Tahun" in content  # UU Dokumen Perusahaan
     assert "Umami" in content
-    assert "Xendit" in content
+    assert "Mayar" in content
+    assert "Xendit" not in content
     assert "Firebase" in content
 
 

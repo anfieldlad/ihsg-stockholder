@@ -60,7 +60,8 @@ def test_regulatory_and_pass_content():
     assert "UU" in privacy and "27" in privacy and "2022" in privacy
     assert "Firebase" in privacy
     assert "Google" in privacy
-    assert "Xendit" in privacy
+    assert "Mayar" in privacy
+    assert "Xendit" not in privacy
     assert "Umami" in privacy
     assert "/api/v1/me/export" in privacy
     assert "DELETE /api/v1/me" in privacy
@@ -73,7 +74,10 @@ def test_regulatory_and_pass_content():
     assert "No Refund" in refund
     assert "48 jam" in refund or "48" in refund
     assert "ganda" in refund.lower() or "double charge" in refund.lower()
-    assert "Xendit" in refund
+    assert "Mayar" in refund
+    assert "Xendit" not in refund
+    assert "[A]" in refund
+    assert "Saldo" in refund or "saldo" in refund.lower()
     print("  [OK] 03-kebijakan-refund.md refund rules verified.")
     
     # Disclaimer OJK
@@ -83,6 +87,8 @@ def test_regulatory_and_pass_content():
     assert "BUKAN" in disclaimer or "bukan penasihat investasi" in disclaimer.lower()
     assert "DYOR" in disclaimer or "Do Your Own Research" in disclaimer
     assert "Buy / Sell Signals" in disclaimer
+    assert "Mayar" in disclaimer
+    assert "Xendit" not in disclaimer
     print("  [OK] 04-disclaimer-ojk.md OJK disclaimer rules verified.")
     
     # CS Playbook
@@ -92,7 +98,18 @@ def test_regulatory_and_pass_content():
     assert "refund" in cs.lower()
     assert "hapus akun" in cs.lower()
     assert "Erin" in cs
+    assert "Mayar" in cs
+    assert "Xendit" not in cs
+    assert "[A]" in cs
+    assert "Saldo" in cs or "saldo" in cs.lower()
     print("  [OK] 05-customer-support-playbook.md CS templates verified.")
+
+    # README Manifest & Placeholders Checklist
+    readme = (DOCS_LEGAL_DIR / "README.md").read_text(encoding="utf-8")
+    assert "Harus diisi Bobby" in readme
+    assert "Mayar" in readme
+    assert "Xendit" not in readme
+    print("  [OK] README.md manifest & Bobby's checklist verified.")
 
     # D10 Disclaimer and Paywall Wording
     d10 = (DOCS_LEGAL_DIR / "disclaimer-and-paywall-wording.md").read_text(encoding="utf-8")

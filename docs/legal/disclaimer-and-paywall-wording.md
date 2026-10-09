@@ -175,7 +175,7 @@ Pelindungan Data: BAD.AI bertindak sebagai Pengendali Data Pribadi sesuai UU No.
 ### 5.2 Notifikasi Transparansi Data di Modal Checkout
 Ditempatkan tepat di bawah rincian tagihan pembayaran:
 - **Transparansi Pemrosesan:**  
-  *Data yang Diproses:* Alamat email Google & ID Akun (untuk penerbitan pass akses digital), serta ID Referensi Transaksi Xendit.  
+  *Data yang Diproses:* Alamat email Google & ID Akun (untuk penerbitan pass akses digital), serta ID Referensi Transaksi Mayar.  
   *Jaminan Keamanan Finansial:* Pembayaran diproses secara aman melalui gerbang pembayaran berizin Bank Indonesia. Kami **TIDAK PERNAH** meminta, memproses, atau menyimpan nomor kartu kredit/debit, CVV, PIN perbankan, ataupun NIK/KTP Anda.  
   *Analitik Tanpa Cookie Pihak Ketiga:* Lalu lintas web diukur secara agregat tanpa cookie pelacak lintas situs (didukung oleh Umami Cloud).
 

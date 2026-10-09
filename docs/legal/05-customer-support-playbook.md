@@ -24,7 +24,7 @@ Sebagai garda terdepan layanan IHSG Storm (`ihsg.badai.tech`), komunikasi dukung
 | Kategori Masalah | Prioritas | SLA Respon Pertama | Target Penyelesaian | PIC Utama |
 | :--- | :--- | :--- | :--- | :--- |
 | **Akses Belum Aktif Pasca-Bayar** | **P1 (Kritis)** | **< 2 Jam Kerja** | < 4 Jam Kerja | Erin (Manual Check) / Bobby |
-| **Klaim Pembayaran Ganda / Refund** | **P1 (Kritis)** | **< 4 Jam Kerja** | < 24 Jam Kerja | Erin & Bobby (Xendit Verify) |
+| **Klaim Pembayaran Ganda / Refund** | **P1 (Kritis)** | **< 4 Jam Kerja** | < 24 Jam Kerja | Erin & Bobby (Mayar Verify) |
 | **Permohonan Hapus Akun (UU PDP)** | **P2 (Tinggi)** | **< 12 Jam Kerja** | < 24 Jam Kerja | Erin / Script Deletion |
 | **Laporan Data Salah (Glued Token)** | **P3 (Sedang)** | **< 24 Jam Kerja** | Rilis update bulanan | Erin (Triase) -> Dwight |
 | **Pertanyaan Umum / Saran Fitur** | **P4 (Rendah)** | **< 48 Jam Kerja** | Roadmap bulanan | Erin |
@@ -81,7 +81,7 @@ Halo Kak [Nama Pengguna],
 
 Mohon maaf sekali atas ketidaknyamanan yang Kakak alami perihal pass akses yang belum langsung aktif setelah pembayaran. Kami siap membantu menyelesaikan ini segera!
 
-Berdasarkan pengecekan kami pada sistem gerbang pembayaran Xendit dengan ID Transaksi [Nomor Invoice/Xendit ID], pembayaran Kakak untuk [Pass Investor / Pakar 1-Bulan] sebenarnya telah sukses diterima. Keterlambatan aktivasi ini disebabkan oleh jeda sesaat pada penerimaan sinyal webhook ke server kami.
+Berdasarkan pengecekan kami pada sistem gerbang pembayaran Mayar dengan ID Transaksi [Nomor Invoice/Mayar ID], pembayaran Kakak untuk [Pass Investor / Pakar 1-Bulan] sebenarnya telah sukses diterima. Keterlambatan aktivasi ini disebabkan oleh jeda sesaat pada penerimaan sinyal webhook ke server kami.
 
 Kami telah mengaktifkan pass akses Kakak secara manual sekarang juga. 
 
@@ -108,10 +108,10 @@ Setelah kami memeriksa sistem kami dengan email [Email Akun], kami belum menemuk
 
 Agar kami dapat langsung melacak dan mengaktifkan akses Kakak secara manual, mohon bantu kami dengan mengirimkan:
 1. Tangkapan layar (screenshot) bukti transfer sukses dari m-banking / e-wallet Kakak (yang menampilkan jam, nominal, dan Nomor Referensi Bank/RRN).
-2. Kode faktur / Invoice ID Xendit (jika tercantum pada layar pembayaran).
+2. Kode faktur / Invoice ID Mayar atau tautan invoice Mayar (jika tercantum pada layar pembayaran).
 3. Alamat email Google yang Kakak gunakan saat login di IHSG Storm.
 
-Segera setelah kami menerima bukti tersebut, kami akan segera mencocokkan ke dashboard gateway dan langsung menyalakan akses pass Kakak dalam waktu kurang dari 1 jam.
+Segera setelah kami menerima bukti tersebut, kami akan segera mencocokkan ke dashboard gateway Mayar dan langsung menyalakan akses pass Kakak dalam waktu kurang dari 1 jam.
 
 Terima kasih atas kerja sama dan kesabaran Kakak!
 
@@ -123,20 +123,32 @@ Erin — Client Success IHSG Storm (BAD.AI)
 
 ### SKENARIO 3: Permohonan Pengembalian Dana (Refund Request)
 
+#### Prosedur Operasional Standar (SOP Internal): Verifikasi & Eksekusi Refund Mayar (Erin & Bobby)
+1. **Verifikasi Bukti Transaksi:** Cocokkan Invoice ID Mayar, bukti bayar QRIS, jam transaksi, dan Nomor Referensi Bank (RRN) yang dilaporkan pengguna.
+2. **Akses Dashboard Mayar:** Masuk ke Dashboard Mayar (`web.mayar.id` atau sandbox `web.mayar.club`) pada menu *Transaksi / Invoices*.
+3. **Pemeriksaan Status Transaksi:** Pastikan transaksi berstatus *Berhasil / Paid* dan verifikasi apakah terjadi pemotongan ganda (*double charge*) dalam rentang waktu $\le 48$ jam atau kegagalan aktivasi permanen 2x24 jam.
+4. **Cek Kecukupan Saldo Aktif:** Pastikan Saldo Aktif (*Dashboard Balance*) akun Mayar IHSG Storm mencukupi nominal refund. Sesuai Poin 5 Ketentuan Layanan Mayar, dana refund dipotong langsung dari Saldo Aktif merchant.
+5. **Eksekusi Refund di Dashboard Mayar:** [A] Inisiasi pengembalian dana melalui fitur Refund pada transaksi terkait di dashboard Mayar (`web.mayar.id`). Saldo aktif Mayar akan terpotong secara otomatis senilai transaksi refund.
+6. **[A] Penanganan Khusus Rel Pembayaran QRIS:** [A] Jika pembalikan otomatis QRIS ke sumber dana pengguna mengalami kendala teknis jaringan bank/e-wallet pengirim, lakukan transfer manual dari rekening operasional ke rekening/e-wallet pengguna terdaftar dan catat nomor referensi transfer pada tiket.
+7. **Kirim Konfirmasi:** Kirimkan tanggapan resmi ke pengguna menggunakan Template 3A (jika disetujui) atau Template 3B (jika ditolak sesuai kebijakan).
+
+---
+
 #### Kasus 3A: Refund DISETUJUI (Transaksi Ganda / Double Charge Terverifikasi)
 ```text
 Halo Kak [Nama Pengguna],
 
 Terima kasih telah menunggu dan mengonfirmasi bukti transaksi kepada kami.
 
-Setelah dilakukan pengecekan mendalam pada log pembayaran Xendit, kami mengonfirmasi bahwa memang telah terjadi pemotongan saldo ganda (double charge) untuk invoice [Nomor Invoice] akibat gangguan jaringan perbankan saat pemindaian QRIS.
+Setelah dilakukan pengecekan mendalam pada log pembayaran Mayar, kami mengonfirmasi bahwa memang telah terjadi pemotongan saldo ganda (double charge) untuk invoice [Nomor Invoice Mayar] akibat gangguan jaringan perbankan saat pemindaian QRIS.
 
 Permohonan pengembalian dana (refund) Kakak sebesar [Nomor Nominal, misal: Rp 19.000 / Rp 49.000] telah kami SETUJUI 100%.
 
 Berikut detail proses pengembalian dana:
-- Metode Refund: Transfer Bank / Pembalikan QRIS
-- Bank Tujuan: [Nama Bank & Nomor Rekening Pelanggan]
-- Estimasi Dana Masuk: 1 - 3 hari kerja bank (tergantung kliring bank terkait)
+- Metode Refund: Pembalikan Saldo via Dashboard Mayar / Transfer Bank Pengembalian
+- Rekening / Akun Tujuan: [Nama Bank / E-Wallet & Nomor Rekening Pelanggan]
+- [A] Sumber Pengembalian: Diproses langsung dari Saldo Aktif Dashboard Mayar IHSG Storm
+- Estimasi Dana Masuk: 1 - 3 hari kerja bank (tergantung kliring perbankan penerbit)
 
 Sementara itu, satu pass akses aktif tetap menyala di akun Kakak dan dapat digunakan seperti biasa.
 
@@ -237,8 +249,8 @@ Erin — Client Success IHSG Storm (BAD.AI)
 
 ## 4. Panduan Eskalasi Masalah (Escalation Path)
 
-1. **Kendala Sistemik / Gateway Down (Xendit Webhook Error):**
-   - Jika >2 pengguna melaporkan akses tertunda dalam 1 jam, eskalasikan langsung ke Dwight (Engineering) dan Bobby (Founder) untuk memeriksa status koneksi API/server.
+1. **Kendala Sistemik / Gateway Down (Mayar Webhook Error):**
+   - Jika >2 pengguna melaporkan akses tertunda dalam 1 jam, eskalasikan langsung ke Dwight (Engineering) dan Bobby (Founder) untuk memeriksa status koneksi API/server Mayar (`api.mayar.id` / webhook endpoint).
 2. **Pertanyaan Nasihat Saham / Pom-Pom:**
    - Apabila ada pengguna mendesak meminta rekomendasi beli saham ("Min, saham X besok bakal terbang gak?"), tegaskan secara sopan bahwa tim IHSG Storm adalah penyedia data independen, bukan penasihat investasi OJK, dan arahkan membaca halaman `/legal/disclaimer`.
 3. **Ancaman Hukum / Sengketa Finansial:**

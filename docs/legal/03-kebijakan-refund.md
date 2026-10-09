@@ -31,7 +31,7 @@ Pengembalian dana 100% (penuh) hanya dapat diproses dalam 2 (dua) kondisi teknis
 - **Solusi:** Transaksi kedua yang berlebih akan dikembalikan 100% atau, atas persetujuan Pengguna, dialihkan untuk memperpanjang durasi masa aktif pass berikutnya (*pass stacking*).
 
 ### 2.2 Kegagalan Sistem Total dalam Penyerahan Akses (Permanent Delivery Failure)
-- **Kondisi:** Pembayaran Pengguna telah sukses terpotong dan terkonfirmasi valid oleh payment gateway Xendit, namun sistem backend IHSG Storm mengalami kegagalan teknis sehingga hak akses tidak aktif dalam waktu **2 x 24 jam kerja**, dan tim dukungan teknis kami tidak mampu mengaktifkannya secara manual setelah dilaporkan.
+- **Kondisi:** Pembayaran Pengguna telah sukses terpotong dan terkonfirmasi valid oleh payment gateway Mayar, namun sistem backend IHSG Storm mengalami kegagalan teknis sehingga hak akses tidak aktif dalam waktu **2 x 24 jam kerja**, dan tim dukungan teknis kami tidak mampu mengaktifkannya secara manual setelah dilaporkan.
 - **Solusi:** Pengembalian dana 100% dari nominal yang dibayarkan.
 
 ---
@@ -63,24 +63,30 @@ Apabila Anda mengalami kendala pembayaran ganda atau kegagalan aktivasi sistem, 
 ### 5.1 Saluran Pengajuan Resmi
 Kirimkan permohonan Anda ke:
 - **Email Dukungan:** `support@badai.tech`
-- **Subjek Email:** `[Klaim Refund] Permohonan Pengembalian Dana - [ID Transaksi/Invoice Xendit]`
+- **Subjek Email:** `[Klaim Refund] Permohonan Pengembalian Dana - [ID Transaksi/Invoice Mayar]`
 - **Batas Waktu Pengajuan:** Maksimal **48 jam kalender** sejak waktu transaksi pembayaran berhasil.
 
 ### 5.2 Bukti dan Informasi yang Wajib Dilampirkan:
 1. Alamat email akun Google yang terdaftar di IHSG Storm.
-2. Nomor ID Faktur / Invoice ID Xendit (contoh: `INV-IHSG-XXXXXX`).
+2. Nomor ID Faktur / Invoice ID Mayar atau tautan invoice Mayar (contoh: ID transaksi Mayar atau `INV-MAYAR-XXXXXX`).
 3. Tangkapan layar (*screenshot*) bukti pembayaran resmi dari aplikasi perbankan atau e-wallet (menampilkan tanggal, jam, nominal transaksi, dan Nomor Referensi Bank / RRN).
-4. Nomor rekening bank tujuan pengembalian dana (Nama Bank, Nomor Rekening, dan Nama Pemilik Rekening yang wajib sama dengan identitas pembayar).
+4. Nomor rekening bank atau akun e-wallet tujuan pengembalian dana (Nama Bank/E-Wallet, Nomor Rekening/HP, dan Nama Pemilik Rekening yang wajib sama dengan identitas pembayar).
 
 ---
 
-## 6. Standar Waktu Penyelesaian (SLA Penanganan Refund)
+## 6. Standar Waktu Penyelesaian & Mekanisme Pengembalian Dana Mayar (SLA)
 
-1. **Pemeriksaan & Verifikasi Data:** Tim Client Success akan memverifikasi log pembayaran pada backend dan dashboard gateway Xendit dalam waktu maksimal **1 x 24 jam kerja**.
-2. **Konfirmasi Keputusan:** Pengguna akan menerima notifikasi tertulis mengenai status permohonan (Disetujui atau Ditolak disertai alasan objektif).
-3. **Pencairan Dana (Disbursement):**
-   - Apabila disetujui, pengembalian dana akan diproses dalam waktu **3 hingga 5 hari kerja bank**.
-   - Biaya pemrosesan transfer bank pihak ketiga (jika ada) akan ditanggung oleh Pengelola untuk kasus kesalahan teknis sistem internal.
+1. **Pemeriksaan & Verifikasi Data:**
+   - Tim Client Success akan memverifikasi log pembayaran internal dan status transaksi pada Dashboard Mayar (`web.mayar.id`) dalam waktu maksimal **1 x 24 jam kerja**.
+2. **Konfirmasi Keputusan:**
+   - Pengguna akan menerima notifikasi tertulis mengenai status permohonan (Disetujui atau Ditolak disertai alasan objektif).
+3. **Mekanisme Eksekusi Refund Mayar (Per Ketentuan Mayar & Riset Ryan):**
+   - **Inisiasi dari Saldo Dashboard Mayar:** Sesuai ketentuan operasional Mayar (Poin 5 Ketentuan Layanan Mayar), pengembalian dana dieksekusi oleh Pengelola melalui dashboard Mayar dan nilai penuh pengembalian dana akan langsung memotong **Saldo Aktif (*Dashboard Balance*)** Pengelola.
+   - **[A] Metode Pengembalian Dana:** [A] Pengembalian dana QRIS diproses melalui pembalikan saldo QRIS/e-wallet oleh Mayar atau transfer dana pengembalian dari saldo akun merchant ke rekening/e-wallet pembeli.
+   - **[A] Ketersediaan Saldo Merchant:** [A] Eksekusi refund bergantung pada kecukupan Saldo Aktif merchant di Mayar. Jika saldo aktif belum mencukupi (akibat masa kliring/settlement H+3), pengembalian akan diproses segera setelah settlement dana tercatat di saldo atau penyesuaian saldo dilakukan.
+4. **Pencairan Dana (Disbursement SLA):**
+   - [A] Apabila disetujui, dana efektif masuk kembali ke rekening/e-wallet Pengguna dalam waktu **1 hingga 3 hari kerja bank** (maksimal 3 hingga 5 hari kerja bank tergantung jadwal kliring perbankan penerbit).
+   - Biaya pemrosesan transaksi atau biaya transfer bank pihak ketiga (jika timbul) akan ditanggung sepenuhnya oleh Pengelola untuk kasus kesalahan teknis sistem internal.
 
 ---
 

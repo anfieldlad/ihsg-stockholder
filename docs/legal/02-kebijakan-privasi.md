@@ -25,9 +25,9 @@ Kami menerapkan prinsip minimalisasi data yang sangat ketat (*strict data minimi
 1. **Identitas Akun (Google OAuth via Firebase):**
    - Alamat email Google, Nama tampilan (*display name*), dan ID Unik Pengguna Google (*Firebase User Identifier / UID*).
    - Kami **TIDAK PERNAH** meminta atau menyimpan kata sandi (*password*) Anda; proses autentikasi ditangani sepenuhnya oleh Google OAuth.
-2. **Referensi Transaksi Pembayaran (Xendit Payment Gateway):**
-   - ID Pembayaran internal (*payment ID*), ID Faktur Xendit (*Xendit Invoice ID*), nominal transaksi, metode pembayaran (misal: QRIS / E-Wallet), dan status transaksi.
-   - **TIDAK ADA DATA KARTU/BANK MENTAH:** Seluruh pembayaran diproses melalui *hosted checkout* terlisensi Bank Indonesia (Xendit/Mayar). Kami **TIDAK PERNAH** mengumpulkan, memproses, atau menyimpan nomor kartu kredit/debit, nomor CVV, PIN, atau kredensial perbankan Pengguna.
+2. **Referensi Transaksi Pembayaran (Mayar Payment Gateway):**
+   - ID Pembayaran internal (*payment ID*), ID Faktur / Transaksi Mayar (*Mayar Invoice ID / Payment ID*), tautan pembayaran (*payment link*), nominal transaksi, metode pembayaran (misal: QRIS Dinamis / E-Wallet), dan status transaksi.
+   - **TIDAK ADA DATA KARTU/BANK MENTAH:** Seluruh pembayaran diproses melalui *hosted checkout* terlisensi Bank Indonesia (Mayar — PT Mayar Solusi Karya). Kami **TIDAK PERNAH** mengumpulkan, memproses, atau menyimpan nomor kartu kredit/debit, nomor CVV, PIN, atau kredensial perbankan Pengguna.
 3. **Analitik Penggunaan Platform (Privacy-First Analytics):**
    - Data telemetri agregat melalui **Umami Cloud** (platform analitik sumber terbuka yang patuh privasi).
    - Pengumpulan data tidak menggunakan cookie pihak ketiga (*no third-party tracking cookies*), tidak melacak riwayat lintas situs, dan alamat IP Pengguna dianonimkan (*anonymized IP hash*).
@@ -67,7 +67,7 @@ Kami menyimpan data pribadi Anda hanya selama diperlukan untuk tujuan pemrosesan
 | Kategori Data | Elemen Data | Masa Simpan (Retention Window) | Dasar Aturan |
 | :--- | :--- | :--- | :--- |
 | **Profil Pengguna** | Email Google, Nama, Google UID | Selama pass aktif + 30 hari pasca-permohonan penghapusan | Keperluan operasional akun & masa sanggah |
-| **Transaksi Finansial** | ID Faktur Xendit, Nominal, Waktu Bayar | **10 Tahun** | Kewajiban Undang-Undang Dokumen Perusahaan (UU No. 8/1997) & Perpajakan |
+| **Transaksi Finansial** | ID Faktur Mayar, Nominal, Waktu Bayar | **10 Tahun** | Kewajiban Undang-Undang Dokumen Perusahaan (UU No. 8/1997) & Perpajakan |
 | **Tiket Umpan Balik** | Kontak pelapor, deskripsi laporan | 90 hari setelah tiket terselesaikan | Pelacakan kualitas data |
 | **Riwayat Publik KSEI** | Nama pemegang saham emiten publik | Permanen (Arsip Terbuka) | Keterbukaan informasi pasar modal |
 
@@ -101,7 +101,7 @@ Anda berhak mengetahui data apa saja yang kami simpan mengenai diri Anda dan men
 
 Kami **TIDAK PERNAH MENJUAL, MENYEWAKAN, ATAU MEMPERDAGANGKAN** data pribadi Pengguna kepada pihak ketiga atau pengiklan manapun. Data hanya dibagikan kepada mitra pemroses infrastruktur terpercaya yang terikat perjanjian kerahasiaan:
 1. **Google Firebase (Autentikasi):** Memvalidasi identitas login Google OAuth Anda.
-2. **Xendit / Mayar (Payment Gateway):** Memproses invoice dan verifikasi status pembayaran pass berbayar.
+2. **Mayar (Payment Gateway — PT Mayar Solusi Karya):** Memproses invoice dan tautan pembayaran QRIS, antarmuka hosted checkout, serta verifikasi webhook status pembayaran pass berbayar.
 3. **Resend (Email Transaksional):** Mengirimkan tanda terima pembayaran dan pengingat perpanjangan pass.
 4. **Telegram (Bot API):** Mengirimkan pesan alert saham pantauan (hanya jika Anda mengaktifkan bot).
 5. **Aparat Penegak Hukum:** Hanya apabila diwajibkan secara tegas oleh perintah pengadilan atau hukum Republik Indonesia yang sah.
