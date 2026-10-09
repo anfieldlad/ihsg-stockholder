@@ -104,6 +104,10 @@ def scan_repo_for_unauthorized_badai_tech(root_dir: Path) -> list[str]:
         # Test suites:
         Path("tests/test_site_config.py"),          # This test suite
         Path("tests/test_seo_phase0.py"),           # SEO validation assertions
+        Path("tests/test_worker_proxy.js"),         # Cloudflare Worker proxy mock test
+        Path("tests/test_worker_proxy.py"),         # Cloudflare Worker proxy test
+        # Cloudflare Worker proxy (upstream proxy target):
+        Path("worker.js"),
         # Generated build files that mirror site_config.SITE_URL:
         Path("public/index.html"),
         Path("public/sitemap.xml"),
