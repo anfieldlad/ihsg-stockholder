@@ -87,10 +87,6 @@ export const storeConfig = {
     _priceDebounceTimer: null,
 
     async init() {
-        if (typeof window !== 'undefined' && typeof window.__markAppBooted === 'function') {
-            window.__markAppBooted();
-        }
-
         // Initialize Theme from localStorage or default 'a'
         try {
             const savedTheme = localStorage.getItem('ihsg-theme');
@@ -121,6 +117,10 @@ export const storeConfig = {
             this.calculateStats();
             this.loading = false;
 
+            if (typeof window !== 'undefined' && typeof window.__markAppBooted === 'function') {
+                window.__markAppBooted();
+            }
+
             // Route handling
             this.handleHashRoute();
             window.addEventListener('hashchange', () => this.handleHashRoute());
@@ -134,6 +134,9 @@ export const storeConfig = {
             console.error('Initialization error:', e);
             this.error = COPY.states.error_load;
             this.loading = false;
+            if (typeof window !== 'undefined' && typeof window.__triggerAppFallback === 'function') {
+                window.__triggerAppFallback('network_error', e);
+            }
         }
 
         // Online/Offline listeners

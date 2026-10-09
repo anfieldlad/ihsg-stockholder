@@ -52,36 +52,81 @@
   <!-- Self-hosted Scoped CSS (Zero Build Step, Tailwind CDN removed) -->
   <link rel="stylesheet" href="/assets/css/style.css">
 
-  <!-- Application Fallback Watcher (vanilla JS, runs before ES modules) -->
+  <!-- Application Watcher & Fallback (vanilla JS, runs before ES modules) -->
   <script>
     (function() {
       var booted = false;
+      var hintTimer = null;
+      var timeoutTimer = null;
+
+      function clearTimers() {
+        if (hintTimer) { clearTimeout(hintTimer); hintTimer = null; }
+        if (timeoutTimer) { clearTimeout(timeoutTimer); timeoutTimer = null; }
+      }
+
       window.__markAppBooted = function() {
+        if (booted) return;
         booted = true;
-        var el = document.getElementById('app-fallback');
-        if (el) el.style.display = 'none';
+        clearTimers();
+        var loadingEl = document.getElementById('app-loading');
+        if (loadingEl) loadingEl.style.display = 'none';
+        var fallbackEl = document.getElementById('app-fallback');
+        if (fallbackEl) fallbackEl.style.display = 'none';
+        var freshEl = document.getElementById('fresh');
+        if (freshEl) freshEl.style.display = '';
+        var layoutEl = document.getElementById('app-layout');
+        if (layoutEl) layoutEl.style.display = '';
       };
 
-      function triggerFallback(err) {
+      function triggerFallback(type, err) {
         if (booted) return;
-        var el = document.getElementById('app-fallback');
-        if (el) el.style.display = 'block';
-        var fresh = document.getElementById('fresh');
-        if (fresh) fresh.style.display = 'none';
-        if (err) console.error('IHSG Storm startup error / timeout:', err);
+        clearTimers();
+        var loadingEl = document.getElementById('app-loading');
+        if (loadingEl) loadingEl.style.display = 'none';
+        var freshEl = document.getElementById('fresh');
+        if (freshEl) freshEl.style.display = 'none';
+        var layoutEl = document.getElementById('app-layout');
+        if (layoutEl) layoutEl.style.display = 'none';
+
+        var fallbackEl = document.getElementById('app-fallback');
+        var msgEl = document.getElementById('app-fallback-msg');
+        var subEl = document.getElementById('app-fallback-sub');
+
+        if (type === 'script_error') {
+          if (msgEl) msgEl.textContent = 'Gagal memuat sistem aplikasi.';
+          if (subEl) subEl.textContent = 'Terjadi kendala teknis saat memuat komponen aplikasi. Silakan coba muat ulang halaman.';
+        } else {
+          // network_error, timeout, or general data failure
+          if (msgEl) msgEl.textContent = 'Gagal memuat data kepemilikan saham. Silakan periksa koneksi internet Anda.';
+          if (subEl) subEl.textContent = 'Koneksi internet bermasalah atau data tidak dapat diakses. Silakan periksa koneksi Anda dan coba lagi.';
+        }
+
+        if (fallbackEl) fallbackEl.style.display = 'block';
+        if (err) console.error('IHSG Storm startup error / fallback:', err);
       }
+
+      window.__triggerAppFallback = triggerFallback;
 
       window.addEventListener('error', function(event) {
         if (!booted) {
-          triggerFallback(event.error || event.message);
+          triggerFallback('script_error', event.error || event.message);
         }
       });
 
-      setTimeout(function() {
+      // Progress hint if loading takes longer than 8s ('Koneksi lambat, masih memuat...')
+      hintTimer = setTimeout(function() {
         if (!booted) {
-          triggerFallback('Alpine / module initialization timeout (>3s)');
+          var hintEl = document.getElementById('app-loading-hint');
+          if (hintEl) hintEl.style.display = 'block';
         }
-      }, 3000);
+      }, 8000);
+
+      // Long timeout (~25s) with no boot
+      timeoutTimer = setTimeout(function() {
+        if (!booted) {
+          triggerFallback('timeout', 'Batas waktu inisialisasi aplikasi terlampaui (>25s)');
+        }
+      }, 25000);
     })();
   </script>
 
@@ -100,9 +145,6 @@
 
     document.addEventListener('alpine:init', () => {
       Alpine.data('app', () => storeConfig);
-      if (typeof window.__markAppBooted === 'function') {
-        window.__markAppBooted();
-      }
     });
   </script>
   <script src="/assets/vendor/alpine.min.js" defer></script>
@@ -180,28 +222,42 @@
     <main class="shell">
       <!-- Fallback when JavaScript is disabled -->
       <noscript>
+        <style>#app-loading { display: none !important; }</style>
         <div class="state" style="margin: 40px auto; max-width: 480px;">
           <b>Gagal memuat data kepemilikan saham. Silakan periksa koneksi internet Anda.</b>
           <p>JavaScript dinonaktifkan pada peramban Anda. Aktifkan JavaScript untuk memuat data IHSG Storm.</p>
         </div>
       </noscript>
 
-      <!-- Fallback when script fails or Alpine does not initialize within ~3s -->
+      <!-- Neutral Loading Panel (visible from first paint until booted) -->
+      <div id="app-loading" style="margin: 24px auto; max-width: 680px; padding: 0 16px;">
+        <div class="state" style="padding: 28px 16px 20px;">
+          <div class="loading-spinner" aria-hidden="true"></div>
+          <b id="app-loading-msg" style="font-size: 15px;">Memuat data kepemilikan saham...</b>
+          <p id="app-loading-hint" style="display: none; margin-top: 8px; font-size: 13px; color: var(--ink3);">Koneksi lambat, masih memuat...</p>
+        </div>
+        <div class="skel" aria-hidden="true"><div class="sk" style="width:38%"></div><div class="sk" style="width:62%;height:10px"></div></div>
+        <div class="skel" aria-hidden="true"><div class="sk" style="width:42%"></div><div class="sk" style="width:58%;height:10px"></div></div>
+        <div class="skel" aria-hidden="true"><div class="sk" style="width:35%"></div><div class="sk" style="width:65%;height:10px"></div></div>
+        <div class="skel" aria-hidden="true"><div class="sk" style="width:40%"></div><div class="sk" style="width:50%;height:10px"></div></div>
+      </div>
+
+      <!-- Fallback when script fails, network times out (~25s), or fetch rejects -->
       <div class="state" id="app-fallback" style="display: none; margin: 40px auto; max-width: 480px;">
         <b id="app-fallback-msg">Gagal memuat data kepemilikan saham. Silakan periksa koneksi internet Anda.</b>
-        <p>Aplikasi belum berhasil diinisialisasi atau koneksi jaringan terputus.</p>
-        <button class="btn pri" type="button" onclick="location.reload()" style="margin: 0 auto; display: inline-flex;">Coba Lagi</button>
+        <p id="app-fallback-sub">Periksa koneksi internet Anda dan coba lagi.</p>
+        <button class="btn pri" id="app-fallback-retry" type="button" onclick="location.reload()" style="margin: 0 auto; display: inline-flex;">Coba Lagi</button>
       </div>
 
       <!-- Freshness Indicator -->
-      <div class="fresh" role="status" id="fresh">
+      <div class="fresh" role="status" id="fresh" style="display: none;">
         <span class="dot"></span>
         <span>Data KSEI per <b x-text="asOfLabel || '30 September 2026'"></b> (pembaruan berkala) · Harga bursa tertunda 15 mnt</span>
         <button type="button" @click="openPro('freshness')">Info Pembaruan</button>
       </div>
 
       <!-- Master-Detail Layout -->
-      <div class="layout" :class="{ 'has-pane': currentTab !== 'analytics' && currentTab !== 'faq' }">
+      <div class="layout" id="app-layout" style="display: none;" :class="{ 'has-pane': currentTab !== 'analytics' && currentTab !== 'faq' }">
         <div class="col" id="col">
 
           <!-- VIEW: STOCKS -->
