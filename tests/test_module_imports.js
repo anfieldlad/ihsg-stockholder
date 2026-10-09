@@ -33,7 +33,7 @@ const requiredModules = [
     exports: ['normalizeInvestorName', 'canonicalInvestorKey', 'isSameInvestor', 'canonical_investor_key']
   },
   {
-    path: 'src/analytics.js',
+    path: `${srcPrefix}analytics.js`,
     exports: [
       'ANALYTICS_CONFIG',
       'initAnalytics',
@@ -44,6 +44,7 @@ const requiredModules = [
       'trackOpenInvestor',
       'trackLockedClick',
       'trackFeedbackOpen',
+      'trackFeedbackSubmit',
       'isDntEnabled'
     ]
   }

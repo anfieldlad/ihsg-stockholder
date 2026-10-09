@@ -183,3 +183,15 @@ def test_node_max_holders_and_aadi():
         check=False,
     )
     assert res.returncode == 0, f"Node max holders verification failed:\n{res.stdout}\n{res.stderr}"
+
+
+def test_node_analytics():
+    """Verify cookieless privacy analytics and store integration."""
+    for test_script in ["tests/test_analytics.js", "tests/test_analytics_store.js"]:
+        res = subprocess.run(
+            ["node", test_script],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        assert res.returncode == 0, f"{test_script} failed:\n{res.stdout}\n{res.stderr}"

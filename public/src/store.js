@@ -10,7 +10,8 @@ import {
     trackOpenStock,
     trackOpenInvestor,
     trackLockedClick,
-    trackFeedbackOpen
+    trackFeedbackOpen,
+    trackFeedbackSubmit
 } from './analytics.js';
 
 export const storeConfig = {
@@ -285,7 +286,6 @@ export const storeConfig = {
             this.cur = null;
             this.detailStack = [];
         }
-        trackPageview(tab);
         window.scrollTo({ top: 0, behavior: 'smooth' });
     },
 
@@ -794,6 +794,7 @@ export const storeConfig = {
             const resData = await res.json().catch(() => ({}));
             this.feedbackTicketId = resData.ticket_id || `TICK-${Date.now()}`;
             this.feedbackSuccess = true;
+            trackFeedbackSubmit(this.feedbackForm.category || 'general');
         } catch (err) {
             console.warn('Feedback submission failed:', err);
             this.feedbackError = err.message || 'Gagal mengirim laporan ke server.';
