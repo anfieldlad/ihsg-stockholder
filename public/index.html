@@ -8,7 +8,9 @@
   <meta name="robots" content="index, follow">
   <meta name="author" content="BAD AI">
   <link rel="canonical" href="https://ihsg.badai.tech/">
-  <link rel="icon" href="/favicon.ico" type="image/x-icon">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="alternate icon" href="/favicon.ico" type="image/x-icon">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="180x180">
 
   <!-- Open Graph -->
   <meta property="og:type" content="website">
@@ -129,7 +131,14 @@
 
   <!-- Desktop Left Rail (>=1024px) -->
   <nav class="rail" id="rail" aria-label="Navigasi utama">
-    <div class="logo" aria-hidden="true">IH</div>
+    <!-- Brand Anchor: Vertical Lockup in 72px Rail -->
+    <a href="#/stocks" class="rail-brand" @click.prevent="goHome()" aria-label="IHSG Storm - Beranda">
+      <div class="logo" aria-hidden="true">IH</div>
+      <div class="rail-brand-text" aria-hidden="true">
+        <span class="rail-brand-name">IHSG</span>
+        <span class="rail-brand-sub">STORM</span>
+      </div>
+    </a>
     <button class="nb" type="button" @click="setTab('stocks')" :aria-current="currentTab === 'stocks' ? 'page' : null">
       <svg class="i"><use href="#i-list"/></svg>
       <span>Saham</span>
@@ -158,13 +167,20 @@
   <!-- App Wrapper -->
   <div class="page">
     <!-- Sticky Top Header -->
-    <header class="top">
+    <header class="top" role="banner">
       <div class="shell top-in">
-        <div class="logo" aria-hidden="true">IH</div>
+        <!-- Brand Lockup (Hidden on Desktop >=1024px) -->
+        <a href="#/stocks" class="top-brand" @click.prevent="goHome()" aria-label="IHSG Storm - Beranda">
+          <div class="logo" aria-hidden="true">IH</div>
+          <span class="top-brand-text"><b>IHSG</b> Storm</span>
+        </a>
+
+        <!-- Compact Search Trigger -->
         <button class="sbtn" type="button" @click="openSearch()" aria-label="Cari kode saham atau nama investor">
-          <svg class="i"><use href="#i-search"/></svg>
-          <span x-text="C.search.bar_placeholder">Cari kode saham atau investor...</span>
-          <kbd>Ctrl</kbd>&nbsp;<kbd>K</kbd>
+          <svg class="i s"><use href="#i-search"/></svg>
+          <span class="sbtn-text sbtn-short">Cari...</span>
+          <span class="sbtn-text sbtn-long" x-text="C.search.bar_placeholder">Cari kode saham atau investor...</span>
+          <kbd>Ctrl K</kbd>
         </button>
 
         <button class="theme-btn" type="button" @click="toggleTheme()" :title="theme === 'a' ? 'Mode Malam' : 'Mode Terang'" :aria-label="theme === 'a' ? 'Beralih ke mode malam' : 'Beralih ke mode terang'">
@@ -207,7 +223,10 @@
           <!-- VIEW: STOCKS -->
           <section class="view" :class="{ on: currentTab === 'stocks' }" id="v-stocks" aria-labelledby="h-stocks">
             <div class="view-head">
-              <h1 id="h-stocks" x-text="C.stocks.title">Saham</h1>
+              <div class="title-wrap">
+                <h1 id="h-stocks" x-text="C.stocks.title">Saham</h1>
+                <p class="tagline">Pantau kepemilikan saham dan pergerakan investor kakap</p>
+              </div>
               <p class="sub" id="sub-stocks" x-text="`${fmtNum(totalStocks)} emiten dengan pemegang saham ≥1%`"></p>
 
               <div class="tools">

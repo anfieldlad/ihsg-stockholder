@@ -303,9 +303,49 @@ kbd {
   display: none;
 }
 
+/* Mobile Top Brand Lockup */
+.top-brand {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  text-decoration: none;
+  color: var(--ink);
+  flex-shrink: 0;
+  min-height: 40px;
+}
+
+.top-brand .logo {
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
+  background: var(--accent);
+  color: var(--on-accent);
+  font-weight: 800;
+  font-size: 11.5px;
+  display: grid;
+  place-items: center;
+  letter-spacing: -0.02em;
+}
+
+.top-brand-text {
+  font-size: 15px;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.top-brand-text b {
+  font-weight: 800;
+  color: var(--ink);
+}
+
 @media(min-width: 1024px) {
   .sbtn kbd {
     display: block;
+  }
+  .top-brand {
+    display: none;
   }
   .top .logo {
     display: none;
@@ -315,10 +355,17 @@ kbd {
   }
 }
 
-@media(max-width: 420px) {
-  .top .logo {
+@media(max-width: 350px) {
+  .top-brand-text {
     display: none;
   }
+}
+
+.sbtn-short { display: inline; }
+.sbtn-long { display: none; }
+@media(min-width: 560px) {
+  .sbtn-short { display: none; }
+  .sbtn-long { display: inline; }
 }
 
 .theme-btn {
@@ -432,8 +479,54 @@ kbd {
     padding: 14px 8px;
     z-index: 30;
   }
-  .rail .logo {
-    margin: 4px auto 18px;
+  .rail-brand {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    margin: 4px auto 14px;
+    text-decoration: none;
+    padding: 4px 2px;
+    border-radius: var(--r-s);
+    transition: background 0.15s var(--ease);
+    width: 100%;
+    cursor: pointer;
+  }
+  .rail-brand:hover {
+    background: var(--hover);
+  }
+  .rail-brand .logo {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: var(--accent);
+    color: var(--on-accent);
+    font-weight: 800;
+    font-size: 13px;
+    display: grid;
+    place-items: center;
+    letter-spacing: -0.02em;
+    margin: 0;
+  }
+  .rail-brand-text {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    line-height: 1.05;
+    text-align: center;
+  }
+  .rail-brand-name {
+    font-weight: 800;
+    font-size: 11px;
+    letter-spacing: -0.01em;
+    color: var(--ink);
+  }
+  .rail-brand-sub {
+    font-weight: 800;
+    font-size: 10px;
+    letter-spacing: 0.03em;
+    color: var(--ink3);
+    text-transform: uppercase;
   }
   .rail .nb {
     border-radius: var(--r);
@@ -586,6 +679,31 @@ main {
 }
 
 /* Headings & Filter Tools */
+.title-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.title-wrap h1 {
+  margin-top: 12px;
+  margin-bottom: 0;
+}
+
+.tagline {
+  font-size: 13.5px;
+  line-height: 1.35;
+  color: var(--ink2);
+  font-weight: 500;
+  margin-top: 2px;
+}
+
+@media(min-width: 768px) {
+  .tagline {
+    font-size: 14px;
+  }
+}
+
 h1 {
   font-size: 24px;
   line-height: 1.2;

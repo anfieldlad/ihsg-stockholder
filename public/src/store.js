@@ -265,6 +265,18 @@ export const storeConfig = {
     },
 
     // Navigation & Tabs
+    goHome() {
+        if (this.currentTab !== 'stocks') {
+            this.setTab('stocks');
+        }
+        if (this.cur) {
+            this.closeDetail();
+        }
+        if (typeof window !== 'undefined') {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+    },
+
     setTab(tab) {
         this.currentTab = tab;
         this.showWhaleMap = false;
