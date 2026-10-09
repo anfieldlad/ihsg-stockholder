@@ -117,7 +117,7 @@ export async function renderWhaleChart(container, targetOrOptions, holdersOrHold
                 category: 1, // Saham
                 symbolSize: 48,
                 itemStyle: { color: '#0b6e5f', borderColor: '#34d399', borderWidth: 2.5 },
-                label: { show: true, fontWeight: 'bold', fontSize: 13, color: '#f8fafc' },
+                label: { show: true, position: 'inside', fontWeight: 'bold', fontSize: 13, color: '#ffffff' },
                 value: `${fullHolders.length} Pemegang Saham`
             });
             nodeSet.add('stk_' + centerCode);
@@ -133,11 +133,11 @@ export async function renderWhaleChart(container, targetOrOptions, holdersOrHold
                 if (!nodeSet.has(invId)) {
                     nodes.push({
                         id: invId,
-                        name: invName.length > 20 ? invName.slice(0, 18) + '...' : invName,
+                        name: invName.length > 14 ? invName.slice(0, 12) + '…' : invName,
                         fullName: invName,
                         category: 0, // Investor
                         symbolSize: Math.max(20, Math.min(36, Math.round(18 + pct / 3))),
-                        itemStyle: { color: isLocal ? '#10b981' : '#1f5fbf' },
+                        itemStyle: { color: isLocal ? '#8b5cf6' : '#6366f1' },
                         label: { show: true, fontSize: 10 },
                         value: `${pct.toFixed(2)}% (${isLocal ? 'Domestik' : 'Asing'})`
                     });
@@ -189,7 +189,7 @@ export async function renderWhaleChart(container, targetOrOptions, holdersOrHold
                 category: 0, // Investor
                 symbolSize: 48,
                 itemStyle: { color: '#8b5cf6', borderColor: '#d8b4fe', borderWidth: 2.5 },
-                label: { show: true, fontWeight: 'bold', fontSize: 11, color: '#f8fafc' },
+                label: { show: true, position: 'inside', fontWeight: 'bold', fontSize: 11, color: '#ffffff' },
                 value: `${fullHoldings.length} Portofolio Emiten`
             });
             nodeSet.add('inv_' + centerName);
@@ -233,11 +233,11 @@ export async function renderWhaleChart(container, targetOrOptions, holdersOrHold
                     if (!nodeSet.has(otherInvId)) {
                         nodes.push({
                             id: otherInvId,
-                            name: otherInvName.length > 20 ? otherInvName.slice(0, 18) + '...' : otherInvName,
+                            name: otherInvName.length > 14 ? otherInvName.slice(0, 12) + '…' : otherInvName,
                             fullName: otherInvName,
                             category: 0, // Investor
                             symbolSize: 24,
-                            itemStyle: { color: isOtherLocal ? '#10b981' : '#1f5fbf' },
+                            itemStyle: { color: isOtherLocal ? '#8b5cf6' : '#6366f1' },
                             label: { show: true, fontSize: 10 },
                             value: `${otherPct.toFixed(2)}% (${isOtherLocal ? 'Domestik' : 'Asing'})`
                         });
@@ -249,7 +249,9 @@ export async function renderWhaleChart(container, targetOrOptions, holdersOrHold
             }
         }
 
-        const isTouch = window.matchMedia('(pointer: coarse)').matches;
+        const isSmall = (container && container.clientWidth && container.clientWidth < 480) ||
+                        (typeof window !== 'undefined' && window.innerWidth < 640);
+        const isTouch = (typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(pointer: coarse)').matches) || isSmall;
 
         const option = {
             backgroundColor: 'transparent',
@@ -281,7 +283,8 @@ export async function renderWhaleChart(container, targetOrOptions, holdersOrHold
             legend: {
                 data: ['Investor', 'Saham'],
                 textStyle: { color: '#64748b', fontSize: 11 },
-                bottom: 6,
+                top: 8,
+                right: 12,
                 icon: 'circle',
                 itemWidth: 10,
                 itemHeight: 10
@@ -289,16 +292,17 @@ export async function renderWhaleChart(container, targetOrOptions, holdersOrHold
             series: [{
                 type: 'graph',
                 layout: 'force',
+                center: ['50%', '50%'],
                 categories: [
                     { name: 'Investor', itemStyle: { color: '#8b5cf6' } },
                     { name: 'Saham', itemStyle: { color: '#0b6e5f' } }
                 ],
                 roam: !isTouch, // Touch-friendly: disable roam on mobile touch to avoid scroll trap
                 force: {
-                    repulsion: isTouch ? 180 : 220,
-                    edgeLength: [50, 110],
-                    gravity: 0.12,
-                    friction: 0.6,
+                    repulsion: isSmall ? 170 : 210,
+                    edgeLength: isSmall ? [54, 82] : [60, 110],
+                    gravity: isSmall ? 0.17 : 0.14,
+                    friction: 0.65,
                     layoutAnimation: true
                 },
                 data: nodes,
@@ -311,7 +315,9 @@ export async function renderWhaleChart(container, targetOrOptions, holdersOrHold
                     show: true,
                     position: 'bottom',
                     fontSize: 10,
-                    color: '#475569'
+                    color: '#475569',
+                    overflow: 'truncate',
+                    width: 78
                 }
             }]
         };

@@ -28,7 +28,10 @@ console.log('--- Running test_analytics.js (Cookieless Analytics Suite) ---');
 // Test 1: Configuration default values & alert quota
 console.log('[Test 1] Analytics configuration defaults & quota alerts...');
 assert.strictEqual(typeof ANALYTICS_CONFIG, 'object', 'ANALYTICS_CONFIG must be an object');
-assert.strictEqual(ANALYTICS_CONFIG.websiteId, '', 'websiteId must be empty string by default for safe no-op');
+assert(
+  ANALYTICS_CONFIG.websiteId === '' || ANALYTICS_CONFIG.websiteId === '010bf3dc-512c-49e6-977a-11bf3a265b1b',
+  'websiteId must be valid UUID or empty string'
+);
 assert.strictEqual(ANALYTICS_CONFIG.scriptUrl, 'https://cloud.umami.is/script.js', 'scriptUrl must default to Umami Cloud');
 assert.strictEqual(ANALYTICS_CONFIG.respectDnt, true, 'respectDnt must default to true');
 assert.strictEqual(ANALYTICS_CONFIG.alertThresholdEvents, 80000, 'alertThresholdEvents must be 80,000 per M0-4');

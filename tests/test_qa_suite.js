@@ -84,12 +84,12 @@ async function runQASuite() {
     console.log('--- GATE 1: ES Module Import Integrity ---');
     let storeModule, apiModule, chartsModule, copyModule, utilsModule, normalizeModule;
     try {
-        storeModule = await import('../src/store.js');
-        apiModule = await import('../src/api.js');
-        chartsModule = await import('../src/charts.js');
-        copyModule = await import('../src/copy.js');
-        utilsModule = await import('../src/utils.js');
-        normalizeModule = await import('../src/normalize.js');
+        storeModule = await import('../public/src/store.js');
+        apiModule = await import('../public/src/api.js');
+        chartsModule = await import('../public/src/charts.js');
+        copyModule = await import('../public/src/copy.js');
+        utilsModule = await import('../public/src/utils.js');
+        normalizeModule = await import('../public/src/normalize.js');
         assert(true, 'All 6 ES modules imported without syntax or linking errors');
     } catch (err) {
         assert(false, `ES module import failed: ${err.message}`);
@@ -106,7 +106,9 @@ async function runQASuite() {
     // GATE 2: STORE BOOT & REAL DATA PARSING
     // -------------------------------------------------------------
     console.log('\n--- GATE 2: Store Boot & Real Data Parsing ---');
-    const dataPath = path.join(rootDir, 'shareholder_data.json');
+    const dataPath = fs.existsSync(path.join(rootDir, 'public/shareholder_data.json'))
+        ? path.join(rootDir, 'public/shareholder_data.json')
+        : path.join(rootDir, 'shareholder_data.json');
     assert(fs.existsSync(dataPath), 'shareholder_data.json exists on disk');
 
     const rawData = JSON.parse(fs.readFileSync(dataPath, 'utf8'));
@@ -117,12 +119,14 @@ async function runQASuite() {
     // Setup Mock DOM
     const listeners = {};
     const elements = {};
+    global.history = { pushState: () => {}, replaceState: () => {} };
     global.window = {
         addEventListener: (event, handler) => {
             if (!listeners[event]) listeners[event] = [];
             listeners[event].push(handler);
         },
-        location: { hash: '' }
+        location: { hash: '' },
+        history: global.history
     };
     global.document = {
         getElementById: (id) => elements[id] || {
@@ -303,7 +307,10 @@ async function runQASuite() {
     assert(an.concBars.length === 4, `Analytics concentration buckets generated (4 buckets)`);
 
     // Pure CSS verification in index.html
-    const indexHtml = fs.readFileSync(path.join(rootDir, 'index.html'), 'utf8');
+    const indexPath = fs.existsSync(path.join(rootDir, 'public/index.html'))
+        ? path.join(rootDir, 'public/index.html')
+        : path.join(rootDir, 'index.html');
+    const indexHtml = fs.readFileSync(indexPath, 'utf8');
     assert(!indexHtml.includes('chart.js'), 'Zero Chart.js references in index.html (Chart.js fully retired)');
     assert(!indexHtml.includes('cdn.tailwindcss.com'), 'Zero Tailwind CDN references in index.html (Tailwind CDN retired)');
     assert(indexHtml.includes('conic-gradient'), 'Conic-gradient CSS donut charts implemented');
@@ -312,7 +319,10 @@ async function runQASuite() {
     // GATE 7: WCAG 2.1 AA COLOR CONTRAST RATIO AUDIT
     // -------------------------------------------------------------
     console.log('\n--- GATE 7: WCAG 2.1 AA Color Contrast Audit ---');
-    const styleCss = fs.readFileSync(path.join(rootDir, 'assets/css/style.css'), 'utf8');
+    const cssPath = fs.existsSync(path.join(rootDir, 'public/assets/css/style.css'))
+        ? path.join(rootDir, 'public/assets/css/style.css')
+        : path.join(rootDir, 'assets/css/style.css');
+    const styleCss = fs.readFileSync(cssPath, 'utf8');
 
     // Theme A (Terang)
     // --bg: #f5f4ef, --card: #ffffff, --ink: #15181d, --ink2: #434a55, --ink3: #5f6672, --accent: #0b6e5f, --up: #0a7a4f, --down: #c0233f

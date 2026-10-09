@@ -99,8 +99,8 @@
           if (subEl) subEl.textContent = 'Terjadi kendala teknis saat memuat komponen aplikasi. Silakan coba muat ulang halaman.';
         } else {
           // network_error, timeout, or general data failure
-          if (msgEl) msgEl.textContent = 'Gagal memuat data kepemilikan saham. Silakan periksa koneksi internet Anda.';
-          if (subEl) subEl.textContent = 'Koneksi internet bermasalah atau data tidak dapat diakses. Silakan periksa koneksi Anda dan coba lagi.';
+          if (msgEl) msgEl.textContent = 'Data belum bisa dimuat';
+          if (subEl) subEl.textContent = 'Coba muat ulang. Jika tetap gagal, matikan pemblokir iklan atau coba beberapa menit lagi.';
         }
 
         if (fallbackEl) fallbackEl.style.display = 'block';
@@ -240,7 +240,8 @@
       <noscript>
         <style>#app-loading { display: none !important; }</style>
         <div class="state" style="margin: 40px auto; max-width: 480px;">
-          <b>Gagal memuat data kepemilikan saham. Silakan periksa koneksi internet Anda.</b>
+          <svg class="i" style="width:28px;height:28px;margin:0 auto 10px;color:var(--warn);display:block" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          <b>Data belum bisa dimuat</b>
           <p>JavaScript dinonaktifkan pada peramban Anda. Aktifkan JavaScript untuk memuat data IHSG Storm.</p>
         </div>
       </noscript>
@@ -260,8 +261,9 @@
 
       <!-- Fallback when script fails, network times out (~25s), or fetch rejects -->
       <div class="state" id="app-fallback" style="display: none; margin: 40px auto; max-width: 480px;">
-        <b id="app-fallback-msg">Gagal memuat data kepemilikan saham. Silakan periksa koneksi internet Anda.</b>
-        <p id="app-fallback-sub">Periksa koneksi internet Anda dan coba lagi.</p>
+        <svg class="i" style="width:28px;height:28px;margin:0 auto 10px;color:var(--warn);display:block" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        <b id="app-fallback-msg">Data belum bisa dimuat</b>
+        <p id="app-fallback-sub">Coba muat ulang. Jika tetap gagal, matikan pemblokir iklan atau coba beberapa menit lagi.</p>
         <button class="btn pri" id="app-fallback-retry" type="button" onclick="location.reload()" style="margin: 0 auto; display: inline-flex;">Coba Lagi</button>
       </div>
 

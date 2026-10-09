@@ -202,7 +202,7 @@ def run_tests():
         assert not page.locator("#app-loading").is_visible(), "#app-loading must be hidden when error occurs"
         error_msg = page.locator("#app-fallback-msg").inner_text()
         print(f"Fallback error message displayed: '{error_msg}'")
-        assert "Gagal memuat data kepemilikan saham" in error_msg, f"Expected network error copy, got '{error_msg}'"
+        assert "Data belum bisa dimuat" in error_msg, f"Expected network error copy, got '{error_msg}'"
         assert page.locator("#app-fallback-retry").is_visible(), "Coba Lagi button must be visible"
         page.screenshot(path=str(SHOTS_DIR / "error_data_blocked.png"))
         print(f"[PASS] Error displayed correctly. Screenshot saved to {SHOTS_DIR / 'error_data_blocked.png'}")

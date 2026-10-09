@@ -303,7 +303,7 @@ export const COPY = {
   states: {
     loading: "Memuat data kepemilikan saham...",
     loading_prices: "Memperbarui harga saham...",
-    error_load: "Gagal memuat data kepemilikan saham. Silakan periksa koneksi internet Anda.",
+    error_load: "Data belum bisa dimuat",
     btn_retry: "Coba Lagi",
     price_loading: "-",
     price_unavailable: "-",
