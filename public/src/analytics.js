@@ -1,13 +1,17 @@
 /**
  * IHSG Storm — Cookieless Privacy Analytics (Umami Cloud / Self-Hosted)
  *
- * Requirements:
+ * Requirements & Specifications (architecture-v3.md Section 2.10 & M0-4):
  * - 100% Cookieless (no cookies set, no cookie consent banner required).
  * - UU PDP (UU No. 27/2022) & GDPR compliant: zero PII, no IP storage.
  * - Loaded with defer.
  * - Respects browser Do-Not-Track (DNT) header.
  * - Safe no-op when unconfigured or offline (NEVER throws, zero page impact).
- * - Measuring funnel: pageview, search, open_stock, open_investor, locked_click(feature), feedback_open.
+ * - Event budget discipline (100k events/month free cap on Umami Cloud Hobby):
+ *   * One pageview on boot only (no pageview per tab switch to avoid noise).
+ *   * No per-keystroke events (search fires on enter/select).
+ *   * Alert at 80k events/month; fallback plan = self-host GoatCounter on VPS or Umami Pro.
+ * - Funnel events: pageview, search, open_stock, open_investor, locked_click, feedback_open, feedback_submit.
  */
 
 export const ANALYTICS_CONFIG = {
@@ -15,7 +19,8 @@ export const ANALYTICS_CONFIG = {
    * The single value required to activate analytics:
    * Paste your Umami Website ID (UUID) from Umami Cloud dashboard.
    * Example: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890'
-   * If empty string, analytics operates as a silent no-op.
+   * If empty string, analytics operates as a silent safe no-op.
+   * Note: Bobby will paste the Umami Website ID later — do not invent one.
    */
   websiteId: '',
 
@@ -27,7 +32,16 @@ export const ANALYTICS_CONFIG = {
   /**
    * Respect user Do-Not-Track (DNT) browser settings.
    */
-  respectDnt: true
+  respectDnt: true,
+
+  /**
+   * Quota & Monitoring Note (M0-4):
+   * Free tier cap: 100,000 events/month (shared across pageviews & custom events).
+   * Alert threshold: 80,000 events/month (~80% quota).
+   * Fallback plan when exceeded: self-host GoatCounter on VPS (SQLite, lightweight)
+   * or upgrade to Umami Pro ($20/month, 1M events).
+   */
+  alertThresholdEvents: 80000
 };
 
 /**
@@ -114,8 +128,10 @@ export function trackEvent(eventName, eventData = {}) {
 }
 
 /**
- * Funnel Event 1: Page / Tab View
- * @param {string} page - Tab name ('stocks', 'investors', 'analytics', 'faq')
+ * Funnel Event 1: Page View (Boot-only)
+ * Per M0-4 / architecture-v3.md section 2.10: fired once on boot only.
+ * Tab switching is not tracked as separate pageviews to avoid noise and conserve event quota.
+ * @param {string} [page='stocks'] - Initial tab name
  */
 export function trackPageview(page) {
   trackEvent('pageview', {
@@ -174,5 +190,16 @@ export function trackLockedClick(feature) {
 export function trackFeedbackOpen(context) {
   trackEvent('feedback_open', {
     context: String(context || 'general')
+  });
+}
+
+/**
+ * Funnel Event 7: Feedback Submitted (M0-4)
+ * Strict privacy: records category only, NEVER message text or reporter contact (No PII).
+ * @param {string} category - Category ('data_error', 'feature_request', 'general', etc.)
+ */
+export function trackFeedbackSubmit(category) {
+  trackEvent('feedback_submit', {
+    category: String(category || 'general')
   });
 }
