@@ -820,8 +820,9 @@ h1 {
     overflow-x: auto;
     scrollbar-width: none;
     scroll-snap-type: x proximity;
+    scroll-padding-inline: var(--gut);
     -webkit-overflow-scrolling: touch;
-    width: 100%;
+    width: calc(100% + (var(--gut) * 2));
     margin-inline: calc(var(--gut) * -1);
     padding-inline: var(--gut);
     padding-block: 4px;
