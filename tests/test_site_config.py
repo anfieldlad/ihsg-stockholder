@@ -100,7 +100,6 @@ def scan_repo_for_unauthorized_badai_tech(root_dir: Path) -> list[str]:
         # Legal & documentation text:
         Path("README.md"),                          # Project documentation
         Path("feedback_submissions.json"),         # Historical mock CS data
-        Path("public/components/tab-faq.html"),     # Support email (help@badai.tech)
         # Test suites:
         Path("tests/test_site_config.py"),          # This test suite
         Path("tests/test_seo_phase0.py"),           # SEO validation assertions

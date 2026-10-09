@@ -2,7 +2,7 @@
 
 A lightweight, component-driven dashboard that parses shareholder data from KSEI (Indonesia Stock Exchange ownership data) and displays it alongside live market prices.
 
-**Live Demo:** [https://ihsg.badai.tech/](https://ihsg.badai.tech/)
+**Live Demo:** [https://ihsg.bad.ai.id/](https://ihsg.bad.ai.id/)
 
 ## Features
 - **Top Investors:** See who owns what in the Indonesian market (ownership > 1%).
@@ -60,4 +60,4 @@ The application is pre-configured to run as a serverless project on Vercel.
 Do not use this for actual financial decisions. The pricing data is delayed and the static ownership data is just a snapshot.
 
 ---
-Crafted with ❤️ by [BAD AI](https://badai.tech)
+Crafted with ❤️ by [BAD AI](https://bad.ai.id)
