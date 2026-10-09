@@ -13,7 +13,7 @@ robots.txt, and client config will be updated automatically.
 import os
 
 # SINGLE CONSTANT: Production site base URL
-SITE_URL = os.environ.get("SITE_URL", "https://ihsg.badai.tech").rstrip("/")
+SITE_URL = os.environ.get("SITE_URL", "https://ihsg.bad.ai.id").rstrip("/")
 
 # Company website base URL
-COMPANY_URL = os.environ.get("COMPANY_URL", "https://badai.tech").rstrip("/")
+COMPANY_URL = os.environ.get("COMPANY_URL", "https://bad.ai.id").rstrip("/")

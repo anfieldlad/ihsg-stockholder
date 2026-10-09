@@ -3,4 +3,4 @@ Allow: /
 Disallow: /api/
 Disallow: /scripts/
 
-Sitemap: https://ihsg.badai.tech/sitemap.xml
+Sitemap: https://ihsg.bad.ai.id/sitemap.xml

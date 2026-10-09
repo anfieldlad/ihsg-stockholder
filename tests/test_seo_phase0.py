@@ -20,6 +20,10 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parent.parent
 PUBLIC_DIR = REPO_ROOT / "public"
 
+import sys
+sys.path.insert(0, str(REPO_ROOT))
+import site_config
+
 
 def get_png_dimensions(path: Path) -> tuple[int, int]:
     with open(path, "rb") as f:
@@ -61,19 +65,22 @@ def test_brand_icons_exist_and_dimensions():
 
 
 def test_index_html_og_and_seo_tags():
+    assert site_config.SITE_URL == "https://ihsg.bad.ai.id", "SITE_URL must be https://ihsg.bad.ai.id"
+    assert site_config.COMPANY_URL == "https://bad.ai.id", "COMPANY_URL must be https://bad.ai.id"
+
     index_html = PUBLIC_DIR / "index.html"
     assert index_html.exists(), "public/index.html must exist"
     content = index_html.read_text(encoding="utf-8")
 
     # Canonical must point to '/'
-    assert '<link rel="canonical" href="https://ihsg.badai.tech/">' in content, (
-        "Canonical link must point to https://ihsg.badai.tech/"
+    assert f'<link rel="canonical" href="{site_config.SITE_URL}/">' in content, (
+        f"Canonical link must point to {site_config.SITE_URL}/"
     )
 
     # Open Graph tags
     assert '<meta property="og:type" content="website">' in content
-    assert '<meta property="og:url" content="https://ihsg.badai.tech/">' in content
-    assert '<meta property="og:image" content="https://ihsg.badai.tech/og-image.png">' in content
+    assert f'<meta property="og:url" content="{site_config.SITE_URL}/">' in content
+    assert f'<meta property="og:image" content="{site_config.SITE_URL}/og-image.png">' in content
     assert '<meta property="og:image:width" content="1200">' in content
     assert '<meta property="og:image:height" content="630">' in content
     assert '<meta property="og:image:alt"' in content
@@ -81,7 +88,7 @@ def test_index_html_og_and_seo_tags():
 
     # Twitter Card tags
     assert '<meta name="twitter:card" content="summary_large_image">' in content
-    assert '<meta name="twitter:image" content="https://ihsg.badai.tech/og-image.png">' in content
+    assert f'<meta name="twitter:image" content="{site_config.SITE_URL}/og-image.png">' in content
 
     # Favicons & Touch icons
     assert '<link rel="icon" href="/favicon.svg" type="image/svg+xml">' in content
@@ -90,7 +97,8 @@ def test_index_html_og_and_seo_tags():
     assert '<link rel="apple-touch-icon" href="/apple-touch-icon.png"' in content
 
     # JSON-LD Structured Data
-    assert '"url": "https://ihsg.badai.tech/"' in content, "JSON-LD url must match site url"
+    assert f'"url": "{site_config.SITE_URL}/"' in content, "JSON-LD url must match site url"
+    assert f'"url": "{site_config.COMPANY_URL}"' in content, "JSON-LD creator url must match company url"
 
 
 def test_sitemap_xml_validity_and_lastmod():
@@ -109,7 +117,7 @@ def test_sitemap_xml_validity_and_lastmod():
 
     home_url = urls[0]
     loc = home_url.find("sm:loc", ns)
-    assert loc is not None and loc.text == "https://ihsg.badai.tech/", (
+    assert loc is not None and loc.text == f"{site_config.SITE_URL}/", (
         f"Unexpected sitemap <loc>: {loc.text if loc is not None else None}"
     )
 
@@ -124,7 +132,7 @@ def test_robots_txt_sitemap_directive():
     robots = PUBLIC_DIR / "robots.txt"
     assert robots.exists(), "public/robots.txt must exist"
     content = robots.read_text(encoding="utf-8")
-    assert "Sitemap: https://ihsg.badai.tech/sitemap.xml" in content, (
+    assert f"Sitemap: {site_config.SITE_URL}/sitemap.xml" in content, (
         "robots.txt must include Sitemap line pointing to sitemap.xml"
     )
 
