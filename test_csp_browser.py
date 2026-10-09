@@ -27,7 +27,8 @@ assert "'unsafe-inline'" in csp_header, "'unsafe-inline' missing from Content-Se
 
 class CspHandler(http.server.SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, directory=str(REPO_ROOT), **kwargs)
+        serve_dir = REPO_ROOT / "public" if (REPO_ROOT / "public").exists() else REPO_ROOT
+        super().__init__(*args, directory=str(serve_dir), **kwargs)
 
     def do_GET(self):
         if self.path.startswith("/api/feedback/status"):

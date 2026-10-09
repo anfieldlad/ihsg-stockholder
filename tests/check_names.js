@@ -1,6 +1,7 @@
 import fs from 'fs';
 
-const raw = JSON.parse(fs.readFileSync('./shareholder_data.json', 'utf8'));
+const jsonPath = fs.existsSync('./public/shareholder_data.json') ? './public/shareholder_data.json' : './shareholder_data.json';
+const raw = JSON.parse(fs.readFileSync(jsonPath, 'utf8'));
 const samples = new Set();
 for (const item of raw.items) {
     if (item.issuer && (item.issuer.includes('PT') || item.issuer.includes('Pt') || item.issuer.includes('TBK') || item.issuer.includes('Tbk'))) {

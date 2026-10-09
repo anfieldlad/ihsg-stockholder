@@ -45,7 +45,8 @@ from datetime import date, datetime
 # ── Paths ──
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_DIR = os.path.dirname(SCRIPT_DIR)
-JSON_PATH = os.path.join(PROJECT_DIR, "shareholder_data.json")
+_public_json = os.path.join(PROJECT_DIR, "public", "shareholder_data.json")
+JSON_PATH = _public_json if os.path.exists(_public_json) else os.path.join(PROJECT_DIR, "shareholder_data.json")
 
 # ── IDX page ──
 PAGE_URL = "https://www.idx.co.id/id/perusahaan-tercatat/data-kepemilikan-saham/"

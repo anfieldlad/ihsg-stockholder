@@ -3,7 +3,8 @@ import fs from 'node:fs';
 
 console.log('Running test_fallback_markup.js...');
 
-const indexHtml = fs.readFileSync('index.html', 'utf8');
+const indexPath = fs.existsSync('public/index.html') ? 'public/index.html' : 'index.html';
+const indexHtml = fs.readFileSync(indexPath, 'utf8');
 const copyStrings = JSON.parse(fs.readFileSync('/home/hermes/company/ihsg/copy-strings.json', 'utf8'));
 const expectedErrorMsg = copyStrings.states.error_load;
 

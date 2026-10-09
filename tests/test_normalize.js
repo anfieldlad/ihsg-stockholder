@@ -1,5 +1,10 @@
 import assert from 'node:assert';
-import { normalizeInvestorName, canonicalInvestorKey, isSameInvestor } from '../src/normalize.js';
+import fs from 'node:fs';
+
+const modPath = fs.existsSync(new URL('../public/src/normalize.js', import.meta.url)) 
+  ? '../public/src/normalize.js' 
+  : '../src/normalize.js';
+const { normalizeInvestorName, canonicalInvestorKey, isSameInvestor } = await import(modPath);
 
 console.log('Running test_normalize.js...');
 

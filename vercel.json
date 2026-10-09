@@ -1,4 +1,5 @@
 {
+  "outputDirectory": "public",
   "headers": [
     {
       "source": "/(.*)",
@@ -29,7 +30,7 @@
   "rewrites": [
     {
       "source": "/api/(.*)",
-      "destination": "/api/index"
+      "destination": "/api/index?__route=$1"
     }
   ]
 }

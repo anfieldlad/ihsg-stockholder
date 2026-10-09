@@ -53,11 +53,12 @@ globalThis.__markAppBooted = () => {
 };
 
 // 2. Mock fetch to serve real shareholder_data.json from disk
-const realDataJson = JSON.parse(fs.readFileSync('shareholder_data.json', 'utf8'));
+const dataPath = fs.existsSync('public/shareholder_data.json') ? 'public/shareholder_data.json' : 'shareholder_data.json';
+const realDataJson = JSON.parse(fs.readFileSync(dataPath, 'utf8'));
 console.log(`Loaded shareholder_data.json with ${realDataJson.items?.length || 0} items, as_of: ${realDataJson.as_of_label || realDataJson.source_date_in_file}`);
 
 globalThis.fetch = async (url) => {
-  if (url === 'shareholder_data.json') {
+  if (url === 'shareholder_data.json' || url === '/shareholder_data.json') {
     return {
       ok: true,
       json: async () => realDataJson
@@ -76,7 +77,8 @@ globalThis.fetch = async (url) => {
 };
 
 // 3. Import store module
-const storeModuleUrl = pathToFileURL(path.resolve(process.cwd(), 'src/store.js')).href;
+const storePath = fs.existsSync('public/src/store.js') ? 'public/src/store.js' : 'src/store.js';
+const storeModuleUrl = pathToFileURL(path.resolve(process.cwd(), storePath)).href;
 const { storeConfig } = await import(storeModuleUrl);
 
 assert(storeConfig, 'storeConfig must be exported by src/store.js');

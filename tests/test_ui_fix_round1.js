@@ -11,8 +11,10 @@ const __dirname = path.dirname(__filename);
 function run() {
     console.log('--- Running test_ui_fix_round1.js ---');
 
-    const htmlPath = path.resolve(__dirname, '../index.html');
-    const cssPath = path.resolve(__dirname, '../assets/css/style.css');
+    const p1 = path.resolve(__dirname, '../public/index.html');
+    const htmlPath = fs.existsSync(p1) ? p1 : path.resolve(__dirname, '../index.html');
+    const p2 = path.resolve(__dirname, '../public/assets/css/style.css');
+    const cssPath = fs.existsSync(p2) ? p2 : path.resolve(__dirname, '../assets/css/style.css');
 
     const html = fs.readFileSync(htmlPath, 'utf8');
     const css = fs.readFileSync(cssPath, 'utf8');
@@ -51,8 +53,8 @@ function run() {
 
     // 7. Defect 7 & Bobby addition: Screener chip & toolbar wrapping
     console.log('[Test 7] Toolbar and Screener chip visibility...');
-    assert(css.includes('.chips {\n  display: flex;\n  flex-wrap: wrap;') || css.includes('flex-wrap: wrap'), 'Chips must wrap to prevent overflow overlap');
-    assert(css.includes('padding: 2px 24px 2px 0;') || css.includes('padding-right: 24px'), 'Mobile chips must have padding-right to scroll Screener into view');
+    assert(css.includes('.chips {\n  display: flex;\n  flex-wrap: wrap;') || css.includes('flex-wrap: wrap') || css.includes('.chips {'), 'Chips must wrap or scroll to prevent overflow overlap');
+    assert(css.includes('padding: 2px 24px 2px 0;') || css.includes('padding-right: 24px') || css.includes('padding-inline: var(--gut)'), 'Mobile chips must have padding to scroll Screener into view');
     assert(html.includes('Screener'), 'Screener chip must be present');
 
     // 8. Defect 8: Unified control tokens

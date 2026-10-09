@@ -1,5 +1,10 @@
 import assert from 'assert';
-import { toTitleCase } from '../src/utils.js';
+import fs from 'node:fs';
+
+const modPath = fs.existsSync(new URL('../public/src/utils.js', import.meta.url)) 
+  ? '../public/src/utils.js' 
+  : '../src/utils.js';
+const { toTitleCase } = await import(modPath);
 
 console.log('Testing toTitleCase...');
 
