@@ -19,6 +19,7 @@ from flask import Flask, jsonify, send_from_directory, request, Response
 from flask_cors import CORS
 
 from api.services.yahoo import fetch_single_price, fetch_batch_prices
+from site_config import SITE_URL
 
 # Serve static files strictly from public/ directory (SEC-02)
 PUBLIC_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "public")
@@ -67,12 +68,12 @@ else:
     is_dev = os.environ.get("FLASK_ENV") == "development" or os.environ.get("ENV") == "development"
     if is_dev:
         allowed_origins = [
-            "https://ihsg.badai.tech",
+            SITE_URL,
             re.compile(r"^https?://(localhost|127\.0\.0\.1)(:\d+)?$")
         ]
     else:
         allowed_origins = [
-            "https://ihsg.badai.tech"
+            SITE_URL
         ]
 CORS(app, origins=allowed_origins)
 

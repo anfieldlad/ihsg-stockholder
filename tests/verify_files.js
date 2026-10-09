@@ -21,6 +21,15 @@ const files = [
   `${prefix}src/analytics.js`,
   `${prefix}src/copy.js`,
   `${prefix}src/utils.js`,
+  `${prefix}src/config.js`,
+  `${prefix}og-image.png`,
+  `${prefix}apple-touch-icon.png`,
+  `${prefix}favicon-32.png`,
+  `${prefix}favicon-192.png`,
+  `${prefix}favicon-512.png`,
+  `${prefix}sitemap.xml`,
+  `${prefix}robots.txt`,
+  'site_config.py',
   'vercel.json'
 ];
 
@@ -47,7 +56,7 @@ console.log('OK: vercel.json contains valid rewrites configuration');
 
 // Run module import regression check
 const modPrefix = fs.existsSync('public/src') ? 'public/src/' : 'src/';
-const requiredModules = ['store.js', 'api.js', 'charts.js', 'copy.js', 'utils.js', 'normalize.js', 'analytics.js'].map(m => `${modPrefix}${m}`);
+const requiredModules = ['store.js', 'api.js', 'charts.js', 'copy.js', 'utils.js', 'normalize.js', 'analytics.js', 'config.js'].map(m => `${modPrefix}${m}`);
 for (const mod of requiredModules) {
   const fileUrl = pathToFileURL(path.resolve(process.cwd(), mod)).href;
   try {
