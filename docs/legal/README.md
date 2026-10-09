@@ -10,7 +10,7 @@
 
 ## 1. Daftar Dokumen (Deliverables Manifest)
 
-Direktori ini memuat 5 instrumen dokumen hukum dan panduan dukungan pelanggan dalam Bahasa Indonesia lugas (*plain-language Indonesian*):
+Direktori ini memuat 6 instrumen dokumen hukum, tinjauan kepatuhan D10, dan panduan dukungan pelanggan dalam Bahasa Indonesia lugas (*plain-language Indonesian*):
 
 | Berkas | Judul Dokumen | Fokus Kepatuhan & Isi Utama | Status |
 | :--- | :--- | :--- | :--- |
@@ -19,6 +19,7 @@ Direktori ini memuat 5 instrumen dokumen hukum dan panduan dukungan pelanggan da
 | **`03-kebijakan-refund.md`** | Kebijakan Pengembalian Dana (Refund Policy) | Model akses prabayar digital sekali bayar, prinsip "Strictly No Refund setelah login dan konsumsi data KSEI", syarat refund 100% (transaksi ganda QRIS 48 jam & kegagalan sistem permanen 2x24 jam), dan non-eligible cases. | DRAFT |
 | **`04-disclaimer-ojk.md`** | Penafian Investasi Statuter (OJK Statutory Disclaimer) | Kepatuhan POJK No. 6/2026 jo UU P2SK No. 4/2023 Pasal 237, teks resmi bilingual (ID/EN), 5 titik penempatan wajib (footer, checkbox checkout unchecked, modal emiten/investor, header CSV rows 1-3, notifikasi Telegram/email), serta kamus terminologi patuh vs dilarang (anti-pom-pom). | DRAFT |
 | **`05-customer-support-playbook.md`** | Customer Support Playbook & SOP Penanganan Tiket | Panduan operasional Erin & Bobby, filosofi nada bicara OPC, SLA triase P1-P4, dan template balasan lengkap: (1) Data salah & data lag, (2) Akses belum aktif pasca-bayar, (3) Refund disetujui & ditolak sopan, (4) Permohonan hapus akun & ekspor data UU PDP. | DRAFT |
+| **`disclaimer-and-paywall-wording.md`** | Tinjauan Wording D10 & Penafian Statuter (OJK & UU PDP) | Standar resmi salinan UI/paywall teaser paska penghentian dataset statis monolitik (D10), reposisi nilai berbayar (history/diffs/alerts/export/convenience), teks penafian OJK (footer, checkout checkbox unchecked, CSV header `#`), kepatuhan UU PDP & kamus anti-pom-pom. | APPROVED |
 
 ---
 
@@ -44,6 +45,6 @@ Dokumen-dokumen ini secara presisi mengimplementasikan seluruh keputusan strateg
 ---
 
 ## 3. Langkah Tindak Lanjut (Next Steps)
-1. **Review Toby:** Peninjauan kepatuhan risiko regulasi OJK dan klausul UU PDP.
+1. **Review Toby (SELESAI — Task `t_af31d9ae`):** Peninjauan kepatuhan regulasi OJK & UU PDP serta perumusan salinan paywall D10 disahkan dalam `disclaimer-and-paywall-wording.md`.
 2. **Persetujuan Bobby / Kuasa Hukum:** Pengesahan final dokumen sebagai syarat peluncuran gerbang pembayaran komersial.
 3. **Integrasi UI (Dwight & Pam):** Pemasangan tautan dokumen dan checkbox checkout pada antarmuka web.

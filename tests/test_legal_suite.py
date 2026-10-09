@@ -12,6 +12,7 @@ EXPECTED_FILES = [
     "04-disclaimer-ojk.md",
     "05-customer-support-playbook.md",
     "README.md",
+    "disclaimer-and-paywall-wording.md",
 ]
 
 def test_files_exist():
@@ -92,6 +93,23 @@ def test_regulatory_and_pass_content():
     assert "hapus akun" in cs.lower()
     assert "Erin" in cs
     print("  [OK] 05-customer-support-playbook.md CS templates verified.")
+
+    # D10 Disclaimer and Paywall Wording
+    d10 = (DOCS_LEGAL_DIR / "disclaimer-and-paywall-wording.md").read_text(encoding="utf-8")
+    assert "Toby" in d10
+    assert "D10" in d10
+    assert "Data Publik Tetap Publik" in d10 or "what is already public stays public" in d10.lower()
+    assert "POJK No. 6" in d10
+    assert "UU P2SK" in d10 or "UU No. 4 Tahun 2023" in d10
+    assert "UU PDP" in d10 or "UU No. 27/2022" in d10
+    assert "Top 5" in d10 or "5 pemegang" in d10.lower()
+    assert "MoM" in d10
+    assert "Telegram" in d10
+    assert "CSV" in d10
+    assert "50" in d10  # quota
+    assert "One-Time" in d10 or "sekali bayar" in d10.lower()
+    assert "checked = false" in d10 or "unchecked" in d10.lower()
+    print("  [OK] disclaimer-and-paywall-wording.md D10 rules verified.")
     
     print("[PASS] All regulatory and pass rules verified.\n")
 
