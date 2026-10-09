@@ -118,6 +118,8 @@ def scan_repo_for_unauthorized_badai_tech(root_dir: Path) -> list[str]:
         "node_modules",
         ".venv",
         "venv",
+        "dist",
+        "dist-spike",
     }
 
     violations = []

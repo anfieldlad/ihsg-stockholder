@@ -45,6 +45,8 @@ tmp/
 temp/
 .pytest_cache/
 feedback_submissions.json
+dist-spike/
+data/
 
 # Secrets & Local Configurations
 .env*
