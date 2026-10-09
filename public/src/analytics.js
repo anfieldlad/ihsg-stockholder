@@ -20,9 +20,8 @@ export const ANALYTICS_CONFIG = {
    * Paste your Umami Website ID (UUID) from Umami Cloud dashboard.
    * Example: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890'
    * If empty string, analytics operates as a silent safe no-op.
-   * Note: Bobby will paste the Umami Website ID later — do not invent one.
    */
-  websiteId: '',
+  websiteId: '010bf3dc-512c-49e6-977a-11bf3a265b1b',
 
   /**
    * Umami script URL. Defaults to Umami Cloud, can be pointed to self-hosted instance.
