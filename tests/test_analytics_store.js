@@ -2,6 +2,7 @@ import assert from 'node:assert';
 import fs from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
+import { SITE_URL } from '../public/src/config.js';
 
 console.log('Running test_analytics_store.js (Store Analytics Integration Suite)...');
 
@@ -33,7 +34,7 @@ globalThis.document = {
   querySelectorAll() { return []; },
   addEventListener() {}
 };
-globalThis.location = { hash: '', pathname: '/', href: 'https://ihsg.badai.tech/' };
+globalThis.location = { hash: '', pathname: '/', href: `${SITE_URL}/` };
 try {
   Object.defineProperty(globalThis, 'navigator', {
     value: { userAgent: 'test-agent' },
