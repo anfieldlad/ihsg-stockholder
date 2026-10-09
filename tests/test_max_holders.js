@@ -6,14 +6,19 @@ import assert from 'assert';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { storeConfig } from '../src/store.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+const storeModPath = fs.existsSync(path.resolve(__dirname, '../public/src/store.js'))
+    ? '../public/src/store.js'
+    : '../src/store.js';
+const { storeConfig } = await import(storeModPath);
+
 async function run() {
     console.log('--- Running test_max_holders.js ---');
-    const jsonPath = path.resolve(__dirname, '../shareholder_data.json');
+    const p1 = path.resolve(__dirname, '../public/shareholder_data.json');
+    const jsonPath = fs.existsSync(p1) ? p1 : path.resolve(__dirname, '../shareholder_data.json');
     const raw = JSON.parse(fs.readFileSync(jsonPath, 'utf8'));
 
     // Mock global window/document/fetch

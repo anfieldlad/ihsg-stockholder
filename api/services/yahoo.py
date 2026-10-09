@@ -58,12 +58,13 @@ def fetch_single_price(code: str) -> Dict[str, Any]:
 
 
 def fetch_batch_prices(codes: List[str]) -> Dict[str, Dict[str, Any]]:
-    """Fetch prices for multiple stocks using yfinance batch (max 30)."""
+    """Fetch prices for multiple stocks using yfinance batch (max 50)."""
     if not yf:
         return {c: {"error": "Layanan harga belum terpasang", "code": c} for c in codes}
 
-    # Strict cap at 30 codes
-    codes = codes[:30]
+    # Strict cap at 50 codes matching frontend batch size
+    BATCH_CAP = 50
+    codes = codes[:BATCH_CAP]
     yf_tickers_str = " ".join(f"{c}.JK" for c in codes)
     results: Dict[str, Dict[str, Any]] = {}
 

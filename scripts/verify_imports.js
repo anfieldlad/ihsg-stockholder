@@ -62,7 +62,7 @@ function analyzeFile(filePath) {
   return { filePath, exports, imports, hasDefaultExport };
 }
 
-const srcDir = './src';
+const srcDir = fs.existsSync('./public/src') ? './public/src' : './src';
 const srcFiles = fs.readdirSync(srcDir).filter(f => f.endsWith('.js')).map(f => path.join(srcDir, f));
 
 // Also check index.html script tag
@@ -75,12 +75,13 @@ for (const file of allFiles) {
 }
 
 // Also analyze index.html
-const indexHtmlContent = fs.readFileSync('index.html', 'utf8');
+const indexPath = fs.existsSync('./public/index.html') ? './public/index.html' : './index.html';
+const indexHtmlContent = fs.readFileSync(indexPath, 'utf8');
 const indexScriptMatches = indexHtmlContent.matchAll(/<script\s+type="module"[^>]*>([\s\S]*?)<\/script>/gi);
 let idxCount = 0;
 for (const sm of indexScriptMatches) {
   idxCount++;
-  const pseudoPath = `index.html#module-${idxCount}`;
+  const pseudoPath = `${indexPath}#module-${idxCount}`;
   const scriptBody = sm[1];
   const imports = [];
   const importMatches = scriptBody.matchAll(/import\s*\{([^}]+)\}\s*from\s*['"]([^'"]+)['"]/g);
@@ -116,7 +117,7 @@ for (const [file, a] of Object.entries(analyses)) {
   for (const imp of a.imports) {
     let resolvedTarget = null;
     if (imp.source.startsWith('.')) {
-      const baseDir = file.includes('#') ? '.' : path.dirname(file);
+      const baseDir = file.includes('#') ? path.dirname(indexPath) : path.dirname(file);
       resolvedTarget = path.normalize(path.join(baseDir, imp.source));
     }
     console.log(`${file} imports from ${imp.source} -> ${resolvedTarget}`);

@@ -2,22 +2,24 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 
+const prefix = fs.existsSync('public') ? 'public/' : '';
+
 const files = [
-  'index.html',
-  'assets/css/style.css',
-  'assets/fonts/fonts.css',
-  'components/tab-stocks.html',
-  'components/tab-investors.html',
-  'components/tab-analytics.html',
-  'components/tab-faq.html',
-  'components/modal-stock.html',
-  'components/modal-investor.html',
-  'components/modal-feedback.html',
-  'src/store.js',
-  'src/charts.js',
-  'src/normalize.js',
-  'src/copy.js',
-  'src/utils.js',
+  `${prefix}index.html`,
+  `${prefix}assets/css/style.css`,
+  `${prefix}assets/fonts/fonts.css`,
+  `${prefix}components/tab-stocks.html`,
+  `${prefix}components/tab-investors.html`,
+  `${prefix}components/tab-analytics.html`,
+  `${prefix}components/tab-faq.html`,
+  `${prefix}components/modal-stock.html`,
+  `${prefix}components/modal-investor.html`,
+  `${prefix}components/modal-feedback.html`,
+  `${prefix}src/store.js`,
+  `${prefix}src/charts.js`,
+  `${prefix}src/normalize.js`,
+  `${prefix}src/copy.js`,
+  `${prefix}src/utils.js`,
   'vercel.json'
 ];
 
@@ -43,7 +45,8 @@ if (!vercelConfig.rewrites) {
 console.log('OK: vercel.json contains valid rewrites configuration');
 
 // Run module import regression check
-const requiredModules = ['src/store.js', 'src/api.js', 'src/charts.js', 'src/copy.js', 'src/utils.js', 'src/normalize.js'];
+const modPrefix = fs.existsSync('public/src') ? 'public/src/' : 'src/';
+const requiredModules = ['store.js', 'api.js', 'charts.js', 'copy.js', 'utils.js', 'normalize.js'].map(m => `${modPrefix}${m}`);
 for (const mod of requiredModules) {
   const fileUrl = pathToFileURL(path.resolve(process.cwd(), mod)).href;
   try {
