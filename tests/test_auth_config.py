@@ -83,11 +83,11 @@ def test_header_auth_markup():
     assert "user.photoUrl" not in html
 
 
-def test_auth_js_flag_default_off():
-    """Verify public/src/auth.js sets feature flag default to false (zero network)."""
+def test_auth_js_flag_default_on():
+    """Verify public/src/auth.js sets feature flag default to true (production enabled)."""
     auth_path = REPO_ROOT / "public" / "src" / "auth.js"
     assert auth_path.exists()
     content = auth_path.read_text(encoding="utf-8")
-    assert "let _authFlag = false;" in content
+    assert "let _authFlag = true;" in content
     assert "export function isAuthEnabled" in content
     assert "export function getToken" in content

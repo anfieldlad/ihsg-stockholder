@@ -25,7 +25,7 @@ export const FIREBASE_CONFIG = {
 };
 
 // Feature flag (default OFF per spec)
-let _authFlag = false;
+let _authFlag = true;
 
 // In-memory auth state (ZERO persistence for security)
 let _inMemoryToken = null;
