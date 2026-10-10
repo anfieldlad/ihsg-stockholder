@@ -227,16 +227,11 @@
         <button class="sbtn sbtn-desktop" type="button" @click="openSearch()" aria-label="Cari kode saham atau nama investor">
           <svg class="i s"><use href="#i-search"/></svg>
           <span class="sbtn-text sbtn-short">Cari...</span>
-          <span class="sbtn-text sbtn-long" x-text="C.search.bar_placeholder">Cari kode saham atau investor...</span>
+          <span class="sbtn-text sbtn-long" x-text="C.search.bar_placeholder">Cari saham atau investor...</span>
           <kbd>Ctrl K</kbd>
         </button>
 
         <div class="top-actions">
-          <button class="theme-btn" type="button" @click="toggleTheme()" :title="theme === 'a' ? 'Mode Malam' : 'Mode Terang'" :aria-label="theme === 'a' ? 'Beralih ke mode malam' : 'Beralih ke mode terang'">
-            <svg class="i s" x-show="theme === 'a'"><use href="#i-moon"/></svg>
-            <svg class="i s" x-show="theme === 'b'"><use href="#i-sun"/></svg>
-          </button>
-
           <!-- Authentication (M1-3, gated by authEnabled feature flag, default OFF) -->
           <template x-if="authEnabled">
             <div class="auth-wrap" id="auth-wrap">
@@ -266,18 +261,17 @@
           <button class="pro" type="button" @click="openPro('top')" aria-label="Fitur PRO" x-text="C.nav.pro_pill">PRO</button>
         </div>
       </div>
-
-      <!-- Mobile Dedicated Full-Width Search Trigger (<1024px) -->
-      <div class="shell top-search-mobile">
-        <button class="sbtn sbtn-mobile" type="button" @click="openSearch()" aria-label="Cari kode saham atau nama investor">
-          <svg class="i s"><use href="#i-search"/></svg>
-          <span class="sbtn-text" x-text="C.search.bar_placeholder">Cari kode saham atau investor...</span>
-        </button>
-      </div>
     </header>
 
     <!-- Main Content Container -->
     <main class="shell">
+      <!-- Mobile Standalone Search Trigger (<1024px) with 16px gutters -->
+      <div class="search-row-mobile">
+        <button class="sbtn sbtn-mobile" type="button" @click="openSearch()" aria-label="Cari saham atau nama investor">
+          <svg class="i s"><use href="#i-search"/></svg>
+          <span class="sbtn-text" x-text="C.search.bar_placeholder">Cari saham atau investor...</span>
+        </button>
+      </div>
       <!-- Fallback when JavaScript is disabled -->
       <noscript>
         <style>#app-loading { display: none !important; }</style>
@@ -309,10 +303,10 @@
         <button class="btn pri" id="app-fallback-retry" type="button" onclick="location.reload()" style="margin: 0 auto; display: inline-flex;">Coba Lagi</button>
       </div>
 
-      <!-- Freshness Indicator -->
-      <div class="fresh" role="status" id="fresh" style="display: none;">
+      <!-- Freshness Indicator (Hidden on mobile; folded into .meta-line) -->
+      <div class="fresh fresh-desktop" role="status" id="fresh" style="display: none;">
         <span class="dot"></span>
-        <span>Data KSEI per <b x-text="asOfLabel || '30 September 2026'"></b> (pembaruan berkala) · Harga bursa tertunda 15 mnt</span>
+        <span>Data KSEI per <b x-text="asOfLabel || '30 September 2026'"></b> · Harga bursa tertunda 15 mnt</span>
         <button type="button" @click="openPro('freshness')">Info Pembaruan</button>
       </div>
 
@@ -323,11 +317,19 @@
           <!-- VIEW: STOCKS -->
           <section class="view" :class="{ on: currentTab === 'stocks' }" id="v-stocks" aria-labelledby="h-stocks">
             <div class="view-head">
-              <div class="title-wrap">
-                <h1 id="h-stocks" x-text="C.stocks.title">Saham</h1>
-                <p class="tagline">Pantau kepemilikan saham dan pergerakan investor kakap</p>
+              <h1 id="h-stocks" class="sr-only" x-text="C.stocks.title">Saham</h1>
+
+              <!-- Compact 1-Line Metadata (Mobile-first, <150px budget) -->
+              <div class="meta-line">
+                <span class="meta-count" x-text="`${fmtNum(totalStocks)} Saham`">961 Saham</span>
+                <span class="meta-sep" aria-hidden="true">·</span>
+                <button class="meta-info-btn" type="button" @click="openPro('freshness')" aria-label="Informasi pembaruan data KSEI">
+                  <span x-text="`KSEI ${asOfLabel || '30 Sep'}`">KSEI 30 Sep</span>
+                  <svg class="i xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
+                  </svg>
+                </button>
               </div>
-              <p class="sub" id="sub-stocks" x-text="`${fmtNum(totalStocks)} emiten dengan pemegang saham ≥1%`"></p>
 
               <div class="tools">
                 <div class="chips" role="group" id="chips-stocks">
@@ -339,14 +341,14 @@
                     <svg class="i s"><use href="#i-lock"/></svg>
                     <span>Screener</span>
                   </button>
+                  <!-- Inline Sort Select (1-Row Unified Controls on Mobile) -->
+                  <select class="sortsel" :value="stockSortKey" @change="setStockSort($event.target.value)" aria-label="Urutkan Saham">
+                    <option value="code">Urutkan: Kode (A-Z)</option>
+                    <option value="top">Urutkan: Porsi Terbesar</option>
+                    <option value="holders">Urutkan: Jumlah Pemegang</option>
+                    <option value="local">Urutkan: Porsi Domestik</option>
+                  </select>
                 </div>
-
-                <select class="sortsel" :value="stockSortKey" @change="setStockSort($event.target.value)" aria-label="Urutkan Saham">
-                  <option value="code">Urutkan: Kode (A-Z)</option>
-                  <option value="top">Urutkan: Porsi Terbesar</option>
-                  <option value="holders">Urutkan: Jumlah Pemegang</option>
-                  <option value="local">Urutkan: Porsi Domestik</option>
-                </select>
               </div>
             </div>
 

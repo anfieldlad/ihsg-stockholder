@@ -26,7 +26,7 @@ export const COPY = {
     tooltip: "Data kepemilikan efek bersumber dari publikasi berkala KSEI (posisi akhir bulan). Harga bursa diperbarui dengan jeda 15 menit."
   },
   search: {
-    bar_placeholder: "Cari kode saham atau investor...",
+    bar_placeholder: "Cari saham atau investor...",
     overlay_input_placeholder: "Ketik kode saham (misal: BBCA) atau nama investor",
     shortcut: "Ctrl K",
     btn_cancel: "Batal",
