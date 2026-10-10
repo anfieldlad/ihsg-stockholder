@@ -340,7 +340,38 @@ kbd {
   color: var(--ink);
 }
 
+.top-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.top-search-mobile {
+  padding: 0 0 10px;
+  width: 100%;
+}
+
+.sbtn-mobile {
+  width: 100%;
+  max-width: 100%;
+  min-height: 42px;
+  margin: 0;
+  display: flex;
+}
+
+.sbtn-desktop {
+  display: none;
+}
+
 @media(min-width: 1024px) {
+  .top-search-mobile {
+    display: none;
+  }
+  .sbtn-desktop {
+    display: flex;
+  }
   .sbtn kbd {
     display: block;
   }
