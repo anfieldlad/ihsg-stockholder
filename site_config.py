@@ -17,3 +17,7 @@ SITE_URL = os.environ.get("SITE_URL", "https://ihsg.bad.ai.id").rstrip("/")
 
 # Company website base URL
 COMPANY_URL = os.environ.get("COMPANY_URL", "https://bad.ai.id").rstrip("/")
+
+# Firebase Auth Domain (configurable: default ihsg-storm.firebaseapp.com, ihsg.bad.ai.id at cutover)
+AUTH_DOMAIN = os.environ.get("AUTH_DOMAIN", "ihsg-storm.firebaseapp.com")
+

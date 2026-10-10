@@ -13,6 +13,15 @@ import {
     trackFeedbackOpen,
     trackFeedbackSubmit
 } from './analytics.js';
+import {
+    isAuthEnabled,
+    initAuth,
+    subscribeAuth,
+    loginWithGoogle,
+    logout as authLogout,
+    getToken,
+    getUserTier
+} from './auth.js';
 
 export const storeConfig = {
     // Copy reference
@@ -77,6 +86,13 @@ export const storeConfig = {
     feedbackSuccess: false,
     feedbackError: null,
     feedbackTicketId: null,
+
+    // Authentication (M1-3)
+    authEnabled: false,
+    user: null,
+    userTier: 'gratis',
+    userTierLabel: 'Gratis',
+    authLoading: false,
     feedbackForm: {
         category: 'data_error',
         context_type: 'general',
@@ -154,6 +170,20 @@ export const storeConfig = {
 
             // Check feedback webhook availability (B2)
             this.checkFeedbackStatus();
+
+            // Initialize Authentication if feature flag is active (M1-3)
+            this.authEnabled = isAuthEnabled();
+            if (this.authEnabled) {
+                subscribeAuth((authState) => {
+                    this.user = authState.user;
+                    this.userTier = authState.tier || 'gratis';
+                    this.userTierLabel = this.formatTierLabel(this.userTier);
+                    this.authLoading = false;
+                });
+                initAuth().catch((err) => {
+                    console.warn('Auth initialization error:', err);
+                });
+            }
         } catch (e) {
             console.error('Initialization error:', e);
             this.error = COPY.states.error_load;
@@ -183,6 +213,35 @@ export const storeConfig = {
             localStorage.setItem('ihsg-theme', this.theme);
         } catch (e) {}
         document.body.setAttribute('data-theme', this.theme);
+    },
+
+    formatTierLabel(tier) {
+        if (!tier) return 'Gratis';
+        const t = String(tier).toLowerCase();
+        if (t === 'pakar') return 'Pakar';
+        if (t === 'investor') return 'Investor';
+        return 'Gratis';
+    },
+
+    async login() {
+        this.authLoading = true;
+        try {
+            await loginWithGoogle();
+        } catch (err) {
+            console.error('Login error:', err);
+            this.authLoading = false;
+        }
+    },
+
+    async logout() {
+        this.authLoading = true;
+        try {
+            await authLogout();
+        } catch (err) {
+            console.error('Logout error:', err);
+        } finally {
+            this.authLoading = false;
+        }
     },
 
     processData() {

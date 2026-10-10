@@ -29,3 +29,7 @@ def test_csp_header_in_vercel_json():
     assert "https://gateway.umami.is" in csp_header
     assert "https://api-gateway.umami.dev" in csp_header
     assert "https://static.cloudflareinsights.com" in csp_header
+    assert "https://identitytoolkit.googleapis.com" in csp_header
+    assert "https://securetoken.googleapis.com" in csp_header
+    assert "https://accounts.google.com" in csp_header
+    assert "https://ihsg-storm.firebaseapp.com" in csp_header
