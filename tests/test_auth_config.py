@@ -14,18 +14,18 @@ import site_config
 
 
 def test_auth_domain_in_site_config():
-    """Verify site_config exports AUTH_DOMAIN with default ihsg-storm.firebaseapp.com."""
+    """Verify site_config exports AUTH_DOMAIN with default ihsg.bad.ai.id."""
     assert hasattr(site_config, "AUTH_DOMAIN")
-    assert site_config.AUTH_DOMAIN == "ihsg-storm.firebaseapp.com"
+    assert site_config.AUTH_DOMAIN == "ihsg.bad.ai.id"
 
 
 def test_auth_domain_env_override():
     """Verify AUTH_DOMAIN can be overridden via environment variable (cutover preparation)."""
     old_env = os.environ.get("AUTH_DOMAIN")
     try:
-        os.environ["AUTH_DOMAIN"] = "ihsg.bad.ai.id"
+        os.environ["AUTH_DOMAIN"] = "custom-auth.example.com"
         importlib.reload(site_config)
-        assert site_config.AUTH_DOMAIN == "ihsg.bad.ai.id"
+        assert site_config.AUTH_DOMAIN == "custom-auth.example.com"
     finally:
         if old_env is not None:
             os.environ["AUTH_DOMAIN"] = old_env

@@ -25,11 +25,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Enforce visible form focus rings and accessible WCAG AA contrast tokens for light and dark themes
 
 ### Fixed
+- Fix Google sign-in redirect and cross-origin storage partitioning by proxying `/__/auth/*` and `/__/firebase/*` through `worker.js` and configuring `authDomain` to `ihsg.bad.ai.id`
+- Restore Firebase authentication session on page reload using lightweight hint key (`ihsg_auth_hint`) without storing tokens or PII
+- Handle `/api/v1/me` service unavailability gracefully: keep user authenticated with default Gratis tier when `/me` fails
+- Surface Google login and redirect errors with Indonesian toast notification ("Login gagal, coba lagi")
 - Fix Google sign-in: replace placeholder Firebase API key
 - The KSEI data date no longer appears twice on desktop (Saham meta-line, Analitik header); one instance per tab
 - Investor row category badge no longer clipped by long category names (the type truncates, the badge stays); long investor names clamp to 2 lines
 
 ### Security
+- Strict edge proxy routing in `worker.js` for `/__/auth/*` and `/__/firebase/*` with hardcoded upstream host, sanitized internal headers (stripping `X-Origin-Auth`), and zero token/PII persistence in local storage
 
 ### Data
 

@@ -18,7 +18,7 @@ import { trackLoginStart, trackLoginSuccess } from './analytics.js';
 export const FIREBASE_CONFIG = {
   projectId: 'ihsg-storm',
   apiKey: 'AIzaSyDS83jqJ-HwX1Ke3pqwWwbzWiOqpEFuOAg',
-  authDomain: AUTH_DOMAIN || 'ihsg-storm.firebaseapp.com',
+  authDomain: AUTH_DOMAIN || 'ihsg.bad.ai.id',
   storageBucket: 'ihsg-storm.firebasestorage.app',
   messagingSenderId: '773487755988',
   appId: '1:773487755988:web:172076c286e3c258ab7141'
@@ -39,6 +39,7 @@ let _sdkPromise = null;
 let _firebaseApp = null;
 let _firebaseAuth = null;
 const _listeners = new Set();
+let _authStateSubscribed = false;
 
 /**
  * Checks if auth feature flag is active. Default OFF.
@@ -46,11 +47,15 @@ const _listeners = new Set();
  * @returns {boolean}
  */
 export function isAuthEnabled() {
-  if (typeof window !== 'undefined') {
+  if (typeof localStorage !== 'undefined') {
     try {
       const stored = localStorage.getItem('ihsg_auth_flag');
       if (stored === 'true') return true;
       if (stored === 'false') return false;
+    } catch (_) {}
+  }
+  if (typeof window !== 'undefined' && window.location) {
+    try {
       const params = new URLSearchParams(window.location.search);
       if (params.get('auth') === '1') return true;
     } catch (_) {}
@@ -124,9 +129,29 @@ function notifyListeners() {
  */
 export async function loadFirebaseSdk() {
   if (!_sdkPromise) {
-    _sdkPromise = import('/assets/vendor/firebase-auth.js');
+    if (typeof window === 'undefined' && typeof process !== 'undefined') {
+      try {
+        _sdkPromise = import('/assets/vendor/firebase-auth.js');
+        await _sdkPromise;
+      } catch (_) {
+        const path = await import('node:path');
+        const { pathToFileURL } = await import('node:url');
+        const resolved = path.resolve(process.cwd(), 'public/assets/vendor/firebase-auth.js');
+        _sdkPromise = import(pathToFileURL(resolved).href);
+      }
+    } else {
+      _sdkPromise = import('/assets/vendor/firebase-auth.js');
+    }
   }
   return _sdkPromise;
+}
+
+/**
+ * Test helper to provide a mocked or custom Firebase SDK bundle.
+ * @param {object|null} sdk
+ */
+export function setFirebaseSdkForTesting(sdk) {
+  _sdkPromise = sdk ? Promise.resolve(sdk) : null;
 }
 
 /**
@@ -169,11 +194,39 @@ export async function fetchMe(token) {
 }
 
 /**
+ * Displays a lightweight toast notification for auth errors.
+ * Uses #toast element in index.html with automatic 4-second dismissal.
+ * @param {string} message
+ */
+export function showAuthToast(message = 'Login gagal, coba lagi') {
+  if (typeof document === 'undefined') return;
+  try {
+    const t = document.getElementById('toast');
+    if (t) {
+      t.textContent = message;
+      t.classList.add('on');
+      setTimeout(() => {
+        t.classList.remove('on');
+      }, 4000);
+    }
+  } catch (_) {}
+}
+
+/**
  * Handles authenticated user: extracts token in memory and fetches tier.
+ * Sets lightweight auth hint ('ihsg_auth_hint'='1') for session restoration.
  * @param {object} user
  */
 async function handleUserAuthenticated(user) {
   _currentUser = user;
+
+  // Lightweight hint for session restore on page reload (zero secrets/PII)
+  if (typeof localStorage !== 'undefined') {
+    try {
+      localStorage.setItem('ihsg_auth_hint', '1');
+    } catch (_) {}
+  }
+
   try {
     _inMemoryToken = await user.getIdToken();
   } catch (e) {
@@ -183,29 +236,58 @@ async function handleUserAuthenticated(user) {
 
   trackLoginSuccess();
 
-  // If token retrieved, query /api/v1/me for entitlement tier
+  // If token retrieved, query /api/v1/me for entitlement tier.
+  // Requirement d: If /me fails (503 / network / error), the user still counts as
+  // logged in: Masuk button disappears and badge shows Gratis.
   if (_inMemoryToken) {
-    const meData = await fetchMe(_inMemoryToken);
-    if (meData && meData.tier) {
-      _userTier = meData.tier;
-      _userProfile = meData;
-    } else {
+    try {
+      const meData = await fetchMe(_inMemoryToken);
+      if (meData && meData.tier) {
+        _userTier = meData.tier;
+        _userProfile = meData;
+      } else {
+        _userTier = 'gratis';
+        _userProfile = meData || null;
+      }
+    } catch (err) {
+      console.warn('Error fetching /api/v1/me:', err);
       _userTier = 'gratis';
-      _userProfile = meData;
+      _userProfile = null;
     }
+  } else {
+    _userTier = 'gratis';
+    _userProfile = null;
   }
   notifyListeners();
 }
 
 /**
- * Handles user sign-out: resets in-memory variables.
+ * Handles user sign-out: resets in-memory variables and clears auth hint.
  */
 function handleUserSignedOut() {
   _currentUser = null;
   _inMemoryToken = null;
   _userTier = 'gratis';
   _userProfile = null;
+
+  if (typeof localStorage !== 'undefined') {
+    try {
+      localStorage.removeItem('ihsg_auth_hint');
+    } catch (_) {}
+  }
   notifyListeners();
+}
+
+function ensureAuthStateListener(sdk, auth) {
+  if (_authStateSubscribed || !auth || !sdk) return;
+  _authStateSubscribed = true;
+  sdk.onAuthStateChanged(auth, async (user) => {
+    if (user) {
+      await handleUserAuthenticated(user);
+    } else {
+      handleUserSignedOut();
+    }
+  });
 }
 
 /**
@@ -218,16 +300,23 @@ export async function loginWithGoogle() {
   }
   trackLoginStart();
 
-  if (typeof window !== 'undefined') {
+  if (typeof sessionStorage !== 'undefined') {
     try {
       sessionStorage.setItem('ihsg_auth_pending_redirect', '1');
     } catch (_) {}
   }
 
-  const sdk = await loadFirebaseSdk();
-  const auth = await getFirebaseAuth();
-  const provider = new sdk.GoogleAuthProvider();
-  await sdk.signInWithRedirect(auth, provider);
+  try {
+    const sdk = await loadFirebaseSdk();
+    const auth = await getFirebaseAuth();
+    ensureAuthStateListener(sdk, auth);
+    const provider = new sdk.GoogleAuthProvider();
+    await sdk.signInWithRedirect(auth, provider);
+  } catch (err) {
+    console.error('Login error:', err?.code || err);
+    showAuthToast('Login gagal, coba lagi');
+    throw err;
+  }
 }
 
 /**
@@ -248,6 +337,9 @@ export async function logout() {
 /**
  * Initializes auth lifecycle if flag is ON.
  * If flag is OFF, this is a strict no-op with ZERO network requests.
+ * Always restores session on boot: on lightweight hint ('ihsg_auth_hint'='1')
+ * or returning from redirect ('ihsg_auth_pending_redirect'='1'), lazy-loads SDK
+ * and registers onAuthStateChanged.
  */
 export async function initAuth() {
   if (!isAuthEnabled() || _authInitialized) {
@@ -257,7 +349,7 @@ export async function initAuth() {
 
   // Check if returning from a pending redirect
   let isRedirectPending = false;
-  if (typeof window !== 'undefined') {
+  if (typeof sessionStorage !== 'undefined') {
     try {
       if (sessionStorage.getItem('ihsg_auth_pending_redirect') === '1') {
         isRedirectPending = true;
@@ -266,30 +358,51 @@ export async function initAuth() {
     } catch (_) {}
   }
 
-  // Only load SDK on boot if returning from redirect
-  if (isRedirectPending) {
+  // Check if session restore hint exists in localStorage
+  let hasAuthHint = false;
+  if (typeof localStorage !== 'undefined') {
+    try {
+      hasAuthHint = localStorage.getItem('ihsg_auth_hint') === '1';
+    } catch (_) {}
+  }
+
+  // Always restore session if returning from redirect OR hint is set
+  if (isRedirectPending || hasAuthHint) {
     try {
       const sdk = await loadFirebaseSdk();
       const auth = await getFirebaseAuth();
-      const result = await sdk.getRedirectResult(auth);
-      if (result && result.user) {
-        await handleUserAuthenticated(result.user);
+      ensureAuthStateListener(sdk, auth);
+
+      if (isRedirectPending) {
+        try {
+          const result = await sdk.getRedirectResult(auth);
+          if (result && result.user) {
+            await handleUserAuthenticated(result.user);
+          }
+        } catch (err) {
+          console.error('Error processing redirect result:', err?.code || err);
+          showAuthToast('Login gagal, coba lagi');
+        }
       }
     } catch (err) {
-      console.warn('Error processing redirect result:', err);
+      console.error('Error initializing Firebase Auth:', err?.code || err);
+      showAuthToast('Login gagal, coba lagi');
     }
   }
+}
 
-  // Setup authStateChanged listener only after SDK is loaded
-  // or if user initiated it
-  if (_firebaseAuth) {
-    const sdk = await loadFirebaseSdk();
-    sdk.onAuthStateChanged(_firebaseAuth, async (user) => {
-      if (user) {
-        await handleUserAuthenticated(user);
-      } else {
-        handleUserSignedOut();
-      }
-    });
-  }
+/**
+ * Test helper to reset internal auth module state between test runs.
+ */
+export function _resetAuthForTesting() {
+  _authInitialized = false;
+  _authStateSubscribed = false;
+  _currentUser = null;
+  _inMemoryToken = null;
+  _userTier = 'gratis';
+  _userProfile = null;
+  _sdkPromise = null;
+  _firebaseApp = null;
+  _firebaseAuth = null;
+  _listeners.clear();
 }

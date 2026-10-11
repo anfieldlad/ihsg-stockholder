@@ -39,6 +39,9 @@ def test_worker_file_exists():
     assert "forwarded" in content
     assert "private, no-store" in content
     assert "https://ihsg.badai.tech" in content
+    assert "ihsg-storm.firebaseapp.com" in content
+    assert "/__/auth" in content
+    assert "/__/firebase" in content
     assert "env.ASSETS.fetch(request)" in content
 
 
@@ -120,6 +123,22 @@ def test_worker_proxy_routing_logic_python():
         assert parsed.path.startswith("/api/v1/"), f"{req_url} must be a v1 route"
         target_path_and_query = parsed.path + (f"?{parsed.query}" if parsed.query else "")
         target_url = urljoin(v1_origin, target_path_and_query)
+        assert target_url == expected_target
+
+    # Firebase Auth proxy routes directed to Firebase upstream
+    firebase_upstream = "https://ihsg-storm.firebaseapp.com"
+    auth_urls = [
+        ("https://ihsg.bad.ai.id/__/auth/handler", f"{firebase_upstream}/__/auth/handler"),
+        ("https://ihsg.bad.ai.id/__/auth/handler?apiKey=test&appName=%5BDEFAULT%5D", f"{firebase_upstream}/__/auth/handler?apiKey=test&appName=%5BDEFAULT%5D"),
+        ("https://ihsg.bad.ai.id/__/auth/experiments.js", f"{firebase_upstream}/__/auth/experiments.js"),
+        ("https://ihsg.bad.ai.id/__/firebase/init.js", f"{firebase_upstream}/__/firebase/init.js"),
+    ]
+
+    for req_url, expected_target in auth_urls:
+        parsed = urlparse(req_url)
+        assert parsed.path.startswith("/__/auth") or parsed.path.startswith("/__/firebase")
+        target_path_and_query = parsed.path + (f"?{parsed.query}" if parsed.query else "")
+        target_url = urljoin(firebase_upstream, target_path_and_query)
         assert target_url == expected_target
 
     static_test_urls = [
