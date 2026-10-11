@@ -2235,3 +2235,248 @@ h1 {
   color: var(--warn);
 }
 
+/* ===== UI consistency v3 ===== */
+:root {
+  --dur: .15s;
+  --btn-h: 44px;
+  --btn-px: 14px;
+  --anim: var(--dur) var(--ease);   /* kills the undefined var(--anim) */
+}
+[data-theme="a"], :root:not([data-theme="b"]) {
+  --field-bd: #767b82;
+  --chip: var(--sunk);              /* kills the undefined var(--chip) */
+  --pri: var(--accent);             /* kills the undefined var(--pri) → spinner arc visible */
+  --pro-bg: #fbf3e0; --pro-bg-hover: #f6e7c3; --pro-bg-press: #efdcaa;
+  --pro-bd: #9a7220; --pro-ink: #6b4a00;
+  --g-bg: #ffffff; --g-ink: #1f1f1f; --g-bd: #747775;
+  --g-hover: rgba(31,31,31,.08); --g-press: rgba(31,31,31,.12);
+  --g-dis-bg: rgba(31,31,31,.12); --g-dis-ink: rgba(31,31,31,.38); --g-dis-bd: rgba(31,31,31,.12);
+  --tier-inv-bg: #eaf0fd; --tier-inv-ink: #1d4ed8;
+  --tier-pro-bg: #f1ecfd; --tier-pro-ink: #6d28d9;
+}
+[data-theme="b"] {
+  --field-bd: #7d8796;
+  --chip: var(--sunk);
+  --pri: var(--accent);
+  --pro-bg: #262216; --pro-bg-hover: #342d1b; --pro-bg-press: #3d3520;
+  --pro-bd: #9c7c34; --pro-ink: #f2d28a;
+  --g-bg: #131314; --g-ink: #e3e3e3; --g-bd: #8e918f;
+  --g-hover: rgba(227,227,227,.08); --g-press: rgba(227,227,227,.12);
+  --g-dis-bg: rgba(227,227,227,.12); --g-dis-ink: rgba(227,227,227,.38); --g-dis-bd: rgba(227,227,227,.12);
+  --tier-inv-bg: #263241; --tier-inv-ink: #93c5fd;
+  --tier-pro-bg: #2d3041; --tier-pro-ink: #c4b5fd;
+}
+
+/* Rule 2 — Global focus ring and top bar height (F2: drop revert-layer) */
+:focus-visible { outline: 2px solid var(--accent-text); outline-offset: 2px; }
+.top-in { height: 44px; }
+@media (min-width: 1024px) { .top-in { height: var(--topH); } }
+
+/* Rule 3 — Page container (centred on desktop) */
+@media (min-width: 768px) {
+  #v-analytics, #v-faq { max-width: 880px; margin-inline: auto; }
+}
+
+/* Rule 4 — Visible page titles (Investors, Analytics, FAQ) */
+#v-investors h1, #v-analytics h1, #v-faq h1 {
+  font-size: 20px; line-height: 1.25; margin-top: 12px; letter-spacing: -.02em; font-weight: 800;
+}
+#v-investors .sub, #v-analytics .sub, #v-faq .sub {
+  font-size: 13px; line-height: 1.4; margin-top: 2px; color: var(--ink3);
+}
+@media (min-width: 1024px) {
+  #v-investors h1, #v-analytics h1, #v-faq h1 { font-size: 22px; margin-top: 16px; }
+}
+
+/* Rule 5 — Shared base for .btn, .auth-btn, .pro (F1: wrap and 1.25 on .btn, nowrap on .auth-btn/.pro) */
+.btn, .auth-btn, .pro {
+  box-sizing: border-box;
+  display: inline-flex; align-items: center; justify-content: center;
+  gap: 8px;
+  min-height: var(--btn-h); min-width: var(--btn-h);
+  border: 1px solid transparent;
+  border-radius: var(--r-s);
+  font-family: var(--font); font-size: 14px; font-weight: 600;
+  cursor: pointer;
+  -webkit-user-select: none;
+  user-select: none;
+  transition: background-color var(--dur) var(--ease), border-color var(--dur) var(--ease), color var(--dur) var(--ease);
+}
+.btn {
+  white-space: normal; line-height: 1.25; padding: 10px var(--btn-px); text-align: center;
+}
+.auth-btn, .pro {
+  white-space: nowrap; line-height: 1; padding: 0 var(--btn-px);
+}
+.btn:focus-visible, .auth-btn:focus-visible, .pro:focus-visible {
+  outline: 2px solid var(--accent-text); outline-offset: 2px; border-radius: var(--r-s);
+}
+
+/* Rule 6 — Google button .auth-btn (Google brand guideline; F5: Manrope 600 deviation) */
+.auth-btn { background-color: var(--g-bg); color: var(--g-ink); border-color: var(--g-bd); }
+.auth-btn .auth-g-icon { width: 18px; height: 18px; flex: 0 0 18px; }
+.auth-btn:hover:not(:disabled) {
+  background-color: var(--g-bg);
+  background-image: linear-gradient(var(--g-hover), var(--g-hover));
+  border-color: var(--g-bd);
+}
+.auth-btn:active:not(:disabled) { background-image: linear-gradient(var(--g-press), var(--g-press)); }
+.auth-btn:disabled {
+  background-color: var(--g-dis-bg); background-image: none;
+  color: var(--g-dis-ink); border-color: var(--g-dis-bd);
+  opacity: 1; cursor: not-allowed;
+}
+.auth-btn:disabled .auth-g-icon { opacity: .38; }
+
+/* Rule 7 — Pro button .pro (restrained brass tint, same geometry) */
+.pro {
+  margin-left: 0; flex-shrink: 0;
+  background-color: var(--pro-bg); color: var(--pro-ink); border-color: var(--pro-bd);
+  letter-spacing: .04em;
+}
+.pro:hover:not(:disabled)  { background-color: var(--pro-bg-hover); }
+.pro:active:not(:disabled) { background-color: var(--pro-bg-press); }
+.pro:focus-visible { outline-color: var(--pro-bd); }
+.pro:disabled { background-color: var(--g-dis-bg); color: var(--g-dis-ink); border-color: var(--g-dis-bd); cursor: not-allowed; }
+
+/* Rule 8 — Logout (ghost) and tier badge (F4: max-width 399px; S2: disabled logout color) */
+.auth-btn.auth-logout { background: transparent; border-color: transparent; color: var(--ink2); padding: 0 12px; min-height: var(--btn-h); font-size: 14px; }
+.auth-btn.auth-logout:hover:not(:disabled) { background: var(--hover); border-color: transparent; color: var(--ink); }
+.auth-btn.auth-logout:disabled { color: var(--g-dis-ink); }
+.auth-tier { font-size: 12px; font-weight: 700; text-transform: none; letter-spacing: 0; padding: 2px 8px; border-radius: 99px; background: var(--sunk); color: var(--ink2); border: 1px solid var(--line); }
+.auth-tier.tier-investor { background: var(--tier-inv-bg); color: var(--tier-inv-ink); border-color: transparent; }
+.auth-tier.tier-pakar    { background: var(--tier-pro-bg); color: var(--tier-pro-ink); border-color: transparent; }
+.auth-wrap, .auth-user, .top-actions { gap: 8px; }
+@media (max-width: 399px) { .auth-tier { display: none; } }
+
+/* Rule 9 — Content buttons .btn.pri / .btn.sec (S1: omit redundant width:100%) */
+.btn.pri { background-color: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+.btn.pri:hover:not(:disabled)  { filter: brightness(1.08); }
+.btn.pri:active:not(:disabled) { filter: brightness(.94); }
+.btn.sec { background-color: var(--card); color: var(--ink); border-color: var(--field-bd); }
+.btn.sec:hover:not(:disabled)  { background-color: var(--hover); }
+.btn.sec:active:not(:disabled) { background-color: var(--sunk); }
+.btn:disabled { opacity: .45; cursor: not-allowed; filter: none; }
+
+/* Rule 10 — Stocks chips */
+.chip { transition: background-color var(--dur) var(--ease), border-color var(--dur) var(--ease), color var(--dur) var(--ease); }
+.chip:focus-visible { outline-offset: 1px; border-radius: 99px; }
+.chip[aria-pressed="true"]:hover { filter: brightness(1.08); color: var(--on-accent); }
+
+/* Rule 12 — Investors tab */
+#v-investors .view-head { padding-bottom: 4px; }
+#v-investors .tools { margin-top: 8px !important; }
+#invList .row .code { font-size: 15px; }
+#invList .row .px   { font-size: 14px; }
+
+/* Rule 14 — Analytics tab */
+#v-analytics .grid2 { gap: 12px; margin-top: 12px; }
+#v-analytics .card { padding: 16px; }
+#v-analytics .card h3 { font-size: 15px; line-height: 1.3; }
+#v-analytics .card .note { margin-top: 2px; line-height: 1.4; }
+#v-analytics .bars { margin-top: 12px; gap: 10px; }
+#v-analytics .bar { grid-template-columns: minmax(72px, 120px) 1fr 48px; gap: 10px; font-size: 13px; }
+#v-analytics .bar .tr { height: 8px; border-radius: 4px; }
+#v-analytics .bar .tr i { background: var(--accent); border-radius: 4px; }
+#v-analytics .seg { height: 12px; border-radius: 6px; margin: 14px 0 10px; }
+#v-analytics .legend { gap: 6px 14px; font-size: 13px; }
+@media (min-width: 768px) {
+  #v-analytics .grid2 { gap: 16px; margin-top: 16px; }
+  #v-analytics .card { padding: 20px; }
+}
+
+/* Rule 16 — FAQ tab */
+#v-faq .tools { margin: 16px 0 0 !important; gap: 10px !important; flex-direction: column; align-items: stretch; }
+#v-faq .tools .form-input { max-width: none !important; width: 100%; }
+#v-faq .card { padding: 4px 16px; }
+#v-faq .faq-item { padding: 0; }
+#v-faq .faq-q { min-height: 52px; padding: 12px 0; font-size: 15px; line-height: 1.35; }
+#v-faq .faq-q .i { color: var(--ink3); transition: transform var(--dur) var(--ease); }
+#v-faq .faq-a { margin: 0 0 14px; font-size: 14px; line-height: 1.6; color: var(--ink2); }
+@media (min-width: 768px) {
+  #v-faq .tools { flex-direction: row; align-items: center; }
+  #v-faq .tools .form-input { max-width: 320px !important; }
+}
+
+/* Rule 17 — Contact box (bottom of FAQ) */
+#v-faq > .card:last-of-type { padding: 20px 16px !important; }
+#v-faq > .card:last-of-type h3 { font-size: 16px !important; line-height: 1.35; }
+#v-faq > .card:last-of-type .sub { margin: 6px auto 14px !important; }
+
+/* Rule 18 — Detail sheet and desktop pane (F3: drop pane shadow/border overrides) */
+.db { padding: 16px 16px 32px; }
+@media (min-width: 768px) { .db { padding: 20px 20px 32px; } }
+.big { font-size: 28px; letter-spacing: -.02em; }
+.pr { font-size: 20px; }
+.sec-h { font-size: 15px; margin: 20px 0 4px; }
+.stat { padding: 10px 12px; }
+.stat b { font-size: 17px; }
+.stats { gap: 8px; margin: 16px 0; }
+.dh .tt { font-weight: 700; }
+
+/* Rule 21 — Pro lock cards (all surfaces) */
+.lock { padding: 12px 14px; margin-top: 12px; }
+.lock h4 { font-size: 14px; }
+.lock .go { min-height: 44px; margin-top: 0; padding-right: 4px; }
+.lock .go:focus-visible { outline-offset: 0; }
+
+/* Rule 22 — Pro sheet (#proSheet) */
+#proSheet .dh .tt { font-weight: 700; letter-spacing: 0 !important; }
+#proSheet h2 { font-size: 20px !important; line-height: 1.25; }
+#proSheet .db > .card { padding: 16px !important; margin: 14px 0 !important; text-align: left !important; background: var(--sunk) !important; }
+#proSheet .db > .card > div:first-child {
+  background: transparent !important; padding: 0 !important; margin-bottom: 6px !important;
+  color: var(--ink3) !important; font-weight: 600 !important;
+}
+#proSheet .db > .card .sub { margin: 0 !important; max-width: none !important; }
+#proSheet table { font-size: 13px; }
+#proSheet thead th { color: var(--ink3); font-weight: 700; }
+#proSheet .pt td { padding: 10px 8px 10px 0; border-top: 1px solid var(--line); }
+#proSheet .pt td:first-child { color: var(--ink2); }
+
+/* Rule 23 — Feedback modal (#feedbackModal) and forms */
+.form-group { margin-bottom: 14px; }
+.form-label { font-size: 13px; font-weight: 700; color: var(--ink2); margin-bottom: 6px; }
+.form-input, .form-select, .form-textarea {
+  min-height: 44px; padding: 10px 12px;
+  border: 1px solid var(--field-bd); border-radius: var(--r-s);
+  background: var(--card); color: var(--ink);
+  font-size: 16px; line-height: 1.4;
+  transition: border-color var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+}
+.form-textarea { min-height: 112px; }
+.form-input::placeholder, .form-textarea::placeholder { color: var(--ink3); opacity: 1; }
+.form-input:focus, .form-select:focus, .form-textarea:focus,
+.form-input:focus-visible, .form-select:focus-visible, .form-textarea:focus-visible {
+  border-color: var(--accent-text);
+  box-shadow: 0 0 0 2px var(--accent-text);
+  outline: none;
+}
+@media (min-width: 768px) {
+  .form-input, .form-select, .form-textarea { font-size: 14px; }
+}
+.form-select { appearance: none; padding-right: 32px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23434a55' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 10px center; }
+[data-theme="b"] .form-select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23b4bcc8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E"); }
+#feedbackModal .chips { margin-bottom: 16px; }
+#feedbackModal .state b { font-size: 17px; }
+#feedbackModal .state p { max-width: 420px; }
+
+/* Rule 24 — Search palette (#pal) */
+.pal-h input { font-size: 16px; border: 1px solid var(--accent-text); box-shadow: 0 0 0 1px var(--accent-text); }
+.pr-i { transition: background-color var(--dur) var(--ease); }
+.pr-i:focus-visible { outline-offset: -2px; }
+
+/* Rule 25 — Loading, empty, error states (S3: delete redundant #app-fallback .state) */
+.loading-spinner { border-color: var(--line); border-top-color: var(--accent); }
+.state { padding: 32px 20px; }
+.state b { font-size: 16px; }
+.state p { font-size: 14px; }
+#app-loading .state { padding: 24px 16px 16px !important; }
+#app-fallback { background: var(--card); border: 1px solid var(--line); border-radius: var(--r); }
+#app-fallback .btn { margin-top: 4px; }
+.pane-empty .i { color: var(--ink3); }
+.skel { background: var(--card); }
+.skel:last-child { border-bottom: 0; }
