@@ -2,6 +2,7 @@
 
 import json
 import os
+import re
 import sys
 from pathlib import Path
 import importlib
@@ -91,3 +92,18 @@ def test_auth_js_flag_default_on():
     assert "let _authFlag = true;" in content
     assert "export function isAuthEnabled" in content
     assert "export function getToken" in content
+
+
+def test_firebase_config_api_key_guard():
+    """Verify FIREBASE_CONFIG.apiKey in public/src/auth.js matches valid Firebase web API key format."""
+    auth_path = REPO_ROOT / "public" / "src" / "auth.js"
+    assert auth_path.exists()
+    content = auth_path.read_text(encoding="utf-8")
+    match = re.search(r"apiKey:\s*['\"]([^'\"]+)['\"]", content)
+    assert match is not None, "FIREBASE_CONFIG.apiKey not found in public/src/auth.js"
+    api_key = match.group(1)
+    pattern = r"^AIza[0-9A-Za-z_-]{35}$"
+    assert re.match(pattern, api_key), (
+        f"FIREBASE_CONFIG.apiKey '{api_key}' is invalid; must match pattern {pattern}"
+    )
+

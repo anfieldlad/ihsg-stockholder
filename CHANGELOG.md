@@ -25,6 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Enforce visible form focus rings and accessible WCAG AA contrast tokens for light and dark themes
 
 ### Fixed
+- Fix Google sign-in: replace placeholder Firebase API key
 - The KSEI data date no longer appears twice on desktop (Saham meta-line, Analitik header); one instance per tab
 - Investor row category badge no longer clipped by long category names (the type truncates, the badge stays); long investor names clamp to 2 lines
 
