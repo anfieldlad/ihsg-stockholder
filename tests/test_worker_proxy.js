@@ -320,4 +320,127 @@ assert(worker && typeof worker.fetch === 'function', 'worker.js must export defa
   }
 }
 
+// Test 10: Proxy GET /__/auth/handler to Firebase with upstream headers and no injected CSP
+{
+  let forwardedRequest = null;
+  let assetsCalled = false;
+  const originalFetch = globalThis.fetch;
+  const mockHtml = '<!DOCTYPE html><html><head><title>Auth Handler</title></head><body></body></html>';
+
+  globalThis.fetch = async (req) => {
+    forwardedRequest = req;
+    return new Response(mockHtml, {
+      status: 200,
+      headers: {
+        'Content-Type': 'text/html; charset=utf-8',
+        'Cache-Control': 'max-age=1800',
+        'X-Firebase-Auth': 'true',
+      },
+    });
+  };
+  const env = {
+    ASSETS: {
+      fetch: async () => {
+        assetsCalled = true;
+        return new Response('Asset fallback', { status: 500 });
+      },
+    },
+  };
+
+  try {
+    const req = new Request('https://ihsg.bad.ai.id/__/auth/handler?apiKey=test-key&appName=%5BDEFAULT%5D', {
+      method: 'GET',
+      headers: { 'User-Agent': 'Mozilla/5.0' },
+    });
+    const res = await worker.fetch(req, env);
+
+    assert.strictEqual(assetsCalled, false, 'Assets fetch must not be called for /__/auth/handler');
+    assert.strictEqual(res.status, 200);
+    assert.strictEqual(res.headers.get('content-type'), 'text/html; charset=utf-8');
+    assert.strictEqual(res.headers.get('cache-control'), 'max-age=1800');
+    assert.strictEqual(res.headers.get('x-firebase-auth'), 'true');
+    assert.strictEqual(res.headers.get('content-security-policy'), null, 'Worker must not inject custom CSP into Firebase auth responses');
+
+    const bodyText = await res.text();
+    assert.strictEqual(bodyText, mockHtml);
+
+    const targetUrl = new URL(forwardedRequest.url);
+    assert.strictEqual(targetUrl.origin, 'https://ihsg-storm.firebaseapp.com');
+    assert.strictEqual(targetUrl.pathname, '/__/auth/handler');
+    assert.strictEqual(targetUrl.search, '?apiKey=test-key&appName=%5BDEFAULT%5D');
+    assert.strictEqual(forwardedRequest.headers.get('Host'), 'ihsg-storm.firebaseapp.com');
+    assert.strictEqual(forwardedRequest.method, 'GET');
+    console.log('[PASS] Test 10: GET /__/auth/handler correctly proxied to https://ihsg-storm.firebaseapp.com');
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+}
+
+// Test 11: Proxy POST /__/auth/handler with body and headers
+{
+  let forwardedRequest = null;
+  const originalFetch = globalThis.fetch;
+  const postPayload = 'state=auth-state-123&code=oauth-code-456';
+
+  globalThis.fetch = async (req) => {
+    forwardedRequest = req;
+    return new Response('{"status":"handled"}', {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  };
+  const env = { ASSETS: { fetch: async () => new Response('Asset', { status: 500 }) } };
+
+  try {
+    const req = new Request('https://ihsg.bad.ai.id/__/auth/handler', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'X-Origin-Auth': 'malicious-attempt',
+      },
+      body: postPayload,
+    });
+    const res = await worker.fetch(req, env);
+
+    assert.strictEqual(res.status, 200);
+    assert.strictEqual(forwardedRequest.method, 'POST');
+    const forwardedBody = await forwardedRequest.text();
+    assert.strictEqual(forwardedBody, postPayload);
+
+    // Toby security check: X-Origin-Auth must be stripped before forwarding to Firebase
+    assert.strictEqual(forwardedRequest.headers.get('X-Origin-Auth'), null);
+    assert.strictEqual(forwardedRequest.headers.get('Host'), 'ihsg-storm.firebaseapp.com');
+    console.log('[PASS] Test 11: POST /__/auth/handler body forwarded and X-Origin-Auth stripped');
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+}
+
+// Test 12: Proxy /__/firebase/init.js route
+{
+  let forwardedRequest = null;
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async (req) => {
+    forwardedRequest = req;
+    return new Response('/* firebase init */', {
+      status: 200,
+      headers: { 'Content-Type': 'application/javascript' },
+    });
+  };
+  const env = { ASSETS: { fetch: async () => new Response('Asset', { status: 500 }) } };
+
+  try {
+    const req = new Request('https://ihsg.bad.ai.id/__/firebase/init.js', { method: 'GET' });
+    const res = await worker.fetch(req, env);
+    assert.strictEqual(res.status, 200);
+
+    const targetUrl = new URL(forwardedRequest.url);
+    assert.strictEqual(targetUrl.origin, 'https://ihsg-storm.firebaseapp.com');
+    assert.strictEqual(targetUrl.pathname, '/__/firebase/init.js');
+    console.log('[PASS] Test 12: GET /__/firebase/init.js proxied to Firebase upstream');
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+}
+
 console.log('\nAll Cloudflare Worker proxy unit tests passed successfully!');

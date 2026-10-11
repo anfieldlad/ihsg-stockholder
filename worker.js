@@ -61,6 +61,37 @@ export default {
       }));
     }
 
+    if (
+      url.pathname === '/__/auth' ||
+      url.pathname.startsWith('/__/auth/') ||
+      url.pathname === '/__/firebase' ||
+      url.pathname.startsWith('/__/firebase/')
+    ) {
+      const upstreamHost = 'ihsg-storm.firebaseapp.com';
+      const targetUrl = new URL(url.pathname + url.search, `https://${upstreamHost}`);
+      const newHeaders = new Headers(request.headers);
+      newHeaders.delete('x-origin-auth');
+      newHeaders.set('Host', upstreamHost);
+
+      const upstreamResponse = await fetch(new Request(targetUrl.toString(), {
+        method: request.method,
+        headers: newHeaders,
+        body: (request.method !== 'GET' && request.method !== 'HEAD') ? request.body : undefined,
+        redirect: 'manual'
+      }));
+
+      const responseHeaders = new Headers(upstreamResponse.headers);
+      const responseBody = (upstreamResponse.status === 204 || upstreamResponse.status === 304 || request.method === 'HEAD')
+        ? null
+        : upstreamResponse.body;
+
+      return new Response(responseBody, {
+        status: upstreamResponse.status,
+        statusText: upstreamResponse.statusText,
+        headers: responseHeaders
+      });
+    }
+
     return env.ASSETS.fetch(request);
   }
 };

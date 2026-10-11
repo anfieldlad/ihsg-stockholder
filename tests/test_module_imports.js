@@ -47,6 +47,22 @@ const requiredModules = [
       'trackFeedbackSubmit',
       'isDntEnabled'
     ]
+  },
+  {
+    path: `${srcPrefix}auth.js`,
+    exports: [
+      'isAuthEnabled',
+      'setAuthFlag',
+      'getToken',
+      'getCurrentUser',
+      'getUserTier',
+      'getUserProfile',
+      'subscribeAuth',
+      'loginWithGoogle',
+      'logout',
+      'initAuth',
+      'FIREBASE_CONFIG'
+    ]
   }
 ];
 

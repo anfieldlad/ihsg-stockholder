@@ -125,4 +125,267 @@ assert(headersText.includes('identitytoolkit.googleapis.com'), '_headers must in
 assert(headersText.includes('accounts.google.com'), '_headers must include accounts.google.com');
 console.log('  [PASS] CSP headers verified across vercel.json and public/_headers');
 
+// 9. Session restoration on boot with lightweight hint 'ihsg_auth_hint'
+console.log('[Test 9] Session restoration on boot via ihsg_auth_hint...');
+{
+  auth._resetAuthForTesting();
+  auth.setAuthFlag(true);
+
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () => new Response(JSON.stringify({ tier: 'gratis' }), { status: 200 });
+
+  const localStore = new Map();
+  const sessionStore = new Map();
+  localStore.set('ihsg_auth_hint', '1');
+
+  globalThis.localStorage = {
+    getItem: (k) => localStore.get(k) ?? null,
+    setItem: (k, v) => localStore.set(k, String(v)),
+    removeItem: (k) => localStore.delete(k),
+  };
+  globalThis.sessionStorage = {
+    getItem: (k) => sessionStore.get(k) ?? null,
+    setItem: (k, v) => sessionStore.set(k, String(v)),
+    removeItem: (k) => sessionStore.delete(k),
+  };
+
+  let authListenerRegistered = false;
+  let authCallback = null;
+  const mockUser = {
+    uid: 'u123',
+    email: 'user@example.com',
+    getIdToken: async () => 'mock-jwt-token',
+  };
+
+  const mockSdk = {
+    getApps: () => [{}],
+    getApp: () => ({}),
+    initializeApp: () => ({}),
+    getAuth: () => ({ currentUser: null }),
+    GoogleAuthProvider: class {},
+    signInWithRedirect: async () => {},
+    getRedirectResult: async () => null,
+    signOut: async () => {},
+    onAuthStateChanged: (authInstance, cb) => {
+      authListenerRegistered = true;
+      authCallback = cb;
+    },
+  };
+  auth.setFirebaseSdkForTesting(mockSdk);
+
+  try {
+    await auth.initAuth();
+    assert.strictEqual(authListenerRegistered, true, 'initAuth with hint must register onAuthStateChanged');
+
+    assert(typeof authCallback === 'function', 'Auth callback must be registered');
+    await authCallback(mockUser);
+
+    assert.strictEqual(auth.getCurrentUser(), mockUser, 'User must be authenticated in memory');
+    assert.strictEqual(auth.getToken(), 'mock-jwt-token', 'Token must be in memory');
+    assert.strictEqual(auth.getUserTier(), 'gratis', 'Tier must default to gratis when /me not called or failed');
+    assert.strictEqual(localStore.get('ihsg_auth_hint'), '1', 'ihsg_auth_hint must remain set');
+    console.log('  [PASS] Session restored on boot via hint and onAuthStateChanged');
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+}
+
+// 10. Redirect return processing with pending redirect flag
+console.log('[Test 10] Pending redirect processing via ihsg_auth_pending_redirect...');
+{
+  auth._resetAuthForTesting();
+  auth.setAuthFlag(true);
+
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () => new Response(JSON.stringify({ tier: 'gratis' }), { status: 200 });
+
+  const localStore = new Map();
+  const sessionStore = new Map();
+  sessionStore.set('ihsg_auth_pending_redirect', '1');
+
+  globalThis.localStorage = {
+    getItem: (k) => localStore.get(k) ?? null,
+    setItem: (k, v) => localStore.set(k, String(v)),
+    removeItem: (k) => localStore.delete(k),
+  };
+  globalThis.sessionStorage = {
+    getItem: (k) => sessionStore.get(k) ?? null,
+    setItem: (k, v) => sessionStore.set(k, String(v)),
+    removeItem: (k) => sessionStore.delete(k),
+  };
+
+  let redirectResultCalled = false;
+  const redirectUser = {
+    uid: 'u456',
+    email: 'redirect@example.com',
+    getIdToken: async () => 'redirect-jwt-token',
+  };
+
+  const mockSdk = {
+    getApps: () => [{}],
+    getApp: () => ({}),
+    initializeApp: () => ({}),
+    getAuth: () => ({}),
+    GoogleAuthProvider: class {},
+    signInWithRedirect: async () => {},
+    getRedirectResult: async () => {
+      redirectResultCalled = true;
+      return { user: redirectUser };
+    },
+    signOut: async () => {},
+    onAuthStateChanged: () => {},
+  };
+  auth.setFirebaseSdkForTesting(mockSdk);
+
+  try {
+    await auth.initAuth();
+    assert.strictEqual(redirectResultCalled, true, 'getRedirectResult must be called when pending flag is set');
+    assert.strictEqual(sessionStore.has('ihsg_auth_pending_redirect'), false, 'Pending flag must be cleared');
+    assert.strictEqual(auth.getCurrentUser(), redirectUser, 'Redirect user must be authenticated');
+    assert.strictEqual(auth.getToken(), 'redirect-jwt-token', 'Token must be stored in memory');
+    assert.strictEqual(localStore.get('ihsg_auth_hint'), '1', 'Successful redirect must set ihsg_auth_hint');
+    console.log('  [PASS] Pending redirect processed, user authenticated, hint saved');
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+}
+
+// 11. Error surfacing: log error code and show toast
+console.log('[Test 11] Error surfacing with Indonesian toast notification...');
+{
+  auth._resetAuthForTesting();
+  auth.setAuthFlag(true);
+
+  const sessionStore = new Map();
+  sessionStore.set('ihsg_auth_pending_redirect', '1');
+  globalThis.sessionStorage = {
+    getItem: (k) => sessionStore.get(k) ?? null,
+    setItem: (k, v) => sessionStore.set(k, String(v)),
+    removeItem: (k) => sessionStore.delete(k),
+  };
+
+  let toastHasOn = false;
+  const mockToast = {
+    textContent: '',
+    classList: {
+      add: (cls) => { if (cls === 'on') toastHasOn = true; },
+      remove: (cls) => { if (cls === 'on') toastHasOn = false; },
+    },
+  };
+  globalThis.document = {
+    getElementById: (id) => id === 'toast' ? mockToast : null,
+  };
+
+  const mockSdk = {
+    getApps: () => [{}],
+    getApp: () => ({}),
+    initializeApp: () => ({}),
+    getAuth: () => ({}),
+    GoogleAuthProvider: class {},
+    signInWithRedirect: async () => {},
+    getRedirectResult: async () => {
+      const err = new Error('OAuth error');
+      err.code = 'auth/unauthorized-domain';
+      throw err;
+    },
+    signOut: async () => {},
+    onAuthStateChanged: () => {},
+  };
+  auth.setFirebaseSdkForTesting(mockSdk);
+
+  await auth.initAuth();
+  assert.strictEqual(mockToast.textContent, 'Login gagal, coba lagi', 'Toast must show "Login gagal, coba lagi" on error');
+  assert.strictEqual(toastHasOn, true, 'Toast element must have class "on"');
+  console.log('  [PASS] Error surfaced via toast notification with Indonesian copy');
+}
+
+// 12. Fallback when /me fails (503): user stays logged in as Gratis
+console.log('[Test 12] Entitlement fallback when /me returns 503...');
+{
+  auth._resetAuthForTesting();
+  auth.setAuthFlag(true);
+
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async (url) => {
+    if (String(url).includes('/api/v1/me')) {
+      return new Response('{"error":"unavailable"}', {
+        status: 503,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+    return new Response('{}', { status: 200 });
+  };
+
+  try {
+    const localStore = new Map();
+    localStore.set('ihsg_auth_hint', '1');
+    globalThis.localStorage = {
+      getItem: (k) => localStore.get(k) ?? null,
+      setItem: (k, v) => localStore.set(k, String(v)),
+      removeItem: (k) => localStore.delete(k),
+    };
+
+    let authCb = null;
+    const testUser = {
+      uid: 'u789',
+      displayName: 'Test User',
+      getIdToken: async () => 'test-token',
+    };
+    const mockSdk = {
+      getApps: () => [{}],
+      getApp: () => ({}),
+      initializeApp: () => ({}),
+      getAuth: () => ({}),
+      GoogleAuthProvider: class {},
+      signInWithRedirect: async () => {},
+      getRedirectResult: async () => null,
+      signOut: async () => {},
+      onAuthStateChanged: (authInst, cb) => { authCb = cb; },
+    };
+    auth.setFirebaseSdkForTesting(mockSdk);
+
+    await auth.initAuth();
+    await authCb(testUser);
+
+    assert.strictEqual(auth.getCurrentUser(), testUser, 'User must remain signed in despite /me 503');
+    assert.strictEqual(auth.getUserTier(), 'gratis', 'User tier must fall back to gratis');
+    console.log('  [PASS] User remains logged in as Gratis when /me endpoint is unavailable (503)');
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+}
+
+// 13. Logout clears state and removes ihsg_auth_hint
+console.log('[Test 13] Logout clears in-memory state and removes hint...');
+{
+  const localStore = new Map();
+  localStore.set('ihsg_auth_hint', '1');
+  globalThis.localStorage = {
+    getItem: (k) => localStore.get(k) ?? null,
+    setItem: (k, v) => localStore.set(k, String(v)),
+    removeItem: (k) => localStore.delete(k),
+  };
+
+  let signOutCalled = false;
+  const mockSdk = {
+    getApps: () => [{}],
+    getApp: () => ({}),
+    initializeApp: () => ({}),
+    getAuth: () => ({}),
+    GoogleAuthProvider: class {},
+    signInWithRedirect: async () => {},
+    getRedirectResult: async () => null,
+    signOut: async () => { signOutCalled = true; },
+    onAuthStateChanged: () => {},
+  };
+  auth.setFirebaseSdkForTesting(mockSdk);
+
+  await auth.logout();
+  assert.strictEqual(auth.getCurrentUser(), null, 'Current user must be null after logout');
+  assert.strictEqual(auth.getToken(), null, 'Token must be null after logout');
+  assert.strictEqual(auth.getUserTier(), 'gratis', 'Tier must reset to gratis');
+  assert.strictEqual(localStore.has('ihsg_auth_hint'), false, 'ihsg_auth_hint must be removed from localStorage');
+  console.log('  [PASS] Logout cleans up state and removes auth hint');
+}
+
 console.log('\n[ALL PASSED] M1-3 Frontend Auth Unit & Integration Suite passed successfully!');
