@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Inline SVG sparkle icon on the Pro header button to match the Google icon on the sign-in button
 
 ### Changed
+- Bantuan search now uses the same pill as the global search (icon, radius, inset, placeholder size); Bantuan and Analitik spacing under the subtitle matches Saham; the Bantuan report button fills the card on phones; Analitik bar labels wrap instead of truncating
 - Compact header controls: Masuk and PRO are now 32px high (invisible 44px tap area kept) with 10px of air above and below in a 52px bar, equal width on mobile, on mobile and desktop
 - Investor, Analitik and Bantuan pages now follow the Saham layout: hidden page title with a one-line meta subtitle, same spacing rhythm, same chip row, same single-card row list
 - Analitik cards on mobile merge into one divided card; FAQ becomes a divided list card; FAQ search field matches the 36px search field; the FAQ contact box matches the Pro lock cards

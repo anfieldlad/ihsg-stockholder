@@ -2701,6 +2701,7 @@ html { scroll-padding-bottom: calc(var(--bnav-h) + 16px); scroll-padding-top: ca
 }
 /* FAQ sub is long: allow two lines, same size */
 #v-faq .sub { line-height: 15px; }
+#v-faq .sub { padding-bottom: 6px; }
 
 #v-investors .view-head { padding-bottom: 0; }
 #v-investors .tools,
@@ -2724,7 +2725,7 @@ html { scroll-padding-bottom: calc(var(--bnav-h) + 16px); scroll-padding-top: ca
 @media (max-width: 767px) {
   #v-analytics .grid2 {
     display: block;
-    margin-top: 4px;
+    margin-top: 0;
     background: var(--card);
     border: 1px solid var(--line);
     border-radius: var(--r);
@@ -2750,30 +2751,86 @@ html { scroll-padding-bottom: calc(var(--bnav-h) + 16px); scroll-padding-top: ca
 #v-analytics .card .note { font-size: 13px; line-height: 1.4; color: var(--ink3); margin-top: 2px; }
 #v-analytics .bar { font-size: 13px; }
 #v-analytics .bar .v { font-weight: 700; }
+#v-analytics .bar {
+  grid-template-columns: minmax(96px, 124px) 1fr 48px;   /* label column a bit wider */
+  align-items: center;
+}
+#v-analytics .bar .t {
+  white-space: normal;             /* allow wrap instead of ellipsis */
+  overflow: visible;
+  text-overflow: clip;
+  overflow-wrap: break-word;
+  font-size: 12.5px;
+  line-height: 1.25;
+}
 #v-analytics .bars { margin-top: 12px; gap: 10px; }
 #v-analytics .seg  { margin: 12px 0 10px; }
 
-/* 5. Bantuan / FAQ */
+/* 5. Bantuan / FAQ: tools column + search pill (polish-3) */
 #v-faq .tools {
   display: flex;
   flex-direction: column;
   align-items: stretch;
   margin: 0 0 5px !important;
 }
-#v-faq .tools .form-input {
-  max-width: none !important;
+
+#v-faq .fsearch {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   width: 100%;
-  min-height: 36px;          /* same as .sbtn-mobile */
   height: 36px;
+  min-height: 36px;
   padding: 0 12px;
-  border-radius: var(--r);   /* 12px like the search field */
-  border-color: var(--line2);
-  font-size: 16px;           /* keep 16px so iOS Safari does not zoom on focus */
-  margin: 0 0 8px;
+  margin: 0 0 8px;                 /* same gap to chips as before */
+  box-sizing: border-box;
+  border: 1px solid var(--line2);
+  border-radius: var(--r);
+  background: var(--card);
+  color: var(--ink3);
+  cursor: text;
 }
+#v-faq .fsearch:hover { border-color: var(--ink); }
+#v-faq .fsearch:focus-within {
+  border-color: var(--accent-text);
+  box-shadow: 0 0 0 2px var(--accent-text);
+}
+
+/* the input becomes a bare text run inside the pill */
+#v-faq .fsearch .form-input,
+#v-faq .fsearch .form-input:focus,
+#v-faq .fsearch .form-input:focus-visible {
+  flex: 1 1 auto;
+  min-width: 0;
+  width: auto;
+  max-width: none !important;
+  height: 100%;
+  min-height: 0;
+  padding: 0;
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  outline: none;
+  color: var(--ink);
+  font-size: 16px;                 /* must stay 16px: iOS Safari zooms on focus below this */
+  line-height: 36px;
+  -webkit-appearance: none;
+  appearance: none;
+}
+/* placeholder matches the global pill text (13px, --ink3) */
+#v-faq .fsearch .form-input::placeholder {
+  font-size: 13px;
+  color: var(--ink3);
+  opacity: 1;
+}
+#v-faq .fsearch .form-input::-webkit-search-cancel-button { -webkit-appearance: none; }
+
 @media (min-width: 768px) {
-  #v-faq .tools { flex-direction: column; }                 /* keep stacked; same as mobile */
-  #v-faq .tools .form-input { max-width: 380px !important; font-size: 14px; }
+  #v-faq .fsearch { max-width: 380px; }
+  #v-faq .fsearch .form-input { font-size: 14px; }
+  #v-faq .fsearch .form-input::placeholder { font-size: 13px; }
 }
 
 #v-faq .tools + .card {
@@ -2804,7 +2861,15 @@ html { scroll-padding-bottom: calc(var(--bnav-h) + 16px); scroll-padding-top: ca
   color: var(--ink3);
   padding: 0;
 }
-#v-faq > .card[x-show="feedbackAvailable"] .btn { width: auto; }
+#v-faq > .card[x-show="feedbackAvailable"] .btn {
+  display: flex;                   /* block-level flex so width:100% is honoured */
+  width: 100%;
+  min-height: 44px;                /* unchanged tap target */
+}
+@media (min-width: 768px) {
+  /* a 700px-wide green slab looks wrong; keep full width on phones only */
+  #v-faq > .card[x-show="feedbackAvailable"] .btn { display: inline-flex; width: auto; min-width: 280px; }
+}
 
 /* 6. Desktop KSEI dedupe (>=1024px) */
 @media (min-width: 1024px) {
