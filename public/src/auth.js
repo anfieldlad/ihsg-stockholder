@@ -40,6 +40,8 @@ let _firebaseApp = null;
 let _firebaseAuth = null;
 const _listeners = new Set();
 let _authStateSubscribed = false;
+let _authReady = false;
+let _redirectSettling = false;
 
 /**
  * Checks if auth feature flag is active. Default OFF.
@@ -61,6 +63,18 @@ export function isAuthEnabled() {
     } catch (_) {}
   }
   return _authFlag;
+}
+
+/**
+ * True when a saved session or a pending redirect must be restored, so the UI
+ * should show a neutral placeholder instead of 'Masuk'. Never clears storage.
+ * @returns {boolean}
+ */
+export function shouldRestoreAuth() {
+  if (!isAuthEnabled()) return false;
+  try { if (typeof sessionStorage !== 'undefined' && sessionStorage.getItem('ihsg_auth_pending_redirect') === '1') return true; } catch (_) {}
+  try { if (typeof localStorage !== 'undefined' && localStorage.getItem('ihsg_auth_hint') === '1') return true; } catch (_) {}
+  return false;
 }
 
 /**
@@ -102,7 +116,8 @@ export function subscribeAuth(cb) {
     user: _currentUser,
     tier: _userTier,
     profile: _userProfile,
-    token: _inMemoryToken
+    token: _inMemoryToken,
+    ready: _authReady
   });
   return () => _listeners.delete(cb);
 }
@@ -112,7 +127,8 @@ function notifyListeners() {
     user: _currentUser,
     tier: _userTier,
     profile: _userProfile,
-    token: _inMemoryToken
+    token: _inMemoryToken,
+    ready: _authReady
   };
   for (const cb of _listeners) {
     try {
@@ -258,6 +274,7 @@ async function handleUserAuthenticated(user) {
     _userTier = 'gratis';
     _userProfile = null;
   }
+  _authReady = true;
   notifyListeners();
 }
 
@@ -284,7 +301,12 @@ function ensureAuthStateListener(sdk, auth) {
   sdk.onAuthStateChanged(auth, async (user) => {
     if (user) {
       await handleUserAuthenticated(user);
+    } else if (_redirectSettling) {
+      // A null here during a pending redirect is not final: getRedirectResult
+      // may still deliver the user. Do not mark ready (avoids a Masuk flash).
+      _currentUser = null;
     } else {
+      _authReady = true;
       handleUserSignedOut();
     }
   });
@@ -366,8 +388,15 @@ export async function initAuth() {
     } catch (_) {}
   }
 
+  if (!isRedirectPending && !hasAuthHint) {
+    _authReady = true;
+    notifyListeners();
+    return;
+  }
+
   // Always restore session if returning from redirect OR hint is set
   if (isRedirectPending || hasAuthHint) {
+    _redirectSettling = isRedirectPending;
     try {
       const sdk = await loadFirebaseSdk();
       const auth = await getFirebaseAuth();
@@ -383,10 +412,21 @@ export async function initAuth() {
           console.error('Error processing redirect result:', err?.code || err);
           showAuthToast('Login gagal, coba lagi');
         }
+        _redirectSettling = false;
+        if (!_currentUser) {
+          // Redirect settled without a user: final answer is signed out.
+          _authReady = true;
+          notifyListeners();
+        }
       }
     } catch (err) {
       console.error('Error initializing Firebase Auth:', err?.code || err);
       showAuthToast('Login gagal, coba lagi');
+      _redirectSettling = false;
+      if (!_currentUser) {
+        _authReady = true;
+        notifyListeners();
+      }
     }
   }
 }
@@ -397,6 +437,8 @@ export async function initAuth() {
 export function _resetAuthForTesting() {
   _authInitialized = false;
   _authStateSubscribed = false;
+  _authReady = false;
+  _redirectSettling = false;
   _currentUser = null;
   _inMemoryToken = null;
   _userTier = 'gratis';

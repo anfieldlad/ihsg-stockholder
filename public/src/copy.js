@@ -57,7 +57,7 @@ export const COPY = {
     col_change: "+/-",
     col_holders: "Pemegang ≥1%",
     col_top_pct: "Porsi Terbesar",
-    col_top_name: "Pemegang Saham Terbesar",
+    col_top_name: "Pemegang Terbesar",
     col_local_pct: "Porsi Domestik",
     row_top_holder: "Pemegang terbesar {pct} · {name}",
     btn_load_more: "Muat Lebih Banyak",
@@ -141,126 +141,66 @@ export const COPY = {
     btn_report_investor: "Laporkan Ketidaksesuaian Investor Ini",
     demo_note: "Menampilkan portofolio investor terdaftar di KSEI."
   },
+  akun: {
+    title: "Akun",
+    label_status: "Status",
+    label_validity: "Masa berlaku",
+    status_pro: "Pro",
+    status_free: "Gratis",
+    lifetime: "Seumur hidup",
+    btn_logout: "Keluar"
+  },
+  info_sheet: {
+    title: "Tentang Data",
+    ksei_head: "Data kepemilikan",
+    ksei_body: "Diambil dari data bulanan KSEI, posisi akhir bulan. Data yang tampil sekarang per {date}. Data baru masuk setelah KSEI merilisnya.",
+    price_head: "Harga saham",
+    price_body: "Harga dari bursa dan tertunda sekitar 15 menit.",
+    btn_close: "Tutup"
+  },
+  soon: {
+    label: "Sedang dibangun",
+    delta: "Perubahan antar-bulan",
+    screener: "Screener"
+  },
   pro_gates: {
-    badge: "FITUR PRO",
-    btn_pro: "Buka Akses Pro",
-    btn_open: "Buka",
-    freshness: {
-      title: "Pembaruan Otomatis Bulanan",
-      benefit: "Dapatkan notifikasi dan data instan setiap kali KSEI merilis arsip baru.",
-      cta: "Lihat Paket Pro"
-    },
-    screener: {
-      title: "Screener Pemegang Saham",
-      benefit: "Filter saham berdasarkan pengendali, porsi asing, akumulasi, dan free float.",
-      cta: "Buka Screener Pro"
-    },
+    btn_see: "Lihat Fitur Pro",
     investor_rank: {
-      title: "Peringkat Lengkap 5.000+ Investor",
-      benefit: "Akses seluruh pemegang saham kakap di BEI dan unduh dataset ke Excel/CSV.",
-      cta: "Buka Akses Pro"
+      title: "Semua {count} investor",
+      benefit: "Lihat seluruh peringkat investor, bukan hanya 20 teratas."
     },
     delta: {
       title: "Perubahan Kepemilikan Antar-Bulan",
-      benefit: "Pantau investor kakap yang menambah atau melepas posisi dari bulan ke bulan.",
-      cta: "Buka Fitur Pro"
+      benefit: "Segera: lihat siapa yang menambah atau melepas saham besar setiap bulan."
     },
     stock_holders: {
-      title: "Semua {count} Pemegang Saham & Riwayat",
-      benefit: "Buka seluruh daftar pemegang saham ≥1% beserta histori tren kepemilikan bulanan.",
-      cta: "Buka Akses Pro"
+      title: "Semua {count} pemegang saham",
+      benefit: "Lihat seluruh pemegang saham ≥1%, bukan hanya 5 teratas."
     },
     investor_portfolio: {
-      title: "Portofolio Lengkap & Riwayat Akumulasi",
-      benefit: "Lihat seluruh emiten yang dikoleksi investor ini beserta riwayat pergerakan porsinya.",
-      cta: "Buka Akses Pro"
-    },
-    relation_map: {
-      title: "Peta Relasi & Kepemilikan Silang",
-      benefit: "Visualisasikan jejaring konglomerasi dan hubungan kepemilikan antar-perusahaan.",
-      cta: "Tampilkan Peta"
-    },
-    csv_export: {
-      title: "Ekspor Data ke Excel & CSV",
-      benefit: "Unduh data mentah kepemilikan untuk analisis mendalam di spreadsheet Anda.",
-      cta: "Buka Ekspor Pro"
+      title: "Portofolio lengkap",
+      benefit: "Lihat semua saham yang dimiliki investor ini, bukan hanya 8 teratas."
     }
   },
   pro_sheet: {
-    mono_badge: "IHSG STORM PRO",
-    title: "Investasi Lebih Percaya Diri dengan Data Investor Kakap",
-    subtitle: "Ketahui langkah konglomerat, investor institusi, dan pengendali sebelum pasar bereaksi luas.",
-    tier_free: "Gratis",
-    tier_investor: "Investor",
-    tier_trader: "Pakar / Trader",
-    price_free: "Gratis",
-    price_investor: "Segera hadir",
-    price_trader: "Segera hadir",
-    per_month: "",
-    note_investor_annual: "Segera hadir",
-    note_trader_annual: "Segera hadir",
-    table_header_feature: "Fitur",
-    table_header_free: "Gratis",
-    table_header_investor: "Investor (Segera hadir)",
-    table_header_trader: "Pakar (Segera hadir)",
+    bar_title: "IHSG Storm Pro",
+    title: "Gratis dan Pro",
+    subtitle: "Pro menambah data yang lebih lengkap dan fitur yang sedang disiapkan.",
+    col_feature: "Fitur",
+    col_free: "Gratis",
+    col_pro: "Pro",
     rows: [
-      {
-        feature: "Pencarian emiten & investor",
-        free: "Semua",
-        investor: "Semua",
-        trader: "Semua"
-      },
-      {
-        feature: "Daftar pemegang saham per saham",
-        free: "5 teratas",
-        investor: "Semua",
-        trader: "Semua"
-      },
-      {
-        feature: "Peringkat investor bursa",
-        free: "20 teratas",
-        investor: "5.000+ lengkap",
-        trader: "5.000+ lengkap"
-      },
-      {
-        feature: "Deteksi akumulasi / distribusi bulanan",
-        free: "-",
-        investor: "1 Bulan Terkini",
-        trader: "Histori Penuh (Multi-Bulan)"
-      },
-      {
-        feature: "Portofolio grup konglomerasi",
-        free: "2 Grup Publik",
-        investor: "20+ Konglomerasi & Paus",
-        trader: "Lengkap + Valuasi Historis"
-      },
-      {
-        feature: "Watchlist Saham Pintar",
-        free: "-",
-        investor: "Hingga 10 Saham",
-        trader: "Hingga 50 Saham"
-      },
-      {
-        feature: "Ekspor data CSV / Excel",
-        free: "-",
-        investor: "5x / bulan",
-        trader: "50x / bulan"
-      },
-      {
-        feature: "Notifikasi Telegram pemegang baru ≥1%",
-        free: "-",
-        investor: "Email Bulanan",
-        trader: "Bot Telegram Real-time"
-      },
-      {
-        feature: "Perbandingan Multi-Emiten (F7)",
-        free: "-",
-        investor: "-",
-        trader: "Hingga 4 Emiten Sekaligus"
-      }
+      { feature: "Cari saham dan investor", free: "Ya", pro: "Ya", soon: false },
+      { feature: "Pemegang saham per saham (≥1%)", free: "5 teratas", pro: "Semua", soon: false },
+      { feature: "Portofolio per investor", free: "8 teratas", pro: "Semua", soon: false },
+      { feature: "Peringkat investor", free: "20 teratas", pro: "Semua", soon: false },
+      { feature: "Perubahan kepemilikan antar-bulan", free: "–", pro: "Segera", soon: true },
+      { feature: "Screener saham", free: "–", pro: "Segera", soon: true },
+      { feature: "Daftar pantau saham", free: "–", pro: "Segera", soon: true },
+      { feature: "Pengingat saat data KSEI diperbarui", free: "–", pro: "Segera", soon: true }
     ],
-    btn_waitlist: "Segera Hadir",
-    pricing_note: "Layanan akun berbayar sedang disiapkan dan belum dibuka untuk umum."
+    cta_disabled: "Pro belum dibuka untuk umum",
+    btn_close: "Tutup"
   },
   feedback: {
     btn_open: "Bantuan & Lapor",

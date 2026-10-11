@@ -129,7 +129,7 @@ assert(bbca.holders.length >= 2, 'BBCA must have at least 2 major shareholders')
 const investors = storeConfig.visibleInvestors;
 console.log(`Visible investors count: ${investors.length}`);
 assert(investors.length > 0, 'visibleInvestors must have >0 rows');
-assert.strictEqual(investors.length, 30, 'visibleInvestors limit should be 30');
+assert.strictEqual(investors.length, 20, 'visibleInvestors Free cap should be 20');
 
 // 8. Test Search
 storeConfig.searchQuery = 'BBCA';

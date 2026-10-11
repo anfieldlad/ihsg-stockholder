@@ -81,7 +81,7 @@ function run() {
     // 12. Defect 12: Accessible names on icon buttons
     console.log('[Test 12] Icon buttons accessible names...');
     assert(html.includes(':aria-label="theme === \'a\' ? \'Beralih ke mode malam\' : \'Beralih ke mode terang\'"'), 'Theme toggle buttons must have aria-label');
-    assert(html.includes('aria-label="Fitur PRO"'), 'PRO button must have aria-label');
+    assert(html.includes('aria-label="Fitur Pro"'), 'PRO button must have aria-label');
 
     console.log('[ALL PASSED] All 12 UI fix assertions passed successfully!');
 }

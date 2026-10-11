@@ -414,10 +414,11 @@ async function runQASuite() {
     assert(copyModule.COPY.disclaimer.banner === copyRef.disclaimer.banner, 'Disclaimer banner text matches exactly');
 
     // Verify intentional B3 hardening (no misleading prices, Segera hadir)
-    assert(copyModule.COPY.pro_sheet.tier_investor === 'Investor', 'Pro sheet includes approved tier "Investor"');
-    assert(copyModule.COPY.pro_sheet.price_investor === 'Segera hadir', 'Pro sheet includes approved placeholder "Segera hadir"');
-    assert(copyModule.COPY.pro_sheet.tier_trader === 'Pakar / Trader', 'Pro sheet includes approved tier "Pakar / Trader"');
-    assert(copyModule.COPY.pro_sheet.price_trader === 'Segera hadir', 'Pro sheet includes approved placeholder "Segera hadir"');
+    assert(copyModule.COPY.pro_sheet.col_pro === 'Pro', 'Pro sheet single tier column is "Pro"');
+    assert(copyModule.COPY.pro_sheet.cta_disabled === 'Pro belum dibuka untuk umum', 'Pro sheet CTA is the disabled "Pro belum dibuka untuk umum"');
+    assert(copyModule.COPY.pro_sheet.rows.length === 8, 'Pro sheet has 8 rows');
+    assert(copyModule.COPY.pro_sheet.rows.every(r => !('investor' in r) && !('trader' in r)), 'Pro sheet rows have no investor/trader columns');
+    assert(!JSON.stringify(copyModule.COPY).includes('Pakar'), 'COPY has no "Pakar" string');
 
     console.log('\n===============================================================');
     console.log(`TOTAL CHECKS: ${results.passed + results.failed} | PASSED: ${results.passed} | FAILED: ${results.failed}`);
