@@ -77,7 +77,7 @@ async function scenario(redirectMs) {
   sessionStorage.setItem('ihsg_auth_pending_redirect', '1');
   localStorage.setItem('ihsg_auth_hint', '1');
   meCalls = 0; toast.on = false; toast.textContent = '';
-  store.user = null; store.userTier = 'gratis'; store.akunOpen = false;
+  store.user = null; store.userTier = 'gratis'; store.akunOpen = false; store._initDone = false;
   store.authRestoring = auth.shouldRestoreAuth();
   const calls = {};
   const fakeUser = { uid: 'u1', email: 'a@b.c', getIdToken: async () => 'tok' };
@@ -160,7 +160,7 @@ async function scenario(redirectMs) {
   auth._resetAuthForTesting();
   localStorage.store = {}; sessionStorage.store = {};
   localStorage.setItem('ihsg_auth_hint', '1');
-  store.user = null; store.authRestoring = auth.shouldRestoreAuth();
+  store.user = null; store.authRestoring = auth.shouldRestoreAuth(); store._initDone = false;
   auth.setFirebaseSdkForTesting(mockSdk(async () => null, {}));
   assert.strictEqual(auth.hasPendingRedirect(), false, 'hint only => no pending redirect');
   await store.init();
@@ -169,6 +169,30 @@ async function scenario(redirectMs) {
   await sleep(1500);
   assert.strictEqual(store.authRestoring, false, 'hint-only placeholder gone after 8s');
   console.log('  [PASS] hint-only cap is 8s');
+}
+
+// --- 5. init() called twice (as Alpine + old x-init did) with a pending flag ---
+{
+  auth._resetAuthForTesting();
+  localStorage.store = {}; sessionStorage.store = {};
+  sessionStorage.setItem('ihsg_auth_pending_redirect', '1');
+  localStorage.setItem('ihsg_auth_hint', '1');
+  store.user = null; store.authRestoring = auth.shouldRestoreAuth(); store._initDone = false;
+  auth.setFirebaseSdkForTesting(mockSdk(() => new Promise(() => {}), {}));
+  const timers = [];
+  const prevST = globalThis.setTimeout;
+  globalThis.setTimeout = (fn, ms, ...a) => { timers.push(ms); return prevST(fn, ms, ...a); };
+  const a = store.init();
+  const b = store.init(); // second call must be a no-op
+  globalThis.setTimeout = prevST;
+  await Promise.all([a, b]);
+  assert.strictEqual(auth.hasPendingRedirect(), true, 'redirect-pending decision stays latched after the flag is consumed');
+  assert.strictEqual(sessionStorage.getItem('ihsg_auth_pending_redirect'), null, 'flag consumed');
+  assert(!timers.includes(auth.HINT_RESTORE_CAP_MS), `no 8s hint timer registered on a pending redirect (timers: ${timers})`);
+  await sleep(9000);
+  assert.strictEqual(store.authRestoring, true, 'placeholder still shown at 9s after double init()');
+  assert.strictEqual(!store.authRestoring && !store.user, false, 'Masuk not rendered');
+  console.log('  [PASS] double init() with pending flag: no 8s timer, no Masuk');
 }
 
 auth._resetAuthForTesting();

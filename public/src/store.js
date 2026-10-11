@@ -123,7 +123,14 @@ export const storeConfig = {
     // Price debounce
     _priceDebounceTimer: null,
 
+    // Idempotency guard: Alpine auto-calls init() on the x-data object. A second call
+    // must not re-register listeners, the pageview, auth timers or the data load.
+    _initDone: false,
+
     async init() {
+        if (this._initDone) return;
+        this._initDone = true;
+
         // Initialize Theme from localStorage or default 'a'
         try {
             const savedTheme = localStorage.getItem('ihsg-theme');
@@ -172,7 +179,25 @@ export const storeConfig = {
             }
         }
 
-        // Load Data
+        // Online/Offline listeners (registered once, independent of data load)
+        window.addEventListener('offline', () => {
+            const t = document.getElementById('toast');
+            if (t) {
+                t.textContent = COPY.states.offline_notice;
+                t.classList.add('on');
+            }
+        });
+        window.addEventListener('online', () => {
+            const t = document.getElementById('toast');
+            if (t) t.classList.remove('on');
+        });
+
+        await this.loadData();
+    },
+
+    // Data load. Also the "Coba Lagi" retry entry point (init() is a no-op after first call).
+    async loadData() {
+        this.error = null;
         try {
             this.loading = true;
             const data = await fetchHolderData();
@@ -215,19 +240,6 @@ export const storeConfig = {
                 window.__triggerAppFallback('network_error', e);
             }
         }
-
-        // Online/Offline listeners
-        window.addEventListener('offline', () => {
-            const t = document.getElementById('toast');
-            if (t) {
-                t.textContent = COPY.states.offline_notice;
-                t.classList.add('on');
-            }
-        });
-        window.addEventListener('online', () => {
-            const t = document.getElementById('toast');
-            if (t) t.classList.remove('on');
-        });
     },
 
     toggleTheme() {

@@ -43,6 +43,7 @@ let _authStateSubscribed = false;
 let _authReady = false;
 let _redirectSettling = false;
 let _redirectCapTimer = null;
+let _redirectWasPending = false; // latched once per page load, before the sessionStorage flag is removed
 const _inflight = new Map(); // uid -> Promise (one handleUserAuthenticated per uid)
 
 export const REDIRECT_CAP_MS = 15000;
@@ -55,6 +56,9 @@ export const HINT_RESTORE_CAP_MS = 8000;
  */
 export function hasPendingRedirect() {
   if (!isAuthEnabled()) return false;
+  // Latched by initAuth() before it consumes the flag, so later callers (and a
+  // second init() call) see the same decision.
+  if (_redirectWasPending) return true;
   try { return typeof sessionStorage !== 'undefined' && sessionStorage.getItem('ihsg_auth_pending_redirect') === '1'; } catch (_) { return false; }
 }
 
@@ -404,6 +408,7 @@ export async function initAuth() {
     try {
       if (sessionStorage.getItem('ihsg_auth_pending_redirect') === '1') {
         isRedirectPending = true;
+        _redirectWasPending = true;
         sessionStorage.removeItem('ihsg_auth_pending_redirect');
       }
     } catch (_) {}
@@ -483,6 +488,7 @@ export function _resetAuthForTesting() {
   _authStateSubscribed = false;
   _authReady = false;
   _redirectSettling = false;
+  _redirectWasPending = false;
   if (_redirectCapTimer) { clearTimeout(_redirectCapTimer); _redirectCapTimer = null; }
   _inflight.clear();
   _currentUser = null;

@@ -35,7 +35,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Enforce visible form focus rings and accessible WCAG AA contrast tokens for light and dark themes
 
 ### Fixed
-- After returning from Google sign-in the header no longer shows "Masuk dengan Google" until a manual refresh: the 4 second time-box no longer applies to a pending redirect (15 second cap, then Masuk plus "Login gagal, coba lagi"), the avatar shows as soon as the user is known instead of after /api/v1/me, and the account check runs once per sign-in instead of twice.
+- After returning from Google sign-in the header no longer shows "Masuk dengan Google" until a manual refresh: the time-boxes no longer apply to a pending redirect (15 second cap, then Masuk plus "Login gagal, coba lagi"), the avatar shows as soon as the user is known instead of after /api/v1/me, and the account check runs once per sign-in instead of twice.
+- App startup (`init()`) ran twice because Alpine auto-calls it and `index.html` also had `x-init="init()"`; the second run lost the redirect-pending flag and armed the 8 second hint time-box, so "Masuk dengan Google" flashed at about 8 seconds on slow phones. `x-init` is removed, `init()` is idempotent (the "Coba Lagi" button now calls `loadData()`), and the redirect-pending decision is latched once in `auth.js`. Page-view, keyboard and online/offline listeners, price fetch and feedback status now also run once per load.
 - Fix Google sign-in redirect and cross-origin storage partitioning by proxying `/__/auth/*` and `/__/firebase/*` through `worker.js` and configuring `authDomain` to `ihsg.bad.ai.id`
 - Restore Firebase authentication session on page reload using lightweight hint key (`ihsg_auth_hint`) without storing tokens or PII
 - Handle `/api/v1/me` service unavailability gracefully: keep user authenticated with default Gratis tier when `/me` fails

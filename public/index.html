@@ -158,7 +158,7 @@
   <script src="/assets/vendor/alpine.min.js" defer></script>
 </head>
 
-<body x-data="app" x-init="init()" :data-theme="theme">
+<body x-data="app" :data-theme="theme">
 
   <!-- SVG Icon Symbol Sprites -->
   <svg width="0" height="0" style="position:absolute" aria-hidden="true">
@@ -381,7 +381,7 @@
                 <div class="state">
                   <b x-text="error"></b>
                   <p></p>
-                  <button class="btn pri" type="button" @click="init()">Coba Lagi</button>
+                  <button class="btn pri" type="button" @click="loadData()">Coba Lagi</button>
                 </div>
               </template>
 
