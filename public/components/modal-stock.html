@@ -21,7 +21,7 @@
               <span
                 :class="priceMap[modalData.code].change_pct > 0 ? 'text-emerald-400 bg-emerald-400/10' : 'text-rose-400 bg-rose-400/10'"
                 class="font-bold px-3 py-1 rounded-md text-[15px]"
-                x-text="`${priceMap[modalData.code].change_abs > 0 ? '+' : ''}${fmtPrice(priceMap[modalData.code].change_abs)} (${fmtChangePct(priceMap[modalData.code].change_pct).text})`"></span>
+                x-text="`${priceMap[modalData.code].change_abs > 0 ? '+' : ''}${fmtPrice(priceMap[modalData.code].change_abs)} (${fmtChangePct(priceMap[modalData.code].change_pct)?.text})`"></span>
               <div class="text-xs text-slate-500 font-medium flex gap-4 ml-4">
                 <span
                   x-text="priceMap[modalData.code]?.market_cap ? 'MCap: Rp ' + fmtNum(priceMap[modalData.code].market_cap) : ''"></span>

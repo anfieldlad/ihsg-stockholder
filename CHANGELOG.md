@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- Stock detail panel and list no longer throw Alpine TypeErrors when a change percentage is null: every `fmtChangePct(...)` result is read with `?.cls` / `?.text`; `tests/test_detail_null_guard.js` now rejects `fmtChangePct(...).cls|text`.
+
 ### Added
 - Akun sheet (name, email, status, validity, Keluar) opened from the avatar button in the header.
 - Inline SVG sparkle icon on the Pro header button to match the Google icon on the sign-in button

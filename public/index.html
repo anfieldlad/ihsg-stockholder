@@ -727,7 +727,7 @@
                 <div class="pline">
                   <span class="pr num" x-text="detailStock?.price != null ? fmtRp(detailStock?.price) : 'n/a'"></span>
                   <template x-if="fmtChangePct(detailStock?.changePct)">
-                    <span class="chg" :class="fmtChangePct(detailStock?.changePct).cls" x-text="fmtChangePct(detailStock?.changePct).text"></span>
+                    <span class="chg" :class="fmtChangePct(detailStock?.changePct)?.cls" x-text="fmtChangePct(detailStock?.changePct)?.text"></span>
                   </template>
                 </div>
                 <p class="note" style="margin-top:4px">Harga bursa tertunda ±15 mnt</p>
@@ -934,7 +934,7 @@
           <div class="pline">
             <span class="pr num" x-text="detailStock?.price != null ? fmtRp(detailStock?.price) : 'n/a'"></span>
             <template x-if="fmtChangePct(detailStock?.changePct)">
-              <span class="chg" :class="fmtChangePct(detailStock?.changePct).cls" x-text="fmtChangePct(detailStock?.changePct).text"></span>
+              <span class="chg" :class="fmtChangePct(detailStock?.changePct)?.cls" x-text="fmtChangePct(detailStock?.changePct)?.text"></span>
             </template>
           </div>
           <p class="note" style="margin-top:4px">Harga bursa tertunda ±15 mnt</p>
