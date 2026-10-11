@@ -21,7 +21,9 @@ import {
     logout as authLogout,
     getToken,
     getUserTier,
-    shouldRestoreAuth
+    shouldRestoreAuth,
+    hasPendingRedirect,
+    HINT_RESTORE_CAP_MS
 } from './auth.js';
 
 // Free users see the first 20 rows of the investor ranking (Pro sees all).
@@ -153,18 +155,20 @@ export const storeConfig = {
                 this.user = authState.user;
                 this.userTier = authState.tier || 'gratis';
                 this.userProfile = authState.profile || null;
-                this.userTierLabel = this.formatTierLabel(this.userTier);
+                this.userTierLabel = this.userTier === 'loading' ? '' : this.formatTierLabel(this.userTier);
                 if (authState.user || authState.ready) this.authRestoring = false;
                 this.authLoading = false;
                 if (!authState.user) this.akunOpen = false;
                 if (this.isPro && this.proOpen) this.closePro();
             });
+            const redirectPending = hasPendingRedirect();
             initAuth().catch((err) => {
                 console.warn('Auth initialization error:', err);
             });
-            // Time-box the neutral placeholder: after 4s with no user show Masuk.
-            if (this.authRestoring) {
-                setTimeout(() => { if (!this.user) this.authRestoring = false; }, 4000);
+            // Pending redirect: keep the placeholder until getRedirectResult settles
+            // (auth.js enforces the 15s hard cap + toast). Hint-only restore is time-boxed to 8s.
+            if (this.authRestoring && !redirectPending) {
+                setTimeout(() => { if (!this.user) this.authRestoring = false; }, HINT_RESTORE_CAP_MS);
             }
         }
 
@@ -236,6 +240,10 @@ export const storeConfig = {
 
     formatTierLabel(tier) {
         return PRO_TIERS.includes(String(tier || '').toLowerCase()) ? COPY.akun.status_pro : COPY.akun.status_free;
+    },
+
+    get tierLoading() {
+        return this.userTier === 'loading';
     },
 
     get isPro() {

@@ -252,6 +252,7 @@
               </template>
               <template x-if="user">
                 <div class="auth-user">
+                  <span class="auth-tier-skel auth-skel sk" x-show="tierLoading" aria-hidden="true"></span>
                   <span class="auth-tier tier-pro" x-show="isPro" x-text="userTierLabel">Pro</span>
                   <button class="auth-avatar" type="button" @click="openAkun()" aria-label="Akun saya" aria-haspopup="dialog">
                     <span x-text="userInitial" aria-hidden="true"></span>

@@ -13,7 +13,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Single Pro tier in the UI: the badge says "Pro" (never Investor or Pakar). Signed-in Pro users no longer see the PRO button, any lock card, or the Pro sheet.
-- The header no longer flashes "Masuk dengan Google" while a saved session is restored; a neutral placeholder shows until sign-in resolves (at most 4 seconds).
+- The header no longer flashes "Masuk dengan Google" while a saved session is restored; a neutral placeholder shows until sign-in resolves (at most 8 seconds for a saved session; while returning from the Google redirect it waits until sign-in settles, at most 15 seconds).
+- After the Google redirect the header shows your avatar as soon as sign-in is known, with a small skeleton in place of the tier badge until the account check returns.
+
 - Pro sheet now compares only Gratis and Pro with rows that match what exists; removed the Investor and Pakar columns and the "Layanan Berlangganan Segera Hadir" box.
 - Pro users see every holder at 1% and above per stock, the full portfolio of every investor and the full investor ranking; free users see the first 20 investors in the ranking.
 - Unbuilt features (Screener, Perubahan Antar-Bulan) show a quiet "Sedang dibangun" note for Pro users instead of opening the Pro sheet.
@@ -33,6 +35,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Enforce visible form focus rings and accessible WCAG AA contrast tokens for light and dark themes
 
 ### Fixed
+- After returning from Google sign-in the header no longer shows "Masuk dengan Google" until a manual refresh: the 4 second time-box no longer applies to a pending redirect (15 second cap, then Masuk plus "Login gagal, coba lagi"), the avatar shows as soon as the user is known instead of after /api/v1/me, and the account check runs once per sign-in instead of twice.
 - Fix Google sign-in redirect and cross-origin storage partitioning by proxying `/__/auth/*` and `/__/firebase/*` through `worker.js` and configuring `authDomain` to `ihsg.bad.ai.id`
 - Restore Firebase authentication session on page reload using lightweight hint key (`ihsg_auth_hint`) without storing tokens or PII
 - Handle `/api/v1/me` service unavailability gracefully: keep user authenticated with default Gratis tier when `/me` fails

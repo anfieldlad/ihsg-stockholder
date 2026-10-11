@@ -42,6 +42,21 @@ const _listeners = new Set();
 let _authStateSubscribed = false;
 let _authReady = false;
 let _redirectSettling = false;
+let _redirectCapTimer = null;
+const _inflight = new Map(); // uid -> Promise (one handleUserAuthenticated per uid)
+
+export const REDIRECT_CAP_MS = 15000;
+export const HINT_RESTORE_CAP_MS = 8000;
+
+/**
+ * True when a sign-in redirect is pending (flag set before leaving for Google).
+ * Does not clear the flag. Call before initAuth(), which consumes it.
+ * @returns {boolean}
+ */
+export function hasPendingRedirect() {
+  if (!isAuthEnabled()) return false;
+  try { return typeof sessionStorage !== 'undefined' && sessionStorage.getItem('ihsg_auth_pending_redirect') === '1'; } catch (_) { return false; }
+}
 
 /**
  * Checks if auth feature flag is active. Default OFF.
@@ -233,8 +248,18 @@ export function showAuthToast(message = 'Login gagal, coba lagi') {
  * Sets lightweight auth hint ('ihsg_auth_hint'='1') for session restoration.
  * @param {object} user
  */
-async function handleUserAuthenticated(user) {
+function handleUserAuthenticated(user) {
+  const uid = user && user.uid ? user.uid : '__anon__';
+  if (_inflight.has(uid)) return _inflight.get(uid);
+  const p = _processUser(user);
+  _inflight.set(uid, p);
+  return p;
+}
+
+async function _processUser(user) {
   _currentUser = user;
+  _userTier = 'loading';
+  _userProfile = null;
 
   // Lightweight hint for session restore on page reload (zero secrets/PII)
   if (typeof localStorage !== 'undefined') {
@@ -242,6 +267,11 @@ async function handleUserAuthenticated(user) {
       localStorage.setItem('ihsg_auth_hint', '1');
     } catch (_) {}
   }
+
+  // The user is known: show the avatar now (tier badge is a skeleton) instead of
+  // waiting for the token and /me.
+  _authReady = true;
+  notifyListeners();
 
   try {
     _inMemoryToken = await user.getIdToken();
@@ -252,7 +282,6 @@ async function handleUserAuthenticated(user) {
 
   trackLoginSuccess();
 
-  // If token retrieved, query /api/v1/me for entitlement tier.
   // Requirement d: If /me fails (503 / network / error), the user still counts as
   // logged in: Masuk button disappears and badge shows Gratis.
   if (_inMemoryToken) {
@@ -274,14 +303,14 @@ async function handleUserAuthenticated(user) {
     _userTier = 'gratis';
     _userProfile = null;
   }
-  _authReady = true;
-  notifyListeners();
+  if (_currentUser === user) notifyListeners();
 }
 
 /**
  * Handles user sign-out: resets in-memory variables and clears auth hint.
  */
 function handleUserSignedOut() {
+  _inflight.clear();
   _currentUser = null;
   _inMemoryToken = null;
   _userTier = 'gratis';
@@ -395,38 +424,53 @@ export async function initAuth() {
   }
 
   // Always restore session if returning from redirect OR hint is set
-  if (isRedirectPending || hasAuthHint) {
-    _redirectSettling = isRedirectPending;
-    try {
-      const sdk = await loadFirebaseSdk();
-      const auth = await getFirebaseAuth();
-      ensureAuthStateListener(sdk, auth);
-
-      if (isRedirectPending) {
-        try {
-          const result = await sdk.getRedirectResult(auth);
-          if (result && result.user) {
-            await handleUserAuthenticated(result.user);
-          }
-        } catch (err) {
-          console.error('Error processing redirect result:', err?.code || err);
-          showAuthToast('Login gagal, coba lagi');
-        }
-        _redirectSettling = false;
-        if (!_currentUser) {
-          // Redirect settled without a user: final answer is signed out.
-          _authReady = true;
-          notifyListeners();
-        }
-      }
-    } catch (err) {
-      console.error('Error initializing Firebase Auth:', err?.code || err);
-      showAuthToast('Login gagal, coba lagi');
+  _redirectSettling = isRedirectPending;
+  if (isRedirectPending) {
+    // Hard cap: never leave the placeholder forever. After the cap show Masuk + toast.
+    _redirectCapTimer = setTimeout(() => {
+      _redirectCapTimer = null;
+      if (!_redirectSettling) return;
       _redirectSettling = false;
       if (!_currentUser) {
+        showAuthToast('Login gagal, coba lagi');
         _authReady = true;
         notifyListeners();
       }
+    }, REDIRECT_CAP_MS);
+  }
+  const finishRedirect = () => {
+    _redirectSettling = false;
+    if (_redirectCapTimer) { clearTimeout(_redirectCapTimer); _redirectCapTimer = null; }
+  };
+  try {
+    const sdk = await loadFirebaseSdk();
+    const auth = await getFirebaseAuth();
+    ensureAuthStateListener(sdk, auth);
+
+    if (isRedirectPending) {
+      try {
+        const result = await sdk.getRedirectResult(auth);
+        if (result && result.user) {
+          await handleUserAuthenticated(result.user);
+        }
+      } catch (err) {
+        console.error('Error processing redirect result:', err?.code || err);
+        showAuthToast('Login gagal, coba lagi');
+      }
+      finishRedirect();
+      if (!_currentUser) {
+        // Redirect settled without a user: final answer is signed out.
+        _authReady = true;
+        notifyListeners();
+      }
+    }
+  } catch (err) {
+    console.error('Error initializing Firebase Auth:', err?.code || err);
+    showAuthToast('Login gagal, coba lagi');
+    finishRedirect();
+    if (!_currentUser) {
+      _authReady = true;
+      notifyListeners();
     }
   }
 }
@@ -439,6 +483,8 @@ export function _resetAuthForTesting() {
   _authStateSubscribed = false;
   _authReady = false;
   _redirectSettling = false;
+  if (_redirectCapTimer) { clearTimeout(_redirectCapTimer); _redirectCapTimer = null; }
+  _inflight.clear();
   _currentUser = null;
   _inMemoryToken = null;
   _userTier = 'gratis';
