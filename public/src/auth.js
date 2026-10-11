@@ -17,7 +17,7 @@ import { trackLoginStart, trackLoginSuccess } from './analytics.js';
 // Public Firebase web config (Spark plan, project ihsg-storm)
 export const FIREBASE_CONFIG = {
   projectId: 'ihsg-storm',
-  apiKey: '***',
+  apiKey: 'AIzaSyDS83jqJ-HwX1Ke3pqwWwbzWiOqpEFuOAg',
   authDomain: AUTH_DOMAIN || 'ihsg-storm.firebaseapp.com',
   storageBucket: 'ihsg-storm.firebasestorage.app',
   messagingSenderId: '773487755988',
