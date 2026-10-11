@@ -21,7 +21,9 @@ import {
     logout as authLogout,
     getToken,
     getUserTier,
-    shouldRestoreAuth
+    shouldRestoreAuth,
+    hasPendingRedirect,
+    HINT_RESTORE_CAP_MS
 } from './auth.js';
 
 // Free users see the first 20 rows of the investor ranking (Pro sees all).
@@ -121,7 +123,14 @@ export const storeConfig = {
     // Price debounce
     _priceDebounceTimer: null,
 
+    // Idempotency guard: Alpine auto-calls init() on the x-data object. A second call
+    // must not re-register listeners, the pageview, auth timers or the data load.
+    _initDone: false,
+
     async init() {
+        if (this._initDone) return;
+        this._initDone = true;
+
         // Initialize Theme from localStorage or default 'a'
         try {
             const savedTheme = localStorage.getItem('ihsg-theme');
@@ -153,22 +162,42 @@ export const storeConfig = {
                 this.user = authState.user;
                 this.userTier = authState.tier || 'gratis';
                 this.userProfile = authState.profile || null;
-                this.userTierLabel = this.formatTierLabel(this.userTier);
+                this.userTierLabel = this.userTier === 'loading' ? '' : this.formatTierLabel(this.userTier);
                 if (authState.user || authState.ready) this.authRestoring = false;
                 this.authLoading = false;
                 if (!authState.user) this.akunOpen = false;
                 if (this.isPro && this.proOpen) this.closePro();
             });
+            const redirectPending = hasPendingRedirect();
             initAuth().catch((err) => {
                 console.warn('Auth initialization error:', err);
             });
-            // Time-box the neutral placeholder: after 4s with no user show Masuk.
-            if (this.authRestoring) {
-                setTimeout(() => { if (!this.user) this.authRestoring = false; }, 4000);
+            // Pending redirect: keep the placeholder until getRedirectResult settles
+            // (auth.js enforces the 15s hard cap + toast). Hint-only restore is time-boxed to 8s.
+            if (this.authRestoring && !redirectPending) {
+                setTimeout(() => { if (!this.user) this.authRestoring = false; }, HINT_RESTORE_CAP_MS);
             }
         }
 
-        // Load Data
+        // Online/Offline listeners (registered once, independent of data load)
+        window.addEventListener('offline', () => {
+            const t = document.getElementById('toast');
+            if (t) {
+                t.textContent = COPY.states.offline_notice;
+                t.classList.add('on');
+            }
+        });
+        window.addEventListener('online', () => {
+            const t = document.getElementById('toast');
+            if (t) t.classList.remove('on');
+        });
+
+        await this.loadData();
+    },
+
+    // Data load. Also the "Coba Lagi" retry entry point (init() is a no-op after first call).
+    async loadData() {
+        this.error = null;
         try {
             this.loading = true;
             const data = await fetchHolderData();
@@ -211,19 +240,6 @@ export const storeConfig = {
                 window.__triggerAppFallback('network_error', e);
             }
         }
-
-        // Online/Offline listeners
-        window.addEventListener('offline', () => {
-            const t = document.getElementById('toast');
-            if (t) {
-                t.textContent = COPY.states.offline_notice;
-                t.classList.add('on');
-            }
-        });
-        window.addEventListener('online', () => {
-            const t = document.getElementById('toast');
-            if (t) t.classList.remove('on');
-        });
     },
 
     toggleTheme() {
@@ -236,6 +252,10 @@ export const storeConfig = {
 
     formatTierLabel(tier) {
         return PRO_TIERS.includes(String(tier || '').toLowerCase()) ? COPY.akun.status_pro : COPY.akun.status_free;
+    },
+
+    get tierLoading() {
+        return this.userTier === 'loading';
     },
 
     get isPro() {
