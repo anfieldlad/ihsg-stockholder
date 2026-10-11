@@ -61,7 +61,7 @@ globalThis.fetch = async (url, opts) => {
       json: async () => realDataJson
     };
   }
-  if (url === '/api/feedback') {
+  if (url === '/api/v1/feedback') {
     return {
       ok: true,
       json: async () => ({ status: 'ok', ticket_id: 'TICK-12345' })

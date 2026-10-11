@@ -33,13 +33,13 @@ class QuietHandler(http.server.SimpleHTTPRequestHandler):
         pass
 
     def do_GET(self):
-        if self.path.startswith("/api/prices"):
+        if self.path.startswith("/api/v1/prices"):
             self.send_response(200)
             self.send_header("Content-Type", "application/json")
             self.end_headers()
             self.wfile.write(b'{"prices":{}}')
             return
-        if self.path.startswith("/api/feedback/status"):
+        if self.path.startswith("/api/v1/feedback/status"):
             self.send_response(200)
             self.send_header("Content-Type", "application/json")
             self.end_headers()

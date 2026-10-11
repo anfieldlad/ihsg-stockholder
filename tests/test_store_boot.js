@@ -64,7 +64,7 @@ globalThis.fetch = async (url) => {
       json: async () => realDataJson
     };
   }
-  if (url.startsWith('/api/prices')) {
+  if (url.startsWith('/api/v1/prices')) {
     return {
       ok: true,
       json: async () => ({ prices: {} })
