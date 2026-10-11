@@ -1,8 +1,25 @@
+// Legacy paths kept for 14 days so cached copies of api.js/store.js keep working.
+// Remove in FE-2 (plan step 8).
+const LEGACY_ALIASES = {
+  '/api/prices': '/api/v1/prices',
+  '/api/feedback/status': '/api/v1/feedback/status',
+  '/api/feedback': '/api/v1/feedback'
+};
+
+function resolveV1Path(pathname) {
+  if (pathname === '/api/v1' || pathname.startsWith('/api/v1/')) return pathname;
+  if (Object.hasOwn(LEGACY_ALIASES, pathname)) return LEGACY_ALIASES[pathname];
+  const m = /^\/api\/price\/([A-Za-z0-9]+)$/.exec(pathname);
+  if (m) return `/api/v1/prices/${m[1]}`;
+  return null;
+}
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
+    const v1Path = resolveV1Path(url.pathname);
 
-    if (url.pathname === '/api/v1' || url.pathname.startsWith('/api/v1/')) {
+    if (v1Path !== null) {
       const v1Origin = env?.V1_ORIGIN;
       const originSecret = env?.ORIGIN_SECRET;
 
@@ -16,7 +33,7 @@ export default {
         });
       }
 
-      const targetUrl = new URL(url.pathname + url.search, v1Origin);
+      const targetUrl = new URL(v1Path + url.search, v1Origin);
       const newHeaders = new Headers(request.headers);
       newHeaders.delete('x-origin-auth');
       newHeaders.delete('x-client-ip');
@@ -49,16 +66,14 @@ export default {
       });
     }
 
-    if (url.pathname.startsWith('/api/')) {
-      const targetUrl = new URL(url.pathname + url.search, 'https://ihsg.badai.tech');
-      const newHeaders = new Headers(request.headers);
-      newHeaders.set('Host', 'ihsg.badai.tech');
-      return fetch(new Request(targetUrl.toString(), {
-        method: request.method,
-        headers: newHeaders,
-        body: request.body,
-        redirect: 'follow'
-      }));
+    if (url.pathname === '/api' || url.pathname.startsWith('/api/')) {
+      return new Response('{"error":"not found"}', {
+        status: 404,
+        headers: {
+          'content-type': 'application/json',
+          'cache-control': 'no-store'
+        }
+      });
     }
 
     if (
@@ -71,6 +86,8 @@ export default {
       const targetUrl = new URL(url.pathname + url.search, `https://${upstreamHost}`);
       const newHeaders = new Headers(request.headers);
       newHeaders.delete('x-origin-auth');
+      newHeaders.delete('cookie');
+      newHeaders.delete('authorization');
       newHeaders.set('Host', upstreamHost);
 
       const upstreamResponse = await fetch(new Request(targetUrl.toString(), {
@@ -81,6 +98,7 @@ export default {
       }));
 
       const responseHeaders = new Headers(upstreamResponse.headers);
+      responseHeaders.delete('set-cookie');
       const responseBody = (upstreamResponse.status === 204 || upstreamResponse.status === 304 || request.method === 'HEAD')
         ? null
         : upstreamResponse.body;

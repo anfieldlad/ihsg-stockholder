@@ -951,7 +951,7 @@ export const storeConfig = {
     // Customer Success & Feedback
     async checkFeedbackStatus() {
         try {
-            const res = await fetch('/api/feedback/status');
+            const res = await fetch('/api/v1/feedback/status');
             if (res.ok) {
                 const data = await res.json();
                 this.feedbackAvailable = Boolean(data.available);
@@ -1013,7 +1013,7 @@ export const storeConfig = {
         };
 
         try {
-            const res = await fetch('/api/feedback', {
+            const res = await fetch('/api/v1/feedback', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)

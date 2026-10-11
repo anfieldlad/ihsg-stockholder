@@ -38,7 +38,8 @@ def test_worker_file_exists():
     assert "x-real-ip" in content
     assert "forwarded" in content
     assert "private, no-store" in content
-    assert "https://ihsg.badai.tech" in content
+    assert "badai.tech" not in content
+    assert "/api/v1/prices" in content
     assert "ihsg-storm.firebaseapp.com" in content
     assert "/__/auth" in content
     assert "/__/firebase" in content
@@ -53,6 +54,8 @@ def test_wrangler_config():
     assert config.get("name") == "ihsg-storm"
     assert config.get("main") == "worker.js"
     assert config.get("compatibility_date") == "2026-10-06"
+    # keep dashboard-set vars/secrets (ORIGIN_SECRET) across git-triggered deploys
+    assert config.get("keep_vars") is True
     assert "assets" in config
     assert config["assets"].get("directory") == "./public"
 
@@ -92,23 +95,27 @@ def test_worker_proxy_logic_node_suite():
 
 def test_worker_proxy_routing_logic_python():
     """Verify proxy URL rewrite logic in Python matches worker.js spec."""
-    legacy_base = "https://ihsg.badai.tech"
     v1_origin = "https://ihsg-origin.bad.ai.id"
 
-    # Legacy routes (always directed to legacy upstream)
-    legacy_urls = [
-        ("https://ihsg.bad.ai.id/api/price/BBCA", f"{legacy_base}/api/price/BBCA"),
-        ("https://ihsg.bad.ai.id/api/prices/batch?codes=BBCA,BBRI", f"{legacy_base}/api/prices/batch?codes=BBCA,BBRI"),
-        ("https://ihsg.bad.ai.id/api/health", f"{legacy_base}/api/health"),
-        ("https://ihsg.bad.ai.id/api/feedback", f"{legacy_base}/api/feedback"),
+    # Legacy aliases map onto /api/v1 paths on the V1 origin; no external fallback host
+    alias_urls = [
+        ("https://ihsg.bad.ai.id/api/price/BBCA", f"{v1_origin}/api/v1/prices/BBCA"),
+        ("https://ihsg.bad.ai.id/api/prices?codes=BBCA,BBRI", f"{v1_origin}/api/v1/prices?codes=BBCA,BBRI"),
+        ("https://ihsg.bad.ai.id/api/feedback/status", f"{v1_origin}/api/v1/feedback/status"),
+        ("https://ihsg.bad.ai.id/api/feedback", f"{v1_origin}/api/v1/feedback"),
     ]
-
-    for req_url, expected_target in legacy_urls:
+    alias_map = {
+        "/api/prices": "/api/v1/prices",
+        "/api/feedback/status": "/api/v1/feedback/status",
+        "/api/feedback": "/api/v1/feedback",
+    }
+    for req_url, expected_target in alias_urls:
         parsed = urlparse(req_url)
-        assert parsed.path.startswith("/api/"), f"{req_url} should be an /api/ route"
-        assert not parsed.path.startswith("/api/v1/"), f"{req_url} should not be a v1 route"
-        target_path_and_query = parsed.path + (f"?{parsed.query}" if parsed.query else "")
-        target_url = urljoin(legacy_base, target_path_and_query)
+        path = alias_map.get(parsed.path)
+        if path is None and parsed.path.startswith("/api/price/"):
+            path = "/api/v1/prices/" + parsed.path.rsplit("/", 1)[1]
+        assert path is not None
+        target_url = urljoin(v1_origin, path + (f"?{parsed.query}" if parsed.query else ""))
         assert target_url == expected_target
 
     # V1 routes directed to VPS origin when V1_ORIGIN is set

@@ -7,11 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- Stock detail panel and list no longer throw Alpine TypeErrors when a change percentage is null: every `fmtChangePct(...)` result is read with `?.cls` / `?.text`; `tests/test_detail_null_guard.js` now rejects `fmtChangePct(...).cls|text`.
+
 ### Added
 - Akun sheet (name, email, status, validity, Keluar) opened from the avatar button in the header.
 - Inline SVG sparkle icon on the Pro header button to match the Google icon on the sign-in button
 
 ### Changed
+- Prices and feedback now call the backend directly at `/api/v1/prices`, `/api/v1/prices/<code>`, `/api/v1/feedback/status` and `/api/v1/feedback` (`public/src/api.js`, `public/src/store.js`).
+- `worker.js` maps the four legacy paths (`/api/prices`, `/api/price/<code>`, `/api/feedback/status`, `/api/feedback`) to their `/api/v1` equivalents through the `V1_ORIGIN` branch so cached browser copies keep working; any other `/api/*` returns 404 JSON `{"error":"not found"}`. The alias is temporary and is removed in the follow-up cleanup PR.
+- `wrangler.json` sets `keep_vars: true` so git-triggered deploys keep dashboard-set variables and secrets such as `ORIGIN_SECRET`.
+- Worker tests (`tests/test_worker_proxy.js`, `.py`) rewritten for the alias, the 404 and the absence of an external fallback host.
 - Single Pro tier in the UI: the badge says "Pro" (never Investor or Pakar). Signed-in Pro users no longer see the PRO button, any lock card, or the Pro sheet.
 - The header no longer flashes "Masuk dengan Google" while a saved session is restored; a neutral placeholder shows until sign-in resolves (at most 8 seconds for a saved session; while returning from the Google redirect it waits until sign-in settles, at most 15 seconds).
 - After the Google redirect the header shows your avatar as soon as sign-in is known, with a small skeleton in place of the tier badge until the account check returns.
@@ -34,7 +41,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Implement UI consistency v3 styling across tabs, desktop pane, bottom sheets, form controls, search palette, and status feedback states
 - Enforce visible form focus rings and accessible WCAG AA contrast tokens for light and dark themes
 
+### Removed
+- The `ihsg.badai.tech` (Vercel) fallback in `worker.js`, including the Host override. The Worker no longer calls any external host except the Firebase auth upstream and `V1_ORIGIN`.
+
 ### Fixed
+- Detail panels no longer throw `Cannot read properties of null (reading 'changePct')` while `detailStock`/`detailInvestor` is null: every access in `public/index.html` now uses optional chaining; guarded by `tests/test_detail_null_guard.js`.
 - After returning from Google sign-in the header no longer shows "Masuk dengan Google" until a manual refresh: the time-boxes no longer apply to a pending redirect (15 second cap, then Masuk plus "Login gagal, coba lagi"), the avatar shows as soon as the user is known instead of after /api/v1/me, and the account check runs once per sign-in instead of twice.
 - App startup (`init()`) ran twice because Alpine auto-calls it and `index.html` also had `x-init="init()"`; the second run lost the redirect-pending flag and armed the 8 second hint time-box, so "Masuk dengan Google" flashed at about 8 seconds on slow phones. `x-init` is removed, `init()` is idempotent (the "Coba Lagi" button now calls `loadData()`), and the redirect-pending decision is latched once in `auth.js`. Page-view, keyboard and online/offline listeners, price fetch and feedback status now also run once per load.
 - Fix Google sign-in redirect and cross-origin storage partitioning by proxying `/__/auth/*` and `/__/firebase/*` through `worker.js` and configuring `authDomain` to `ihsg.bad.ai.id`
@@ -46,6 +57,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Investor row category badge no longer clipped by long category names (the type truncates, the badge stays); long investor names clamp to 2 lines
 
 ### Security
+- The `/__/auth/*` and `/__/firebase/*` proxy now drops the request `cookie` and `authorization` headers and the response `set-cookie` header.
 - Strict edge proxy routing in `worker.js` for `/__/auth/*` and `/__/firebase/*` with hardcoded upstream host, sanitized internal headers (stripping `X-Origin-Auth`), and zero token/PII persistence in local storage
 
 ### Data

@@ -13,7 +13,7 @@ export async function fetchPricesBatch(codes) {
     if (!codes || !codes.length) return {};
     const codesStr = codes.join(',');
     try {
-        const res = await fetch(`/api/prices?codes=${codesStr}`);
+        const res = await fetch(`/api/v1/prices?codes=${codesStr}`);
         if (!res.ok) throw new Error('Batch price fetch failed');
         const data = await res.json();
         return data.prices || {};
@@ -25,7 +25,7 @@ export async function fetchPricesBatch(codes) {
 
 export async function fetchSinglePrice(code) {
     try {
-        const res = await fetch(`/api/price/${code}`);
+        const res = await fetch(`/api/v1/prices/${code}`);
         if (!res.ok) throw new Error('Single price fetch failed');
         return await res.json();
     } catch (e) {

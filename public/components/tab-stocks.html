@@ -60,8 +60,8 @@
               <span x-show="r.price === null" class="w-16 h-4 price-loading inline-block"></span>
             </td>
             <td class="p-4 text-right tabular-nums">
-              <span x-show="r.changePct !== null" :class="fmtChangePct(r.changePct).cls"
-                class="px-1.5 py-0.5 rounded text-xs" x-text="fmtChangePct(r.changePct).text"></span>
+              <span x-show="r.changePct !== null" :class="fmtChangePct(r.changePct)?.cls"
+                class="px-1.5 py-0.5 rounded text-xs" x-text="fmtChangePct(r.changePct)?.text"></span>
               <span x-show="r.changePct === null" class="w-10 h-4 price-loading inline-block"></span>
             </td>
 

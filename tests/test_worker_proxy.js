@@ -22,91 +22,140 @@ const worker = module.default;
 
 assert(worker && typeof worker.fetch === 'function', 'worker.js must export default with a fetch function');
 
-// Test 1: Proxy /api/price/BBCA (Legacy behavior, flag unset)
+// Shared helper: env configured for the V1 origin
+const V1_ENV = () => ({
+  V1_ORIGIN: 'https://ihsg-origin.bad.ai.id',
+  ORIGIN_SECRET: 'test-secret-origin',
+  ASSETS: { fetch: async () => new Response('Asset', { status: 500 }) },
+});
+
+// Test 1: Legacy /api/price/BBCA is aliased to /api/v1/prices/BBCA on V1_ORIGIN
 {
-  let fetchCalled = false, forwardedRequest = null, assetsCalled = false;
+  let forwardedRequest = null;
   const originalFetch = globalThis.fetch;
   globalThis.fetch = async (req) => {
-    fetchCalled = true;
     forwardedRequest = req;
     return new Response(JSON.stringify({ code: 'BBCA', last_price: 10500 }), {
       status: 200,
       headers: { 'Content-Type': 'application/json' },
     });
   };
-  const env = { ASSETS: { fetch: async () => { assetsCalled = true; return new Response('Not asset', { status: 404 }); } } };
-
   try {
     const req = new Request('https://ihsg.bad.ai.id/api/price/BBCA', {
       method: 'GET',
-      headers: { 'User-Agent': 'TestClient/1.0', 'Accept': 'application/json' },
+      headers: { 'Accept': 'application/json' },
     });
-    const res = await worker.fetch(req, env);
-    assert.strictEqual(fetchCalled, true);
-    assert.strictEqual(assetsCalled, false);
+    const res = await worker.fetch(req, V1_ENV());
     assert.strictEqual(res.status, 200);
-
     const targetUrl = new URL(forwardedRequest.url);
-    assert.strictEqual(targetUrl.origin, 'https://ihsg.badai.tech');
-    assert.strictEqual(targetUrl.pathname, '/api/price/BBCA');
-    assert.strictEqual(forwardedRequest.headers.get('Host'), 'ihsg.badai.tech');
-    assert.strictEqual(forwardedRequest.headers.get('Accept'), 'application/json');
-    assert.strictEqual(forwardedRequest.redirect, 'follow');
-    console.log('[PASS] Test 1: /api/price/BBCA correctly proxied to https://ihsg.badai.tech');
+    assert.strictEqual(targetUrl.origin, 'https://ihsg-origin.bad.ai.id');
+    assert.strictEqual(targetUrl.pathname, '/api/v1/prices/BBCA');
+    assert.strictEqual(forwardedRequest.headers.get('X-Origin-Auth'), 'test-secret-origin');
+    assert.notStrictEqual(forwardedRequest.headers.get('Host'), 'ihsg.badai.tech');
+    console.log('[PASS] Test 1: /api/price/BBCA aliased to /api/v1/prices/BBCA on V1_ORIGIN');
   } finally {
     globalThis.fetch = originalFetch;
   }
 }
 
-// Test 2: Proxy /api/prices/batch with query parameters
+// Test 2: Legacy /api/prices?codes=... alias keeps the query string
 {
   let forwardedRequest = null;
   const originalFetch = globalThis.fetch;
   globalThis.fetch = async (req) => {
     forwardedRequest = req;
-    return new Response(JSON.stringify({ BBCA: 10500, BBRI: 4800 }), { status: 200 });
+    return new Response(JSON.stringify({ prices: {} }), { status: 200 });
   };
-  const env = { ASSETS: { fetch: async () => new Response('Asset', { status: 200 }) } };
-
   try {
-    const req = new Request('https://ihsg.bad.ai.id/api/prices/batch?codes=BBCA,BBRI&refresh=1', { method: 'GET' });
-    const res = await worker.fetch(req, env);
+    const req = new Request('https://ihsg.bad.ai.id/api/prices?codes=BBCA,BBRI', { method: 'GET' });
+    const res = await worker.fetch(req, V1_ENV());
     assert.strictEqual(res.status, 200);
     const targetUrl = new URL(forwardedRequest.url);
-    assert.strictEqual(targetUrl.pathname, '/api/prices/batch');
-    assert.strictEqual(targetUrl.search, '?codes=BBCA,BBRI&refresh=1');
-    assert.strictEqual(forwardedRequest.headers.get('Host'), 'ihsg.badai.tech');
-    console.log('[PASS] Test 2: /api/prices/batch?codes=... query params preserved');
+    assert.strictEqual(targetUrl.origin, 'https://ihsg-origin.bad.ai.id');
+    assert.strictEqual(targetUrl.pathname, '/api/v1/prices');
+    assert.strictEqual(targetUrl.search, '?codes=BBCA,BBRI');
+    console.log('[PASS] Test 2: /api/prices?codes=... aliased to /api/v1/prices with query preserved');
   } finally {
     globalThis.fetch = originalFetch;
   }
 }
 
-// Test 3: Proxy POST /api/feedback with body
+// Test 3: Legacy feedback paths (GET status, POST body) are aliased
 {
-  let forwardedRequest = null;
+  const seen = [];
   const originalFetch = globalThis.fetch;
   globalThis.fetch = async (req) => {
-    forwardedRequest = req;
-    return new Response(JSON.stringify({ status: 'ok' }), { status: 201 });
+    seen.push(req);
+    return new Response(JSON.stringify({ ok: true }), { status: 200 });
   };
-  const env = { ASSETS: { fetch: async () => new Response('Asset', { status: 200 }) } };
-
   try {
-    const payload = JSON.stringify({ message: 'Great site!' });
-    const req = new Request('https://ihsg.bad.ai.id/api/feedback', {
+    const r1 = await worker.fetch(new Request('https://ihsg.bad.ai.id/api/feedback/status'), V1_ENV());
+    assert.strictEqual(r1.status, 200);
+    assert.strictEqual(new URL(seen[0].url).pathname, '/api/v1/feedback/status');
+
+    const payload = JSON.stringify({ description: 'Great site!' });
+    const r2 = await worker.fetch(new Request('https://ihsg.bad.ai.id/api/feedback', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: payload,
-    });
-    const res = await worker.fetch(req, env);
-    assert.strictEqual(res.status, 201);
-    assert.strictEqual(forwardedRequest.method, 'POST');
-    assert.strictEqual(forwardedRequest.headers.get('Host'), 'ihsg.badai.tech');
-    console.log('[PASS] Test 3: POST /api/feedback body and method forwarded');
+    }), V1_ENV());
+    assert.strictEqual(r2.status, 200);
+    assert.strictEqual(new URL(seen[1].url).pathname, '/api/v1/feedback');
+    assert.strictEqual(seen[1].method, 'POST');
+    assert.strictEqual(await seen[1].text(), payload);
+    console.log('[PASS] Test 3: legacy feedback paths aliased, POST body forwarded');
   } finally {
     globalThis.fetch = originalFetch;
   }
+}
+
+// Test 3b: Legacy alias without V1 config returns 503, never a fallback fetch
+{
+  let fetchCalled = false;
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () => { fetchCalled = true; return new Response('x'); };
+  try {
+    const res = await worker.fetch(new Request('https://ihsg.bad.ai.id/api/prices?codes=BBCA'), {});
+    assert.strictEqual(res.status, 503);
+    assert.strictEqual(fetchCalled, false);
+    console.log('[PASS] Test 3b: legacy alias returns 503 when V1 not configured');
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+}
+
+// Test 3c: Unknown /api/* returns 404 JSON with no upstream fetch
+{
+  let fetchCalled = false, assetsCalled = false;
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () => { fetchCalled = true; return new Response('x'); };
+  const env = {
+    ...V1_ENV(),
+    ASSETS: { fetch: async () => { assetsCalled = true; return new Response('a'); } },
+  };
+  try {
+    const paths = ['/api', '/api/', '/api/x', '/api/health', '/api/prices/batch', '/api/prices_fake',
+      '/api/price/', '/api/price/BB/CA', '/api/price/B.CA', '/api/feedback/other', '/api/constructor'];
+    for (const p of paths) {
+      const res = await worker.fetch(new Request(`https://ihsg.bad.ai.id${p}`), env);
+      assert.strictEqual(res.status, 404, p);
+      assert.strictEqual(res.headers.get('content-type'), 'application/json', p);
+      assert.deepStrictEqual(await res.json(), { error: 'not found' }, p);
+    }
+    assert.strictEqual(fetchCalled, false);
+    assert.strictEqual(assetsCalled, false);
+    console.log('[PASS] Test 3c: unknown /api/* returns 404 JSON without any fetch');
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+}
+
+// Test 3d: worker.js has no external fallback host
+{
+  const { readFileSync } = await import('node:fs');
+  const src = readFileSync(workerPath, 'utf8');
+  assert(!src.includes('badai.tech'), 'worker.js must not reference badai.tech');
+  console.log('[PASS] Test 3d: worker.js contains no badai.tech reference');
 }
 
 // Test 4: Static assets serve from env.ASSETS.fetch
@@ -293,7 +342,7 @@ assert(worker && typeof worker.fetch === 'function', 'worker.js must export defa
   }
 }
 
-// Test 9: Legacy endpoints never receive ORIGIN_SECRET even when env is configured
+// Test 9: Spoofed X-Origin-Auth on a legacy alias path is replaced with the real secret
 {
   let forwardedRequest = null;
   const originalFetch = globalThis.fetch;
@@ -301,20 +350,16 @@ assert(worker && typeof worker.fetch === 'function', 'worker.js must export defa
     forwardedRequest = req;
     return new Response('{"status":"ok"}', { status: 200 });
   };
-  const env = {
-    V1_ORIGIN: 'https://ihsg-origin.bad.ai.id',
-    ORIGIN_SECRET: 'do-not-leak-to-legacy-upstream',
-  };
-
   try {
-    const req = new Request('https://ihsg.bad.ai.id/api/price/BBCA', { method: 'GET' });
-    const res = await worker.fetch(req, env);
+    const req = new Request('https://ihsg.bad.ai.id/api/price/BBCA', {
+      method: 'GET',
+      headers: { 'X-Origin-Auth': 'spoofed', 'X-Forwarded-For': '1.2.3.4' },
+    });
+    const res = await worker.fetch(req, V1_ENV());
     assert.strictEqual(res.status, 200);
-    const targetUrl = new URL(forwardedRequest.url);
-    assert.strictEqual(targetUrl.origin, 'https://ihsg.badai.tech');
-    assert.strictEqual(forwardedRequest.headers.get('X-Origin-Auth'), null);
-    assert.strictEqual(forwardedRequest.headers.get('Host'), 'ihsg.badai.tech');
-    console.log('[PASS] Test 9: Legacy endpoints never receive ORIGIN_SECRET');
+    assert.strictEqual(forwardedRequest.headers.get('X-Origin-Auth'), 'test-secret-origin');
+    assert.strictEqual(forwardedRequest.headers.get('X-Forwarded-For'), null);
+    console.log('[PASS] Test 9: spoofed headers on alias path are sanitized');
   } finally {
     globalThis.fetch = originalFetch;
   }
@@ -438,6 +483,52 @@ assert(worker && typeof worker.fetch === 'function', 'worker.js must export defa
     assert.strictEqual(targetUrl.origin, 'https://ihsg-storm.firebaseapp.com');
     assert.strictEqual(targetUrl.pathname, '/__/firebase/init.js');
     console.log('[PASS] Test 12: GET /__/firebase/init.js proxied to Firebase upstream');
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+}
+
+// Test 13: Toby L1 - cookie and authorization stripped from request to Firebase
+{
+  let forwardedRequest = null;
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async (req) => {
+    forwardedRequest = req;
+    return new Response('ok', { status: 200 });
+  };
+  try {
+    for (const p of ['/__/auth/handler', '/__/firebase/init.js']) {
+      const req = new Request(`https://ihsg.bad.ai.id${p}`, {
+        method: 'GET',
+        headers: { Cookie: 'session=abc', Authorization: 'Bearer tok', 'User-Agent': 'x' },
+      });
+      const res = await worker.fetch(req, V1_ENV());
+      assert.strictEqual(res.status, 200);
+      assert.strictEqual(forwardedRequest.headers.get('cookie'), null);
+      assert.strictEqual(forwardedRequest.headers.get('authorization'), null);
+      assert.strictEqual(forwardedRequest.headers.get('user-agent'), 'x');
+    }
+    console.log('[PASS] Test 13: cookie and authorization stripped on /__/ proxy request');
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+}
+
+// Test 14: Toby L2 - Set-Cookie removed from proxied Firebase response
+{
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () => {
+    const h = new Headers({ 'Content-Type': 'text/html' });
+    h.append('Set-Cookie', 'a=1; Path=/');
+    h.append('Set-Cookie', 'b=2; Path=/');
+    return new Response('ok', { status: 200, headers: h });
+  };
+  try {
+    const res = await worker.fetch(new Request('https://ihsg.bad.ai.id/__/auth/handler'), V1_ENV());
+    assert.strictEqual(res.status, 200);
+    assert.strictEqual(res.headers.get('set-cookie'), null);
+    assert.strictEqual(res.headers.get('content-type'), 'text/html');
+    console.log('[PASS] Test 14: set-cookie removed from /__/ proxy response');
   } finally {
     globalThis.fetch = originalFetch;
   }
