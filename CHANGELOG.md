@@ -10,6 +10,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 ### Changed
+- Standardize button family geometry (44px min-height, 8px radius, 1px border, Manrope 14px/600) across primary, secondary, Google sign-in (`.auth-btn`), and Pro (`.pro`) buttons
+- Implement UI consistency v3 styling across tabs, desktop pane, bottom sheets, form controls, search palette, and status feedback states
+- Enforce visible form focus rings and accessible WCAG AA contrast tokens for light and dark themes
 
 ### Fixed
 
