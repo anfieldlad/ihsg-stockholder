@@ -258,7 +258,12 @@
             </div>
           </template>
 
-          <button class="pro" type="button" @click="openPro('top')" aria-label="Fitur PRO" x-text="C.nav.pro_pill">PRO</button>
+          <button class="pro" type="button" @click="openPro('top')" aria-label="Fitur PRO">
+            <svg class="pro-ic" viewBox="0 0 24 24" width="14" height="14" aria-hidden="true" focusable="false">
+              <path d="M12 2.5l2.35 6.15L20.5 11l-6.15 2.35L12 19.5l-2.35-6.15L3.5 11l6.15-2.35L12 2.5z" fill="currentColor"/>
+            </svg>
+            <span class="pro-tx" x-text="C.nav.pro_pill">PRO</span>
+          </button>
         </div>
       </div>
     </header>
