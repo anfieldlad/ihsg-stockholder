@@ -611,7 +611,10 @@
             <p class="sub">Pertanyaan umum seputar data kepemilikan efek KSEI dan keterbukaan publik IHSG Storm</p>
 
             <div class="tools" style="margin-top:20px">
-              <input type="search" class="form-input" style="max-width:380px" placeholder="Cari pertanyaan di FAQ..." x-model="faqSearch">
+              <label class="fsearch">
+                <svg class="i s" aria-hidden="true"><use href="#i-search"/></svg>
+                <input type="search" class="form-input" placeholder="Cari pertanyaan di FAQ..." x-model="faqSearch" aria-label="Cari pertanyaan di FAQ">
+              </label>
               <div class="chips">
                 <button class="chip" type="button" @click="faqCategory = 'all'" :aria-pressed="faqCategory === 'all'">Semua Topik</button>
                 <button class="chip" type="button" @click="faqCategory = 'ksei'" :aria-pressed="faqCategory === 'ksei'">Data KSEI ≥1%</button>
