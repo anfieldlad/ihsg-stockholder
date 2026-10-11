@@ -20,8 +20,13 @@ import {
     loginWithGoogle,
     logout as authLogout,
     getToken,
-    getUserTier
+    getUserTier,
+    shouldRestoreAuth
 } from './auth.js';
+
+// Free users see the first 20 rows of the investor ranking (Pro sees all).
+const INV_FREE_CAP = 20;
+const PRO_TIERS = ['pro', 'pakar', 'investor'];
 
 export const storeConfig = {
     // Copy reference
@@ -88,11 +93,15 @@ export const storeConfig = {
     feedbackTicketId: null,
 
     // Authentication (M1-3)
-    authEnabled: false,
+    authEnabled: isAuthEnabled(),
+    authRestoring: shouldRestoreAuth(),
     user: null,
     userTier: 'gratis',
     userTierLabel: 'Gratis',
+    userProfile: null,
     authLoading: false,
+    akunOpen: false,
+    infoOpen: false,
     feedbackForm: {
         category: 'data_error',
         context_type: 'general',
@@ -136,6 +145,29 @@ export const storeConfig = {
         initAnalytics();
         trackPageview(this.currentTab || 'stocks');
 
+        // Authentication (M1-3). Independent of data; non-blocking. Runs first so
+        // the session restores while the data loads.
+        this.authEnabled = isAuthEnabled();
+        if (this.authEnabled) {
+            subscribeAuth((authState) => {
+                this.user = authState.user;
+                this.userTier = authState.tier || 'gratis';
+                this.userProfile = authState.profile || null;
+                this.userTierLabel = this.formatTierLabel(this.userTier);
+                if (authState.user || authState.ready) this.authRestoring = false;
+                this.authLoading = false;
+                if (!authState.user) this.akunOpen = false;
+                if (this.isPro && this.proOpen) this.closePro();
+            });
+            initAuth().catch((err) => {
+                console.warn('Auth initialization error:', err);
+            });
+            // Time-box the neutral placeholder: after 4s with no user show Masuk.
+            if (this.authRestoring) {
+                setTimeout(() => { if (!this.user) this.authRestoring = false; }, 4000);
+            }
+        }
+
         // Load Data
         try {
             this.loading = true;
@@ -171,19 +203,6 @@ export const storeConfig = {
             // Check feedback webhook availability (B2)
             this.checkFeedbackStatus();
 
-            // Initialize Authentication if feature flag is active (M1-3)
-            this.authEnabled = isAuthEnabled();
-            if (this.authEnabled) {
-                subscribeAuth((authState) => {
-                    this.user = authState.user;
-                    this.userTier = authState.tier || 'gratis';
-                    this.userTierLabel = this.formatTierLabel(this.userTier);
-                    this.authLoading = false;
-                });
-                initAuth().catch((err) => {
-                    console.warn('Auth initialization error:', err);
-                });
-            }
         } catch (e) {
             console.error('Initialization error:', e);
             this.error = COPY.states.error_load;
@@ -216,12 +235,40 @@ export const storeConfig = {
     },
 
     formatTierLabel(tier) {
-        if (!tier) return 'Gratis';
-        const t = String(tier).toLowerCase();
-        if (t === 'pakar') return 'Pakar';
-        if (t === 'investor') return 'Investor';
-        return 'Gratis';
+        return PRO_TIERS.includes(String(tier || '').toLowerCase()) ? COPY.akun.status_pro : COPY.akun.status_free;
     },
+
+    get isPro() {
+        return PRO_TIERS.includes(String(this.userTier || '').toLowerCase());
+    },
+
+    get akunName() {
+        return this.userProfile?.user?.display_name || this.user?.displayName || '';
+    },
+
+    get akunEmail() {
+        return this.userProfile?.user?.email || this.user?.email || '';
+    },
+
+    get userInitial() {
+        const s = (this.akunName || this.akunEmail || '?').trim();
+        return s.charAt(0).toUpperCase();
+    },
+
+    get akunValidity() {
+        if (!this.isPro) return '';
+        const ent = this.userProfile?.entitlement;
+        if (!ent) return '';
+        if (ent.ends_at == null) return COPY.akun.lifetime;
+        const d = new Date(ent.ends_at);
+        if (isNaN(d.getTime())) return '';
+        return d.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Asia/Jakarta' });
+    },
+
+    openAkun() { if (!this.user) return; this.akunOpen = true; },
+    closeAkun() { this.akunOpen = false; },
+    openInfo() { this.infoOpen = true; },
+    closeInfo() { this.infoOpen = false; },
 
     async login() {
         this.authLoading = true;
@@ -234,6 +281,7 @@ export const storeConfig = {
     },
 
     async logout() {
+        this.closeAkun();
         this.authLoading = true;
         try {
             await authLogout();
@@ -462,7 +510,12 @@ export const storeConfig = {
     },
 
     get visibleInvestors() {
-        return this.filteredInvestors.slice(0, this.invLimit);
+        const lim = this.isPro ? this.invLimit : Math.min(this.invLimit, INV_FREE_CAP);
+        return this.filteredInvestors.slice(0, lim);
+    },
+
+    get invCapped() {
+        return !this.isPro && this.filteredInvestors.length > INV_FREE_CAP;
     },
 
     loadMoreInvestors() {
@@ -600,7 +653,7 @@ export const storeConfig = {
             issuerFormatted: toTitleCase(s.issuer),
             holdersTotal: holders.length,
             holders: top5,
-            allHolders: holders,
+            listHolders: this.isPro ? holders : top5,
             topHolder: holders[0] || null,
             foreignTopPct,
             restPct,
@@ -628,6 +681,7 @@ export const storeConfig = {
             lfLabel: this.getLFLabel(inv.lf),
             holdingsCount: holdings.length,
             holdings: holdings.slice(0, 8),
+            listHoldings: this.isPro ? holdings : holdings.slice(0, 8),
             topHolding,
             totalShares
         };
@@ -850,6 +904,15 @@ export const storeConfig = {
 
     // Pro Gates & Freemium v2
     openPro(why = 'general') {
+        if (this.isPro) {
+            if (window.location.hash.startsWith('#/pro/')) history.replaceState(null, '', window.location.pathname);
+            return;
+        }
+        if (why === 'freshness') {
+            this.openInfo();
+            if (window.location.hash === '#/pro/freshness') history.replaceState(null, '', window.location.pathname);
+            return;
+        }
         this.proWhy = why;
         this.proOpen = true;
         trackLockedClick(why);
@@ -1050,6 +1113,14 @@ export const storeConfig = {
             if (e.key === 'Escape') {
                 if (this.searchOpen) {
                     this.closeSearch();
+                    return;
+                }
+                if (this.akunOpen) {
+                    this.closeAkun();
+                    return;
+                }
+                if (this.infoOpen) {
+                    this.closeInfo();
                     return;
                 }
                 if (this.proOpen) {

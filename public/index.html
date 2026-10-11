@@ -234,8 +234,11 @@
         <div class="top-actions">
           <!-- Authentication (M1-3, gated by authEnabled feature flag, default OFF) -->
           <template x-if="authEnabled">
-            <div class="auth-wrap" id="auth-wrap">
-              <template x-if="!user">
+            <div class="auth-wrap" id="auth-wrap" :aria-busy="authRestoring && !user ? 'true' : 'false'">
+              <template x-if="authRestoring && !user">
+                <span class="auth-skel sk" aria-hidden="true"></span>
+              </template>
+              <template x-if="!authRestoring && !user">
                 <button class="auth-btn" type="button" @click="login()" :disabled="authLoading" aria-label="Masuk dengan Google">
                   <svg class="auth-g-icon" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
                     <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z"/>
@@ -249,16 +252,16 @@
               </template>
               <template x-if="user">
                 <div class="auth-user">
-                  <span class="auth-tier" :class="'tier-' + userTier" x-text="userTierLabel"></span>
-                  <button class="auth-btn auth-logout" type="button" @click="logout()" :disabled="authLoading" aria-label="Keluar">
-                    Keluar
+                  <span class="auth-tier tier-pro" x-show="isPro" x-text="userTierLabel">Pro</span>
+                  <button class="auth-avatar" type="button" @click="openAkun()" aria-label="Akun saya" aria-haspopup="dialog">
+                    <span x-text="userInitial" aria-hidden="true"></span>
                   </button>
                 </div>
               </template>
             </div>
           </template>
 
-          <button class="pro" type="button" @click="openPro('top')" aria-label="Fitur PRO">
+          <button class="pro" type="button" x-cloak x-show="!isPro && !authRestoring" @click="openPro('top')" aria-label="Fitur Pro">
             <svg class="pro-ic" viewBox="0 0 24 24" width="14" height="14" aria-hidden="true" focusable="false">
               <path d="M12 2.5l2.35 6.15L20.5 11l-6.15 2.35L12 19.5l-2.35-6.15L3.5 11l6.15-2.35L12 2.5z" fill="currentColor"/>
             </svg>
@@ -312,7 +315,7 @@
       <div class="fresh fresh-desktop" role="status" id="fresh" style="display: none;">
         <span class="dot"></span>
         <span>Data KSEI per <b x-text="asOfLabel || '30 September 2026'"></b> · Harga bursa tertunda 15 mnt</span>
-        <button type="button" @click="openPro('freshness')">Info Pembaruan</button>
+        <button type="button" @click="openInfo()">Info Pembaruan</button>
       </div>
 
       <!-- Master-Detail Layout -->
@@ -328,7 +331,7 @@
               <div class="meta-line">
                 <span class="meta-count" x-text="`${fmtNum(totalStocks)} Saham`">961 Saham</span>
                 <span class="meta-sep" aria-hidden="true">·</span>
-                <button class="meta-info-btn" type="button" @click="openPro('freshness')" aria-label="Informasi pembaruan data KSEI">
+                <button class="meta-info-btn" type="button" @click="openInfo()" aria-label="Informasi pembaruan data KSEI">
                   <span x-text="`KSEI ${asOfLabel || '30 Sep'}`">KSEI 30 Sep</span>
                   <svg class="i xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                     <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
@@ -342,10 +345,13 @@
                   <button class="chip" type="button" @click="setStockFilter('foreign')" :aria-pressed="stockFilter === 'foreign'">Dominasi Asing</button>
                   <button class="chip" type="button" @click="setStockFilter('many')" :aria-pressed="stockFilter === 'many'">Pemegang Terbanyak</button>
                   <button class="chip" type="button" @click="setStockFilter('scrip')" :aria-pressed="stockFilter === 'scrip'">Warkat / Scrip</button>
-                  <button class="chip" type="button" @click="openPro('screener')" aria-label="Screener saham (Fitur PRO)">
+                  <button class="chip" type="button" x-show="!isPro" @click="openPro('screener')" aria-label="Screener saham (Fitur Pro)">
                     <svg class="i s"><use href="#i-lock"/></svg>
                     <span>Screener</span>
                   </button>
+                  <span class="chip chip-soon" x-show="isPro" x-cloak role="note">
+                    <span x-text="C.soon.screener">Screener</span><span class="chip-soon-tag" x-text="C.soon.label">Sedang dibangun</span>
+                  </span>
                   <!-- Inline Sort Select (1-Row Unified Controls on Mobile) -->
                   <select class="sortsel" :value="stockSortKey" @change="setStockSort($event.target.value)" aria-label="Urutkan Saham">
                     <option value="code">Urutkan: Kode (A-Z)</option>
@@ -397,7 +403,7 @@
                 <button class="h r opt1" type="button" @click="setStockSort('holders')">
                   <span>Pemegang ≥1%</span><span x-show="stockSortKey === 'holders'">&nbsp;↓</span>
                 </button>
-                <span class="h opt2">Pemegang Saham Terbesar</span>
+                <span class="h opt2">Pemegang Terbesar</span>
                 <button class="h r opt3" type="button" @click="setStockSort('local')">
                   <span>Porsi Domestik</span><span x-show="stockSortKey === 'local'">&nbsp;↓</span>
                 </button>
@@ -504,20 +510,20 @@
             </div>
 
             <!-- Pro Gate on Investor List -->
-            <div class="lock">
+            <div class="lock" x-show="invCapped" x-cloak>
               <svg class="i s"><use href="#i-lock"/></svg>
               <div>
-                <h4>Peringkat Lengkap 5.000+ Investor</h4>
-                <p>Akses seluruh pemegang saham kakap di BEI dan unduh dataset ke Excel/CSV.</p>
+                <h4 x-text="C.pro_gates.investor_rank.title.replace('{count}', fmtNum(filteredInvestors.length))"></h4>
+                <p x-text="C.pro_gates.investor_rank.benefit"></p>
                 <button class="go" type="button" @click="openPro('investor_rank')">
-                  Lihat Paket Pro <svg class="i s"><use href="#i-chev"/></svg>
+                  Lihat Fitur Pro <svg class="i s"><use href="#i-chev"/></svg>
                 </button>
               </div>
             </div>
 
             <!-- Investor Load More -->
             <div class="more" x-show="!loading && visibleInvestors.length > 0">
-              <button class="btn sec" type="button" @click="loadMoreInvestors()" x-show="visibleInvestors.length < filteredInvestors.length">Muat Lebih Banyak</button>
+              <button class="btn sec" type="button" @click="loadMoreInvestors()" x-show="visibleInvestors.length < filteredInvestors.length && !invCapped">Muat Lebih Banyak</button>
               <p class="note" x-text="`Menampilkan ${visibleInvestors.length} dari ${fmtNum(filteredInvestors.length)} investor terdaftar di KSEI.`"></p>
             </div>
           </section>
@@ -591,13 +597,17 @@
 
               <!-- Card 5 (Span 2): MoM Delta Lock Card -->
               <div class="span2">
-                <div class="lock" style="margin-top:0">
+                <div class="soon" x-show="isPro" x-cloak role="note">
+                  <b x-text="C.soon.delta">Perubahan antar-bulan</b>
+                  <span x-text="C.soon.label">Sedang dibangun</span>
+                </div>
+                <div class="lock" style="margin-top:0" x-show="!isPro">
                   <svg class="i s"><use href="#i-lock"/></svg>
                   <div>
                     <h4 x-text="C.analytics.card_delta_title">Perubahan Kepemilikan Antar-Bulan</h4>
                     <p x-text="C.analytics.card_delta_desc">Pantau siapa yang akumulasi atau melepas saham besar setiap bulan.</p>
                     <button class="go" type="button" @click="openPro('delta')">
-                      Lihat Paket Pro <svg class="i s"><use href="#i-chev"/></svg>
+                      Lihat Fitur Pro <svg class="i s"><use href="#i-chev"/></svg>
                     </button>
                   </div>
                 </div>
@@ -752,9 +762,9 @@
                 <!-- Holders List -->
                 <h3 class="sec-h">Daftar Pemegang Saham</h3>
                 <div>
-                  <template x-for="(h, i) in detailStock.holders" :key="h.investor">
+                  <template x-for="(h, i) in detailStock.listHolders" :key="h.investor">
                     <button class="hold" type="button" @click="openInvestor(h.investor, true)">
-                      <i class="sw" :style="`background:var(--c${i})`"></i>
+                      <i class="sw" :style="`background:var(${i < 5 ? '--c' + i : '--c-rest'})`"></i>
                       <span class="n" x-text="toTitleCase(h.investor)"></span>
                       <span class="p num" x-text="fmtPct(h.percentage)"></span>
                       <span class="m">
@@ -775,13 +785,13 @@
                 </div>
 
                 <!-- Lock Card for Remaining Holders -->
-                <div class="lock" x-show="detailStock.holdersTotal > 5">
+                <div class="lock" x-show="!isPro && detailStock.holdersTotal > 5" x-cloak>
                   <svg class="i s"><use href="#i-lock"/></svg>
                   <div>
-                    <h4 x-text="`Semua ${detailStock.holdersTotal} Pemegang Saham & Riwayat`"></h4>
-                    <p>Buka seluruh daftar pemegang saham ≥1% beserta histori tren kepemilikan bulanan.</p>
+                    <h4 x-text="C.pro_gates.stock_holders.title.replace('{count}', detailStock.holdersTotal)"></h4>
+                    <p x-text="C.pro_gates.stock_holders.benefit"></p>
                     <button class="go" type="button" @click="openPro('stock_holders')">
-                      Lihat Paket Pro <svg class="i s"><use href="#i-chev"/></svg>
+                      Lihat Fitur Pro <svg class="i s"><use href="#i-chev"/></svg>
                     </button>
                   </div>
                 </div>
@@ -828,7 +838,7 @@
 
                 <h3 class="sec-h" style="margin-top:6px">Portofolio Saham ≥1%</h3>
                 <div>
-                  <template x-for="h in detailInvestor.holdings" :key="h.code">
+                  <template x-for="h in detailInvestor.listHoldings" :key="h.code">
                     <button class="hold pf" type="button" @click="openStock(h.code, true)">
                       <span class="n">
                         <span x-text="h.code"></span>
@@ -848,13 +858,13 @@
                   <div class="whale-map-container" id="whaleMapContainerInv" x-show="showWhaleMap" style="width:100%;height:320px;margin-top:12px;border:1px solid var(--line);border-radius:var(--r-s)"></div>
                 </div>
 
-                <div class="lock">
+                <div class="lock" x-show="!isPro && detailInvestor.holdingsCount > 8" x-cloak>
                   <svg class="i s"><use href="#i-lock"/></svg>
                   <div>
-                    <h4>Portofolio Lengkap & Riwayat Akumulasi</h4>
-                    <p>Lihat seluruh emiten yang dikoleksi investor ini beserta riwayat pergerakan porsinya.</p>
+                    <h4 x-text="C.pro_gates.investor_portfolio.title"></h4>
+                    <p x-text="C.pro_gates.investor_portfolio.benefit"></p>
                     <button class="go" type="button" @click="openPro('investor_portfolio')">
-                      Lihat Paket Pro <svg class="i s"><use href="#i-chev"/></svg>
+                      Lihat Fitur Pro <svg class="i s"><use href="#i-chev"/></svg>
                     </button>
                   </div>
                 </div>
@@ -956,9 +966,9 @@
 
           <h3 class="sec-h">Daftar Pemegang Saham</h3>
           <div>
-            <template x-for="(h, i) in detailStock.holders" :key="h.investor">
+            <template x-for="(h, i) in detailStock.listHolders" :key="h.investor">
               <button class="hold" type="button" @click="openInvestor(h.investor, true)">
-                <i class="sw" :style="`background:var(--c${i})`"></i>
+                <i class="sw" :style="`background:var(${i < 5 ? '--c' + i : '--c-rest'})`"></i>
                 <span class="n" x-text="toTitleCase(h.investor)"></span>
                 <span class="p num" x-text="fmtPct(h.percentage)"></span>
                 <span class="m">
@@ -977,13 +987,13 @@
             <div class="whale-map-container" id="whaleMapContainerMobile" x-show="showWhaleMap" style="width:100%;height:280px;margin-top:12px;border:1px solid var(--line);border-radius:var(--r-s)"></div>
           </div>
 
-          <div class="lock" x-show="detailStock.holdersTotal > 5">
+          <div class="lock" x-show="!isPro && detailStock.holdersTotal > 5" x-cloak>
             <svg class="i s"><use href="#i-lock"/></svg>
             <div>
-              <h4 x-text="`Semua ${detailStock.holdersTotal} Pemegang Saham & Riwayat`"></h4>
-              <p>Buka seluruh daftar pemegang saham ≥1% beserta histori tren kepemilikan.</p>
+              <h4 x-text="C.pro_gates.stock_holders.title.replace('{count}', detailStock.holdersTotal)"></h4>
+              <p x-text="C.pro_gates.stock_holders.benefit"></p>
               <button class="go" type="button" @click="openPro('stock_holders')">
-                Lihat Paket Pro <svg class="i s"><use href="#i-chev"/></svg>
+                Lihat Fitur Pro <svg class="i s"><use href="#i-chev"/></svg>
               </button>
             </div>
           </div>
@@ -1029,7 +1039,7 @@
 
           <h3 class="sec-h" style="margin-top:6px">Portofolio Saham ≥1%</h3>
           <div>
-            <template x-for="h in detailInvestor.holdings" :key="h.code">
+            <template x-for="h in detailInvestor.listHoldings" :key="h.code">
               <button class="hold pf" type="button" @click="openStock(h.code, true)">
                 <span class="n">
                   <span x-text="h.code"></span>
@@ -1049,13 +1059,13 @@
             <div class="whale-map-container" id="whaleMapContainerInvMobile" x-show="showWhaleMap" style="width:100%;height:280px;margin-top:12px;border:1px solid var(--line);border-radius:var(--r-s)"></div>
           </div>
 
-          <div class="lock">
+          <div class="lock" x-show="!isPro && detailInvestor.holdingsCount > 8" x-cloak>
             <svg class="i s"><use href="#i-lock"/></svg>
             <div>
-              <h4>Portofolio Lengkap & Riwayat Akumulasi</h4>
-              <p>Lihat seluruh emiten yang dikoleksi investor ini beserta riwayat pergerakan porsinya.</p>
+              <h4 x-text="C.pro_gates.investor_portfolio.title"></h4>
+              <p x-text="C.pro_gates.investor_portfolio.benefit"></p>
               <button class="go" type="button" @click="openPro('investor_portfolio')">
-                Lihat Paket Pro <svg class="i s"><use href="#i-chev"/></svg>
+                Lihat Fitur Pro <svg class="i s"><use href="#i-chev"/></svg>
               </button>
             </div>
           </div>
@@ -1133,60 +1143,98 @@
     </div>
   </div>
 
-  <!-- Pro Plan Modal / Sheet (Oscar v2 Rp19k / Rp49k Tiers) -->
-  <div class="sheet" id="proSheet" :class="{ on: proOpen }" role="dialog" aria-modal="true" aria-label="Paket Pro">
+  <!-- Pro Sheet (Free and logged-out users only) -->
+  <div class="sheet" id="proSheet" :class="{ on: proOpen }" role="dialog" aria-modal="true" aria-label="Fitur Pro">
     <div class="pane-wrap" style="display:flex;flex-direction:column;height:100%;min-height:0">
       <div class="dh">
-        <span class="tt" style="font-weight:800;letter-spacing:.05em">IHSG STORM PRO</span>
+        <span class="tt" x-text="C.pro_sheet.bar_title">IHSG Storm Pro</span>
         <button class="ib" type="button" @click="closePro()" aria-label="Tutup">
           <svg class="i"><use href="#i-x"/></svg>
         </button>
       </div>
 
-      <div class="db" tabindex="0" role="region" aria-label="Konten paket pro">
-        <h2 style="font-size:22px;line-height:1.25;letter-spacing:-.02em;font-weight:800">Investasi Lebih Percaya Diri dengan Data Investor Kakap</h2>
-        <p class="sub" style="margin-top:8px">Ketahui langkah konglomerat, investor institusi, dan pengendali sebelum pasar bereaksi luas.</p>
+      <div class="db" tabindex="0" role="region" aria-label="Perbandingan Gratis dan Pro">
+        <h2 x-text="C.pro_sheet.title">Gratis dan Pro</h2>
+        <p class="sub" x-text="C.pro_sheet.subtitle"></p>
 
-        <!-- Pro Plan Coming Soon Notice (B3 Hardening) -->
-        <div class="card" style="margin:16px 0;padding:20px;text-align:center;background:var(--sunk);border:1px solid var(--line2)">
-          <div style="display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:99px;background:var(--card);font-weight:700;font-size:12px;color:var(--accent-text);margin-bottom:10px">
-            <svg class="i s"><use href="#i-lock"/></svg>
-            <span>SEGERA HADIR</span>
-          </div>
-          <h3 style="font-size:16px;font-weight:800;margin-bottom:6px">Layanan Berlangganan Segera Hadir</h3>
-          <p class="sub" style="font-size:13px;max-width:380px;margin:0 auto">Akses screener canggih, histori akumulasi paus, dan peringatan kepemilikan saham sedang dalam tahap pengembangan.</p>
-        </div>
-
-        <!-- Comparison Table -->
-        <div style="overflow-x:auto">
-          <table style="width:100%;border-collapse:collapse;font-size:13px;text-align:left">
+        <div class="pt-wrap">
+          <table class="pt-table">
             <thead>
-              <tr style="color:var(--ink3)">
-                <th style="padding:8px 0;font-weight:700">Fitur</th>
-                <th style="padding:8px">Gratis</th>
-                <th style="padding:8px">Investor</th>
-                <th style="padding:8px">Pakar</th>
+              <tr>
+                <th scope="col" x-text="C.pro_sheet.col_feature">Fitur</th>
+                <th scope="col" x-text="C.pro_sheet.col_free">Gratis</th>
+                <th scope="col" x-text="C.pro_sheet.col_pro">Pro</th>
               </tr>
             </thead>
             <tbody class="pt">
               <template x-for="row in C.pro_sheet.rows" :key="row.feature">
                 <tr>
                   <td x-text="row.feature"></td>
-                  <td class="num" style="padding:8px" x-text="row.free"></td>
-                  <td style="padding:8px" x-text="row.investor"></td>
-                  <td style="padding:8px"><b x-text="row.trader"></b></td>
+                  <td x-text="row.free"></td>
+                  <td><span :class="row.soon ? 'pt-soon' : 'pt-yes'" x-text="row.pro"></span></td>
                 </tr>
               </template>
             </tbody>
           </table>
         </div>
 
-        <p class="note" style="margin-top:14px" x-text="C.pro_sheet.pricing_note"></p>
+        <div class="pro-actions">
+          <button class="btn pri" type="button" disabled x-text="C.pro_sheet.cta_disabled">Pro belum dibuka untuk umum</button>
+          <button class="btn sec" type="button" @click="closePro()" x-text="C.pro_sheet.btn_close">Tutup</button>
+        </div>
+      </div>
+    </div>
+  </div>
 
-        <!-- Close Action -->
-        <button class="btn sec" type="button" style="width:100%;margin-top:16px" @click="closePro()">
-          Tutup
+  <!-- Akun Sheet -->
+  <div class="sheet" id="akunSheet" :class="{ on: akunOpen }" role="dialog" aria-modal="true" aria-label="Akun">
+    <div class="pane-wrap">
+      <div class="dh">
+        <span class="tt" x-text="C.akun.title">Akun</span>
+        <button class="ib" type="button" @click="closeAkun()" aria-label="Tutup">
+          <svg class="i"><use href="#i-x"/></svg>
         </button>
+      </div>
+      <div class="db" tabindex="0" role="region" aria-label="Detail akun">
+        <div class="akun-id">
+          <span class="akun-av" aria-hidden="true" x-text="userInitial"></span>
+          <div class="akun-who">
+            <b class="akun-name" x-text="akunName || akunEmail"></b>
+            <span class="akun-mail" x-show="akunName && akunEmail" x-text="akunEmail"></span>
+          </div>
+        </div>
+
+        <dl class="akun-rows">
+          <div class="akun-row">
+            <dt x-text="C.akun.label_status">Status</dt>
+            <dd><span class="auth-tier" :class="isPro ? 'tier-pro' : ''" x-text="userTierLabel"></span></dd>
+          </div>
+          <div class="akun-row" x-show="akunValidity">
+            <dt x-text="C.akun.label_validity">Masa berlaku</dt>
+            <dd x-text="akunValidity"></dd>
+          </div>
+        </dl>
+
+        <button class="btn sec akun-out" type="button" @click="logout()" :disabled="authLoading" x-text="C.akun.btn_logout">Keluar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Info Data Sheet -->
+  <div class="sheet" id="infoSheet" :class="{ on: infoOpen }" role="dialog" aria-modal="true" aria-label="Tentang data">
+    <div class="pane-wrap">
+      <div class="dh">
+        <span class="tt" x-text="C.info_sheet.title">Tentang Data</span>
+        <button class="ib" type="button" @click="closeInfo()" aria-label="Tutup">
+          <svg class="i"><use href="#i-x"/></svg>
+        </button>
+      </div>
+      <div class="db" tabindex="0" role="region" aria-label="Penjelasan data">
+        <p class="info-p"><b x-text="C.info_sheet.ksei_head">Data kepemilikan</b></p>
+        <p class="info-p" x-text="C.info_sheet.ksei_body.replace('{date}', asOfLabel || '')"></p>
+        <p class="info-p"><b x-text="C.info_sheet.price_head">Harga saham</b></p>
+        <p class="info-p" x-text="C.info_sheet.price_body"></p>
+        <button class="btn sec info-close" type="button" @click="closeInfo()" x-text="C.info_sheet.btn_close">Tutup</button>
       </div>
     </div>
   </div>
@@ -1271,8 +1319,8 @@
 
   <!-- Shared Scrim Backdrop -->
   <div class="scrim" id="scrim"
-       :class="{ on: (cur && !window.matchMedia('(min-width: 1024px)').matches) || proOpen || searchOpen || showFeedbackModal }"
-       @click="closeDetail(); closePro(); closeSearch(); closeFeedbackModal()">
+       :class="{ on: (cur && !window.matchMedia('(min-width: 1024px)').matches) || proOpen || akunOpen || infoOpen || searchOpen || showFeedbackModal }"
+       @click="closeDetail(); closePro(); closeAkun(); closeInfo(); closeSearch(); closeFeedbackModal()">
   </div>
 
   <!-- Offline Status Toast -->

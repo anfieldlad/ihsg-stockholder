@@ -8,9 +8,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Akun sheet (name, email, status, validity, Keluar) opened from the avatar button in the header.
 - Inline SVG sparkle icon on the Pro header button to match the Google icon on the sign-in button
 
 ### Changed
+- Single Pro tier in the UI: the badge says "Pro" (never Investor or Pakar). Signed-in Pro users no longer see the PRO button, any lock card, or the Pro sheet.
+- The header no longer flashes "Masuk dengan Google" while a saved session is restored; a neutral placeholder shows until sign-in resolves (at most 4 seconds).
+- Pro sheet now compares only Gratis and Pro with rows that match what exists; removed the Investor and Pakar columns and the "Layanan Berlangganan Segera Hadir" box.
+- Pro users see every holder at 1% and above per stock, the full portfolio of every investor and the full investor ranking; free users see the first 20 investors in the ranking.
+- Unbuilt features (Screener, Perubahan Antar-Bulan) show a quiet "Sedang dibangun" note for Pro users instead of opening the Pro sheet.
+- "Info Pembaruan" now opens a short note about the monthly KSEI data date instead of the Pro sheet.
+- Saham table: header "Pemegang Terbesar" is vertically centred and has even spacing on desktop; same fix for the Investor table header.
 - Bantuan search now uses the same pill as the global search (icon, radius, inset, placeholder size); Bantuan and Analitik spacing under the subtitle matches Saham; the Bantuan report button fills the card on phones; Analitik bar labels wrap instead of truncating
 - Compact header controls: Masuk and PRO are now 32px high (invisible 44px tap area kept) with 10px of air above and below in a 52px bar, equal width on mobile, on mobile and desktop
 - Investor, Analitik and Bantuan pages now follow the Saham layout: hidden page title with a one-line meta subtitle, same spacing rhythm, same chip row, same single-card row list
@@ -41,6 +49,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [2026-10-10] - Minimalist Mobile UI & Cloudflare Worker Auth Integration
 
 ### Added
+- Akun sheet (name, email, status, validity, Keluar) opened from the avatar button in the header.
 - Minimalist mobile UI layout with condensed metadata above-the-fold display (b1f8598)
 - Google sign-in UI and lazy-loaded Firebase authentication bundle (9cc499a)
 - Cloudflare Worker reverse proxy route forwarding `/api/v1/` to VPS origin behind V1_ORIGIN flag (69b55a2)
@@ -58,6 +67,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [2026-10-09] - Cloudflare Worker API Proxy, SEO Phase 0 & UI Polish
 
 ### Added
+- Akun sheet (name, email, status, validity, Keluar) opened from the avatar button in the header.
 - Cloudflare Worker reverse proxy script `worker.js` and `wrangler.json` for edge routing (eae2ff8)
 - Backend origin proxy route `/api/v1/*` behind V1_ORIGIN feature flag (c80c5c0)
 - Google login modal dialog and lazy-loaded Firebase authentication bundle with flag disabled (8c3ba21)
@@ -96,6 +106,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [2026-10-08] - IHSG Storm v2.0 UI Overhaul & September 2026 Data Migration
 
 ### Added
+- Akun sheet (name, email, status, validity, Keluar) opened from the avatar button in the header.
 - Modern foundation layout shell, CSS design tokens, custom typography, and scoped styling (ead6ec4)
 - Alpine.js reactive state architecture, master-detail side pane, and freemium subscription gating (0a1fcb1)
 - Customer support feedback widget modal and interactive FAQ accordion tab (4f55902)
@@ -152,6 +163,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [2026-03-12] - Whale Relationship Map & Rebranding to IHSG Storm
 
 ### Added
+- Akun sheet (name, email, status, validity, Keluar) opened from the avatar button in the header.
 - Interactive Whale Relationship Map visualization powered by Apache ECharts (bf0d2c6)
 - Application favicon asset (c101681)
 
@@ -170,6 +182,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [2026-03-04] - Initial Launch: IHSG Stockholder Dashboard
 
 ### Added
+- Akun sheet (name, email, status, validity, Keluar) opened from the avatar button in the header.
 - Initial release of IHSG Stockholder Dashboard single-page application with live price feeds (c259b5f)
 - Instant in-memory autocomplete search dropdown for listed tickers and major investors (e7774f1)
 - Responsive mobile layout featuring stacked card grids and horizontal table scrolling (662b93a)
