@@ -2480,3 +2480,338 @@ h1 {
 .pane-empty .i { color: var(--ink3); }
 .skel { background: var(--card); }
 .skel:last-child { border-bottom: 0; }
+
+/* ===== Polish 1 / Fix 1 — Header rebalance ===== */
+:root { --top-h: 56px; --top-btn-h: 36px; }
+
+.top-in { height: var(--top-h); gap: 10px; }
+@media (min-width: 1024px) { .top-in { height: var(--topH); } }
+
+.top-brand { min-height: var(--top-btn-h); gap: 8px; }
+.top-brand .logo { width: 32px; height: 32px; border-radius: 8px; font-size: 12.5px; }
+.top-brand-text { font-size: 16px; }
+
+.top-actions { gap: 8px; }
+
+/* Visually 36px, still 44px tappable */
+.top .auth-btn,
+.top .pro {
+  position: relative;
+  min-height: var(--top-btn-h);
+  height: var(--top-btn-h);
+  min-width: 0;
+  padding: 0 12px;
+  font-size: 13px;
+  gap: 6px;
+}
+.top .auth-btn::after,
+.top .pro::after {
+  content: "";
+  position: absolute;
+  left: 0; right: 0;
+  top: 50%;
+  height: 44px;
+  transform: translateY(-50%);   /* 44px vertical hit area, full visual width */
+}
+.top .auth-btn .auth-g-icon { width: 16px; height: 16px; flex-basis: 16px; }
+.top .auth-btn.auth-logout { padding: 0 10px; font-size: 13px; }
+
+/* Desktop keeps the roomier 44px family from ui-consistency */
+@media (min-width: 1024px) {
+  .top .auth-btn, .top .pro { height: auto; min-height: var(--btn-h); font-size: 14px; padding: 0 var(--btn-px); }
+  .top .auth-btn::after, .top .pro::after { display: none; }
+}
+
+/* ===== Polish 1 / Fix 2 — Pro icon ===== */
+.pro .pro-ic { width: 14px; height: 14px; flex: 0 0 14px; color: var(--pro-ink); }
+.pro .pro-tx { font-weight: 700; letter-spacing: .04em; line-height: 1; }
+.pro:disabled .pro-ic { opacity: .38; }
+/* Masuk label: match weight so both buttons read as one family */
+.auth-btn { letter-spacing: .01em; }
+
+/* ===== Polish 1 / Fix 3 — Meta line: truncate the type, never the badge ===== */
+#invList .row .iss {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: visible;           /* the flex children handle truncation */
+  text-overflow: clip;
+}
+#invList .row .iss > span:first-child {
+  min-width: 0;
+  flex: 0 1 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;     /* "State Owned Enter…" · [Domestik] */
+}
+#invList .row .iss > .tag { flex: 0 0 auto; }
+
+/* Very narrow phones (<=340px): allow the badge to drop under the type instead of squeezing */
+@media (max-width: 340px) {
+  #invList .row .iss { flex-wrap: wrap; row-gap: 2px; }
+}
+
+#invList .row .code {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;            /* 2-line clamp for "Perusahaan Perseroan (Persero) PT Asabri" */
+  line-height: 1.25;
+}
+
+/* ===== Polish 1 / Fix 4 — Symmetric gutters ===== */
+html { scrollbar-gutter: auto; }                 /* mobile/tablet: no reserved strip */
+@media (min-width: 1024px) {
+  html { scrollbar-gutter: stable; }             /* desktop: keep layout from jumping between tabs */
+}
+@media (max-width: 767px) {
+  html { scrollbar-width: none; }                /* Firefox */
+  html::-webkit-scrollbar { width: 0; height: 0; display: none; }
+}
+.shell {
+  padding-left: max(var(--gut), env(safe-area-inset-left, 0px));
+  padding-right: max(var(--gut), env(safe-area-inset-right, 0px));
+}
+
+/* ===== Polish 1 / Fix 5 — Clear the bottom nav ===== */
+:root { --bnav-h: calc(60px + env(safe-area-inset-bottom, 0px)); }
+html { scroll-padding-bottom: calc(var(--bnav-h) + 16px); scroll-padding-top: calc(var(--top-h) + 8px); }
+
+@media (max-width: 1023px) {
+  main.shell { padding-bottom: calc(var(--bnav-h) + 24px); }
+  .foot      { padding-bottom: calc(var(--bnav-h) + 16px); }
+  #invList   { margin-bottom: 0; }
+}
+@media (min-width: 1024px) {
+  main.shell { padding-bottom: 32px; }
+}
+
+/* ===== Polish 1 / Fix 6 — Chip row scroll hint ===== */
+@media (max-width: 767px) {
+  .chips {
+    -webkit-mask-image: linear-gradient(to right, #000 0, #000 calc(100% - 32px), transparent 100%);
+            mask-image: linear-gradient(to right, #000 0, #000 calc(100% - 32px), transparent 100%);
+    padding-right: calc(var(--gut) + 24px) !important;  /* last chip can scroll fully clear of the fade */
+  }
+}
+
+/* ===== Polish 2 — Compact header, tab parity with Saham, desktop KSEI dedupe ===== */
+
+/* 1. Header (all tabs) */
+:root {
+  --top-h: 52px;
+  --top-btn-h: 32px;
+  --top-btn-w: 80px;
+}
+
+.top-in {
+  height: var(--top-h);
+  gap: 10px;
+}
+@media (min-width: 1024px) {
+  .top-in {
+    height: var(--topH);
+  }
+}
+
+.top-brand {
+  min-height: var(--top-btn-h);
+}
+.top-brand .logo {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  font-size: 12.5px;
+}
+.top-brand-text {
+  font-size: 16px;
+}
+
+.top .auth-btn,
+.top .pro {
+  position: relative;
+  box-sizing: border-box;
+  height: var(--top-btn-h);
+  min-height: var(--top-btn-h);   /* beats polish-1's desktop min-height:var(--btn-h) */
+  min-width: var(--top-btn-w);
+  padding: 0 12px;
+  gap: 6px;
+  font-size: 13px;
+  line-height: 1;
+  border-radius: var(--r-s);
+}
+.top .auth-btn { font-weight: 600; }
+.top .pro      { font-weight: 700; }
+.top .auth-btn .auth-g-icon { width: 16px; height: 16px; flex: 0 0 16px; }
+.top .pro .pro-ic           { width: 14px; height: 14px; flex: 0 0 14px; }
+
+/* Invisible 44px tap area, ALL viewports */
+.top .auth-btn::after,
+.top .pro::after {
+  content: "";
+  position: absolute;
+  left: -2px;
+  right: -2px;        /* a little horizontal slack, keeps 8px gap between the two */
+  top: 50%;
+  height: 44px;
+  transform: translateY(-50%);
+  display: block;     /* undoes polish-1's display:none at >=1024 */
+}
+
+/* Explicit desktop sizing: undo polish-1 re-inflation */
+@media (min-width: 1024px) {
+  .top .auth-btn,
+  .top .pro {
+    height: var(--top-btn-h);
+    min-height: var(--top-btn-h);
+    padding: 0 12px;
+    font-size: 13px;
+  }
+}
+
+/* Signed-in state (same footprint, no bar growth) */
+.top .auth-btn.auth-logout { min-width: 0; padding: 0 10px; }
+.auth-wrap, .auth-user, .top-actions { gap: 8px; }
+
+/* 2. Shared parity block (Investor, Analitik, Bantuan titles & rhythm) */
+#v-investors h1,
+#v-analytics h1,
+#v-faq h1 {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+#v-investors .sub,
+#v-analytics .sub,
+#v-faq .sub {
+  display: block;
+  margin: 0;
+  padding: 0 0 4px;
+  font-size: 11.5px;
+  line-height: 14px;
+  font-weight: 600;
+  color: var(--ink2);
+}
+/* FAQ sub is long: allow two lines, same size */
+#v-faq .sub { line-height: 15px; }
+
+#v-investors .view-head { padding-bottom: 0; }
+#v-investors .tools,
+#v-faq .tools { margin: 0 0 5px !important; gap: 0 !important; }
+
+@media (min-width: 768px) {
+  #v-analytics,
+  #v-faq {
+    max-width: none;
+    margin-inline: 0;
+  }
+}
+
+/* 3. Investor */
+#invList .row .code { font-size: 16px !important; }
+#invList .row .px   { font-size: 15px !important; }
+#invList .row .ch.note { font-size: 12px; font-weight: 600; color: var(--ink3); padding: 1px 0; }
+#v-investors .lock { margin-top: 12px; }
+
+/* 4. Analitik */
+@media (max-width: 767px) {
+  #v-analytics .grid2 {
+    display: block;
+    margin-top: 4px;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: var(--r);
+    overflow: hidden;
+  }
+  #v-analytics .grid2 > .card {
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+    border-bottom: 1px solid var(--line);
+    padding: 14px 16px;
+  }
+  #v-analytics .grid2 > .span2 { border: 0; }
+  #v-analytics .grid2 > .span2 .lock {
+    margin: 0;
+    border: 0;
+    border-radius: 0;          /* sits as the card's footer band on --sunk */
+    padding: 12px 16px;
+  }
+}
+
+#v-analytics .card h3 { font-size: 15px; line-height: 1.3; font-weight: 800; letter-spacing: -.01em; }
+#v-analytics .card .note { font-size: 13px; line-height: 1.4; color: var(--ink3); margin-top: 2px; }
+#v-analytics .bar { font-size: 13px; }
+#v-analytics .bar .v { font-weight: 700; }
+#v-analytics .bars { margin-top: 12px; gap: 10px; }
+#v-analytics .seg  { margin: 12px 0 10px; }
+
+/* 5. Bantuan / FAQ */
+#v-faq .tools {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  margin: 0 0 5px !important;
+}
+#v-faq .tools .form-input {
+  max-width: none !important;
+  width: 100%;
+  min-height: 36px;          /* same as .sbtn-mobile */
+  height: 36px;
+  padding: 0 12px;
+  border-radius: var(--r);   /* 12px like the search field */
+  border-color: var(--line2);
+  font-size: 16px;           /* keep 16px so iOS Safari does not zoom on focus */
+  margin: 0 0 8px;
+}
+@media (min-width: 768px) {
+  #v-faq .tools { flex-direction: column; }                 /* keep stacked; same as mobile */
+  #v-faq .tools .form-input { max-width: 380px !important; font-size: 14px; }
+}
+
+#v-faq .tools + .card {
+  padding: 0;
+  margin-top: 0 !important;
+  border-radius: var(--r);
+  overflow: hidden;
+}
+#v-faq .faq-item { padding: 0 16px; border-bottom: 1px solid var(--line); }
+#v-faq .faq-item:last-child { border-bottom: 0; }
+#v-faq .faq-q { min-height: 56px; padding: 12px 0; font-size: 15px; font-weight: 700; line-height: 1.3; }
+#v-faq .faq-a { margin: 0 0 14px; font-size: 13px; line-height: 1.55; color: var(--ink2); }  /* 13px = .iss */
+#v-faq .faq-item:hover { background: var(--hover); }
+#v-faq .faq-q:focus-visible { outline-offset: -2px; }
+
+#v-faq > .card[x-show="feedbackAvailable"] {
+  text-align: left !important;
+  padding: 14px 16px !important;
+  margin-top: 12px !important;
+  background: var(--sunk);
+}
+#v-faq > .card[x-show="feedbackAvailable"] h3 { font-size: 14px !important; line-height: 1.35; font-weight: 700; }
+#v-faq > .card[x-show="feedbackAvailable"] .sub {
+  margin: 4px 0 10px !important;
+  max-width: none !important;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink3);
+  padding: 0;
+}
+#v-faq > .card[x-show="feedbackAvailable"] .btn { width: auto; }
+
+/* 6. Desktop KSEI dedupe (>=1024px) */
+@media (min-width: 1024px) {
+  .meta-line .meta-sep,
+  .meta-line .meta-info-btn { display: none; }
+}
+
+@media (min-width: 1024px) {
+  body:has(#v-analytics.on) .fresh-desktop { display: none !important; }
+}

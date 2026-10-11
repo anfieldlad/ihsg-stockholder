@@ -8,13 +8,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Inline SVG sparkle icon on the Pro header button to match the Google icon on the sign-in button
 
 ### Changed
+- Compact header controls: Masuk and PRO are now 32px high (invisible 44px tap area kept) with 10px of air above and below in a 52px bar, equal width on mobile, on mobile and desktop
+- Investor, Analitik and Bantuan pages now follow the Saham layout: hidden page title with a one-line meta subtitle, same spacing rhythm, same chip row, same single-card row list
+- Analitik cards on mobile merge into one divided card; FAQ becomes a divided list card; FAQ search field matches the 36px search field; the FAQ contact box matches the Pro lock cards
+- Investor rows use the Saham row type scale (16px name, 15px count)
+- Rebalance the mobile header: 56px bar, 32px logo, 36px visual buttons with a preserved 44px tap area
+- Reserve the scrollbar gutter only on desktop so mobile content gutters are symmetric (16px both sides)
+- Size bottom padding from the real bottom-nav height plus safe-area, and add scroll-padding so the last row clears the nav
+- Add a right-edge fade on the mobile filter-chip row as a scroll hint
 - Standardize button family geometry (44px min-height, 8px radius, 1px border, Manrope 14px/600) across primary, secondary, Google sign-in (`.auth-btn`), and Pro (`.pro`) buttons
 - Implement UI consistency v3 styling across tabs, desktop pane, bottom sheets, form controls, search palette, and status feedback states
 - Enforce visible form focus rings and accessible WCAG AA contrast tokens for light and dark themes
 
 ### Fixed
+- The KSEI data date no longer appears twice on desktop (Saham meta-line, Analitik header); one instance per tab
+- Investor row category badge no longer clipped by long category names (the type truncates, the badge stays); long investor names clamp to 2 lines
 
 ### Security
 
