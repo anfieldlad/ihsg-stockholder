@@ -15,7 +15,7 @@ Welcome to the IHSG Storm repository. To maintain high engineering discipline, p
 
 Every PR or merge that touches product code, data, or infrastructure **must** add an entry to `CHANGELOG.md` under the `[Unreleased]` section:
 
-- **Categorization:** Group entries under one of the standard sections: `Added`, `Changed`, `Fixed`, `Security`, or `Data`.
+- **Categorization:** Group entries under one of the standard sections: `Added`, `Changed`, `Deprecated`, `Removed`, `Fixed`, `Security`, or `Data`.
 - **Monthly Data Updates:** Monthly data updates and data ingestion runs go under the `Data` section.
 - **Entry Format:** Plain English, one line per change, with a short commit SHA or PR reference (e.g., `- Concise description (short-sha)`).
 - **Mandatory Quality Gate:** **Angela does not PASS any pull request without a valid changelog entry.**

@@ -13,6 +13,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Akun sheet (name, email, status, validity, Keluar) opened from the avatar button in the header.
 - Inline SVG sparkle icon on the Pro header button to match the Google icon on the sign-in button
+- `LICENSE` (proprietary notice, same text as the backend repository).
+- `tests/test_repo_clean.py` fails if backend code, Vercel configuration, raw KSEI pdf/xlsx files, or the retired host come back.
+- Changelog categories `Deprecated` and `Removed` in `CONTRIBUTING.md` and the pull request template.
 
 ### Changed
 - Prices and feedback now call the backend directly at `/api/v1/prices`, `/api/v1/prices/<code>`, `/api/v1/feedback/status` and `/api/v1/feedback` (`public/src/api.js`, `public/src/store.js`).
@@ -40,8 +43,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Standardize button family geometry (44px min-height, 8px radius, 1px border, Manrope 14px/600) across primary, secondary, Google sign-in (`.auth-btn`), and Pro (`.pro`) buttons
 - Implement UI consistency v3 styling across tabs, desktop pane, bottom sheets, form controls, search palette, and status feedback states
 - Enforce visible form focus rings and accessible WCAG AA contrast tokens for light and dark themes
+- README rewritten to the shared nine-section structure used by the backend repository. The monthly data build now lives in the backend repository; this repository only receives `public/shareholder_data.json`.
+- CSP tests (`tests/test_auth_config.py`, `tests/test_csp_browser.py`, `tests/test_auth.js`, `tests/verify_files.js`) read `public/_headers` instead of `vercel.json`; `requirements-dev.txt` is standalone (pytest, playwright); `.gitignore` drops Python-server leftovers.
+- The Flask API tests in `tests/test_api_endpoints.py` are gone; its Node-subprocess checks moved to `tests/test_frontend_node.py`.
+- Bantuan FAQ answers no longer name the removed pipeline scripts.
 
 ### Removed
+- Legacy Flask API (`server.py`, `api/`), Vercel configuration (`vercel.json`), and the unused Python dependencies (`requirements.txt`, `requirements-ingest.txt`). Prices and feedback are served by the backend under `/api/v1`.
+- Raw KSEI PDF and xlsx files, the investor normalizer, parser overrides, the old data build script, and one-off debug and bootstrap scripts. Raw IDX files are not stored in git; the history keeps them.
+- Tests that only covered removed code (`tests/test_feedback_api.py`, `tests/test_normalize.py`, `tests/test_update_data.py`) and the stale root `test_csp_browser.py`.
 - The `ihsg.badai.tech` (Vercel) fallback in `worker.js`, including the Host override. The Worker no longer calls any external host except the Firebase auth upstream and `V1_ORIGIN`.
 
 ### Fixed

@@ -1,5 +1,5 @@
 // Legacy paths kept for 14 days so cached copies of api.js/store.js keep working.
-// Remove in FE-2 (plan step 8).
+// The window ends 2026-10-25; remove the alias in the follow-up PR (FE-3).
 const LEGACY_ALIASES = {
   '/api/prices': '/api/v1/prices',
   '/api/feedback/status': '/api/v1/feedback/status',

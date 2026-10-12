@@ -1,63 +1,92 @@
-# IHSG Storm (IHSG Stock Tracking & Ownership Real-time Monitoring) 📉🚀🤖
+# IHSG Storm (frontend)
 
-A lightweight, component-driven dashboard that parses shareholder data from KSEI (Indonesia Stock Exchange ownership data) and displays it alongside live market prices.
+## 1. Overview
 
-**Live Demo:** [https://ihsg.bad.ai.id/](https://ihsg.bad.ai.id/)
+IHSG Storm shows who owns what on the Indonesia Stock Exchange. It reads the monthly KSEI list of shareholders above 1 percent and lets you browse it by stock and by investor. It also shows delayed market prices.
 
-## Features
-- **Top Investors:** See who owns what in the Indonesian market (ownership > 1%).
-- **Live Prices:** Pings Yahoo Finance to get live stock prices (delayed ~15 mins) and dynamically calculates portfolio valuations.
-- **Fast Search:** Client-side autocomplete for instant matching of stocks and investor names.
-- **Automated Data Updates:** Unified script to fetch the latest KSEI >1% shareholder Excel file from IDX, archive it, and parse it into JSON.
-- **SEO Optimized:** Comprehensive meta tags, Open Graph, Twitter Cards, and JSON-LD structured data.
+This repository holds the website only: static files, the edge Worker, and the UI tests. It has no server code. The live site is https://ihsg.bad.ai.id.
 
-## Tech Stack
-- **Frontend:**
-  - **Alpine.js:** Reactive templating and state management (~10kB).
-  - **Tailwind CSS:** Utility-first styling via CDN.
-  - **ECharts / Chart.js:** Interactive visualizations.
-- **Backend:** 
-  - **Flask:** Python API proxying market data and serving the dashboard.
-- **Automation:**
-  - **Playwright:** Headless browser to load the IDX page and download the data file (IDX is behind Cloudflare, so it may need a manual download fallback).
-  - **openpyxl:** Parses the KSEI shareholder Excel (.xlsx) from IDX.
+The data is a monthly snapshot and prices are delayed. This is not investment advice.
 
-## Local Development
+## 2. Architecture and how the two repos connect
 
-### 1. Setup Environment
-```bash
-# Install dependencies
-pip install -r requirements.txt
+    Browser
+       |
+    Cloudflare Worker (worker.js)
+       |-- static files from public/
+       |-- /api/v1/*  -->  backend origin (repository: ihsg-backend)
 
-# Install Playwright browser
-python -m playwright install chromium
-```
+- public/ is plain HTML, CSS and JavaScript modules. Alpine.js handles state and ECharts draws charts. Fonts and libraries are vendored under public/assets, so the page loads nothing from a CDN.
+- worker.js serves public/ and forwards every request under /api/v1/ to the backend origin. It adds a shared secret header and the real client IP. Any other /api/ path returns 404, except four legacy price and feedback paths that the Worker maps to their /api/v1 equivalents for old cached copies of the site. That alias is temporary.
+- The backend repository (ihsg-backend) owns prices, feedback, login checks and billing. The browser calls it only through the Worker, so there is no cross-origin traffic.
+- public/shareholder_data.json is built by the backend repository's data pipeline and committed here as a plain file.
 
-### 2. Update Data
-To update to the latest shareholder data from IDX/KSEI:
-```bash
-python scripts/update_data.py
-```
-*This script will check if an update is needed, download the latest "Pemegang Saham di Atas 1%" Excel file from the IDX [Data Kepemilikan Saham](https://www.idx.co.id/id/perusahaan-tercatat/data-kepemilikan-saham/) page, archive it as `scripts/shareholder_data_<MON><YEAR>.xlsx`, and parse the data into JSON.*
+Pages: Saham (stocks), Investor, Analitik, Bantuan (FAQ). Routing uses the URL hash.
 
-IDX sits behind Cloudflare, which sometimes blocks the headless browser. If that happens, download the file manually from the page above and run:
-```bash
-python scripts/update_data.py --file ~/Downloads/peng-YYYY-MM-NNNNN-satu-persen.xlsx
-```
+## 3. Local development
 
-### 3. Run Server
-```bash
-python server.py
-```
-Open [http://localhost:5000](http://localhost:5000) in your browser.
+You need Node 22 and Python 3.12.
 
-## Deployment (Vercel)
-The application is pre-configured to run as a serverless project on Vercel. 
-- Python Flask backend runs via `api/index.py`.
-- Static files are served from the root.
+    # serve the static site (prices show n/a without a backend)
+    python -m http.server 8000 --directory public
 
-## Disclaimer
-Do not use this for actual financial decisions. The pricing data is delayed and the static ownership data is just a snapshot.
+    # or run the Worker locally against a backend on port 8081
+    npx wrangler dev --var V1_ORIGIN:http://localhost:8081 --var ORIGIN_SECRET:dev-only
 
----
-Crafted with ❤️ by [BAD AI](https://bad.ai.id)
+Open http://localhost:8000 (or the port Wrangler prints, 8787 by default).
+
+Site metadata (canonical URL, sitemap, robots, config.js) is generated from site_config.py:
+
+    python scripts/build_site_metadata.py          # write
+    python scripts/build_site_metadata.py --check  # verify only
+
+## 4. Tests
+
+    python -m pip install -r requirements-dev.txt
+    python -m playwright install chromium     # only for browser tests
+    python -m pytest                          # fast tests; browser tests are skipped by default
+    for f in tests/test_*.js; do node "$f"; done
+    python scripts/leak_guard.py
+
+tests/test_qa_suite.js currently fails under plain Node (window.matchMedia is not defined). It is a known issue and not part of the routine run.
+
+Browser tests are run on demand, for example: python -m pytest tests/test_loading_state.py. Run them before changing layout or CSS, and check 375 px wide (phone) and 1024 px wide (desktop).
+
+tests/test_repo_clean.py keeps this repository frontend-only: it fails if backend code, Vercel configuration or raw KSEI files come back.
+
+## 5. Deploy
+
+A merge to main deploys to production on Cloudflare Workers. Do not push to main directly. Work on a branch, open a pull request, and get QA and security approval first. wrangler.json holds the Worker name, the asset folder (public/) and the V1_ORIGIN variable. The secret ORIGIN_SECRET is set in the Cloudflare dashboard and never stored in git.
+
+To roll back, revert the pull request and merge the revert, or use the Cloudflare dashboard to restore the previous version.
+
+## 6. Data update
+
+The monthly file public/shareholder_data.json is produced by the backend repository. Steps:
+
+1. Run the data build in ihsg-backend (see its README, section 6) with --out pointing at this repository's public/shareholder_data.json.
+2. Check the summary it prints (row count, data date).
+3. Commit on a branch. Add a Data line to CHANGELOG.md. Open a pull request.
+4. Merge after QA. The site updates on deploy.
+
+Raw IDX files (xlsx, pdf) are not stored in this repository. After a successful build the raw file can be deleted.
+
+## 7. Config and environment
+
+| Name | Where | Purpose |
+|---|---|---|
+| V1_ORIGIN | wrangler.json vars | Backend origin URL for /api/v1/* |
+| ORIGIN_SECRET | Cloudflare Worker secret | Shared secret sent to the backend as X-Origin-Auth |
+| SITE_URL | site_config.py, or environment | Public site URL used for canonical tags and sitemap |
+| COMPANY_URL | site_config.py, or environment | Company site URL |
+| AUTH_DOMAIN | site_config.py, or environment | Firebase auth domain |
+
+Content-Security-Policy and other security headers live in public/_headers. Change them together with the tests in tests/test_auth_config.py.
+
+## 8. Changelog
+
+See CHANGELOG.md. Every merge that changes product code, data or configuration adds an entry under Unreleased. Format: Keep a Changelog.
+
+## 9. License
+
+Proprietary. All rights reserved. See LICENSE.

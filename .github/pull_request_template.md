@@ -4,6 +4,8 @@
 ## Type of Change
 - [ ] Feature (`Added`)
 - [ ] Improvement / Refactor (`Changed`)
+- [ ] Deprecation (`Deprecated`)
+- [ ] Removal (`Removed`)
 - [ ] Bug fix (`Fixed`)
 - [ ] Security fix (`Security`)
 - [ ] Data ingestion / update (`Data`)
@@ -12,7 +14,7 @@
 ## Mandatory Changelog Entry
 <!-- Mandatory: Every PR touching product, data, or infra must include a changelog entry in CHANGELOG.md under [Unreleased]. -->
 - [ ] **Changelog entry added to `CHANGELOG.md` under `[Unreleased]`**
-  - Section: `Added` / `Changed` / `Fixed` / `Security` / `Data`
+  - Section: `Added` / `Changed` / `Deprecated` / `Removed` / `Fixed` / `Security` / `Data`
   - Entry description: 
 
 ## Verification & QA
