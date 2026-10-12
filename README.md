@@ -48,8 +48,6 @@ Site metadata (canonical URL, sitemap, robots, config.js) is generated from site
     for f in tests/test_*.js; do node "$f"; done
     python scripts/leak_guard.py
 
-tests/test_qa_suite.js currently fails under plain Node (window.matchMedia is not defined). It is a known issue and not part of the routine run.
-
 Browser tests are run on demand, for example: python -m pytest tests/test_loading_state.py. Run them before changing layout or CSS, and check 375 px wide (phone) and 1024 px wide (desktop).
 
 tests/test_repo_clean.py keeps this repository frontend-only: it fails if backend code, Vercel configuration or raw KSEI files come back.

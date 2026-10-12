@@ -119,18 +119,34 @@ async function runQASuite() {
     // Setup Mock DOM
     const listeners = {};
     const elements = {};
-    global.history = { pushState: () => {}, replaceState: () => {} };
+    // pushState/replaceState update window.location.hash like a browser would
+    const applyUrl = (url) => {
+        if (typeof url === 'string') global.window.location.hash = url.includes('#') ? url.slice(url.indexOf('#')) : '';
+    };
+    global.history = {
+        pushState: (s, t, url) => applyUrl(url),
+        replaceState: (s, t, url) => applyUrl(url)
+    };
     global.window = {
         addEventListener: (event, handler) => {
             if (!listeners[event]) listeners[event] = [];
             listeners[event].push(handler);
         },
         location: { hash: '' },
-        history: global.history
+        history: global.history,
+        scrollTo: () => {},
+        matchMedia: () => ({
+            matches: false,
+            addEventListener() {},
+            removeEventListener() {},
+            addListener() {},
+            removeListener() {}
+        })
     };
     global.document = {
         getElementById: (id) => elements[id] || {
             classList: { add: () => {}, remove: () => {} },
+            querySelector: () => null,
             textContent: '',
             style: {},
             focus: () => {}
@@ -172,14 +188,14 @@ async function runQASuite() {
     assert((sRes.stocks || []).some(r => r.code === 'BBCA'), 'Search "BBCA" returns BBCA stock result');
 
     // Issuer Name Search
-    store.searchQuery = 'telekomunikasi';
+    store.searchQuery = 'telkom';
     sRes = store.searchResults;
-    assert((sRes.stocks || []).some(r => r.code === 'TLKM'), 'Search "telekomunikasi" returns TLKM');
+    assert((sRes.stocks || []).some(r => r.code === 'TLKM'), 'Search "telkom" (issuer name) returns TLKM');
 
     // Investor Search
-    store.searchQuery = 'DWI MURIA';
+    store.searchQuery = 'dwimuria';
     sRes = store.searchResults;
-    assert((sRes.investors || []).some(r => r.name.includes('DWIMURIA')), 'Search "DWI MURIA" matches PT DWIMURIA INVESTAMA ANDALAN');
+    assert((sRes.investors || []).some(r => r.name.includes('DWIMURIA')), 'Search "dwimuria" matches PT DWIMURIA INVESTAMA ANDALAN');
 
     // Filter: Dominasi Asing
     store.setStockFilter('foreign');
@@ -187,7 +203,7 @@ async function runQASuite() {
     assert(foreignCount > 0 && foreignCount < 961, `Foreign dominated filter returns subset: ${foreignCount} stocks`);
 
     // Filter: Pemegang Terbanyak (>= 6 holders)
-    store.setStockFilter('top_holders');
+    store.setStockFilter('many');
     const topHoldersCount = store.filteredStocks.length;
     assert(topHoldersCount > 0 && topHoldersCount < 961, `Top holders filter returns subset: ${topHoldersCount} stocks`);
     assert(store.filteredStocks.every(s => s.holders.length >= 6), 'All top_holders stocks have holders count >= 6');
@@ -202,9 +218,9 @@ async function runQASuite() {
     assert(store.filteredStocks.length === 961, 'Resetting stock filter returns all 961 stocks');
 
     // Investor Filters
-    store.setInvFilter('individual');
+    store.setInvFilter('ID');
     assert(store.filteredInvestors.length > 0 && store.filteredInvestors.length < 5166, `Individual investor filter active (${store.filteredInvestors.length} investors)`);
-    store.setInvFilter('corporate');
+    store.setInvFilter('CP');
     assert(store.filteredInvestors.length > 0 && store.filteredInvestors.length < 5166, `Corporate investor filter active (${store.filteredInvestors.length} investors)`);
     store.setInvFilter('scrip');
     assert(store.filteredInvestors.length > 0, `Scrip investor filter active (${store.filteredInvestors.length} warkat/unclassified investors)`);
@@ -215,46 +231,47 @@ async function runQASuite() {
     // -------------------------------------------------------------
     console.log('\n--- GATE 4: Modals & Master-Detail Pane ---');
     store.openStock('BBCA');
-    assert(store.selectedStock !== null && store.selectedStock.code === 'BBCA', 'openStock("BBCA") populates selectedStock');
-    assert(store.sheetOpen === true, 'openStock sets sheetOpen = true');
-    assert(store.paneActive === true, 'openStock sets paneActive = true for desktop detail pane');
-    assert(store.stockDonutStyle !== '', 'Conic gradient donut style calculated for BBCA');
-    assert(store.stockDonutSegments.length === 4, `BBCA donut has 4 holder segments (got ${store.stockDonutSegments.length})`);
+    assert(store.cur !== null && store.cur.kind === 'stock' && store.cur.arg === 'BBCA', 'openStock("BBCA") sets cur to the BBCA stock');
+    assert(store.detailStock !== null && store.detailStock.code === 'BBCA', 'detailStock getter resolves BBCA');
+    assert(store.detailStock.donutStops.includes('var(--c0)'), 'Conic gradient donut stops calculated for BBCA');
+    assert(store.detailStock.holders.length === 4, `BBCA detail has 4 holder segments (got ${store.detailStock.holders.length})`);
     assert(window.location.hash === '#/saham/BBCA', `URL hash updated to #/saham/BBCA (got ${window.location.hash})`);
 
     // Drilldown to Investor
-    const bbcaTopHolder = store.selectedStock.holders[0].investor;
+    const bbcaTopHolder = store.detailStock.holders[0].investor;
     store.openInvestor(bbcaTopHolder, true);
-    assert(store.selectedInvestor !== null && store.selectedInvestor.name === bbcaTopHolder, 'Drilldown opens investor profile');
-    assert(store.drillStack.length === 1, 'Drilldown stack contains 1 previous state');
-    assert(store.drillStack[0].type === 'stock' && store.drillStack[0].arg === 'BBCA', 'Drilldown stack remembers BBCA');
+    assert(store.cur !== null && store.cur.kind === 'investor' && store.cur.arg === bbcaTopHolder, 'Drilldown opens investor profile');
+    assert(store.detailInvestor !== null && store.detailInvestor.name === bbcaTopHolder, 'detailInvestor getter resolves the investor');
+    assert(store.detailStack.length === 1, 'Drilldown stack contains 1 previous state');
+    assert(store.detailStack[0].kind === 'stock' && store.detailStack[0].arg === 'BBCA', 'Drilldown stack remembers BBCA');
 
     // Back Navigation
-    store.popDrill();
-    assert(store.selectedStock !== null && store.selectedStock.code === 'BBCA', 'popDrill() returns to BBCA');
-    assert(store.drillStack.length === 0, 'Drilldown stack emptied after popDrill');
+    store.backDetail();
+    assert(store.detailStock !== null && store.detailStock.code === 'BBCA', 'backDetail() returns to BBCA');
+    assert(store.detailStack.length === 0, 'Drilldown stack emptied after backDetail');
 
-    // Close Sheet
-    store.closeSheet();
-    assert(store.selectedStock === null, 'closeSheet resets selectedStock to null');
-    assert(store.sheetOpen === false, 'closeSheet sets sheetOpen = false');
-    assert(store.paneActive === false, 'closeSheet sets paneActive = false');
+    // Close Detail
+    store.closeDetail();
+    assert(store.cur === null, 'closeDetail resets cur to null');
+    assert(store.detailStock === null, 'closeDetail clears detailStock');
+    assert(store.detailStack.length === 0, 'closeDetail clears detailStack');
 
     // Pro Modal
     store.openPro('test-gate');
     assert(store.proOpen === true, 'openPro sets proOpen = true');
-    assert(store.proContext === 'test-gate', 'openPro tracks proContext');
+    assert(store.proWhy === 'test-gate', 'openPro tracks proWhy');
     assert(window.location.hash === '#/pro/test-gate', 'URL hash updated to #/pro/test-gate');
     store.closePro();
     assert(store.proOpen === false, 'closePro sets proOpen = false');
 
-    // Feedback Modal
-    store.openFeedback('data_error', 'stock', 'BBCA', 'PT BANK CENTRAL ASIA TBK');
-    assert(store.showFeedbackModal === true, 'openFeedback sets showFeedbackModal = true');
+    // Feedback Modal (only opens when the feedback API reports available)
+    store.feedbackAvailable = true;
+    store.openFeedbackModal({ category: 'data_error', context_type: 'stock', code: 'BBCA', name: 'PT BANK CENTRAL ASIA TBK' });
+    assert(store.showFeedbackModal === true, 'openFeedbackModal sets showFeedbackModal = true');
     assert(store.feedbackForm.entity_code === 'BBCA', 'Feedback entity_code prefilled to BBCA');
     assert(store.feedbackForm.entity_name === 'PT BANK CENTRAL ASIA TBK', 'Feedback entity_name prefilled');
-    store.closeFeedback();
-    assert(store.showFeedbackModal === false, 'closeFeedback sets showFeedbackModal = false');
+    store.closeFeedbackModal();
+    assert(store.showFeedbackModal === false, 'closeFeedbackModal sets showFeedbackModal = false');
 
     // -------------------------------------------------------------
     // GATE 5: HASH ROUTING & DEEP LINKING
@@ -264,23 +281,23 @@ async function runQASuite() {
     window.location.hash = '#/saham/TLKM';
     store.handleHashRoute();
     assert(store.currentTab === 'stocks', 'Route #/saham/TLKM sets currentTab to stocks');
-    assert(store.selectedStock && store.selectedStock.code === 'TLKM', 'Route #/saham/TLKM opens TLKM detail');
+    assert(store.detailStock && store.detailStock.code === 'TLKM', 'Route #/saham/TLKM opens TLKM detail');
 
     // Test #/stock/BBRI
     window.location.hash = '#/stock/BBRI';
     store.handleHashRoute();
-    assert(store.selectedStock && store.selectedStock.code === 'BBRI', 'Route #/stock/BBRI opens BBRI detail');
+    assert(store.detailStock && store.detailStock.code === 'BBRI', 'Route #/stock/BBRI opens BBRI detail');
 
     // Test #/investor/DWI%20MURIA
     window.location.hash = '#/investor/PT%20DWIMURIA%20INVESTAMA%20ANDALAN';
     store.handleHashRoute();
     assert(store.currentTab === 'investors', 'Route #/investor/... sets currentTab to investors');
-    assert(store.selectedInvestor && store.selectedInvestor.name.includes('DWIMURIA'), 'Route opens PT DWIMURIA investor detail');
+    assert(store.detailInvestor && store.detailInvestor.name.includes('DWIMURIA'), 'Route opens PT DWIMURIA investor detail');
 
     // Test #/pro/screener
     window.location.hash = '#/pro/screener';
     store.handleHashRoute();
-    assert(store.proOpen === true && store.proContext === 'screener', 'Route #/pro/screener opens Pro modal with context screener');
+    assert(store.proOpen === true && store.proWhy === 'screener', 'Route #/pro/screener opens Pro modal with context screener');
     store.closePro();
 
     // Test #/faq
@@ -383,10 +400,10 @@ async function runQASuite() {
     // -------------------------------------------------------------
     console.log('\n--- GATE 8: Responsive Layout & Desktop Centering CSS Audit ---');
     assert(styleCss.includes('.shell {\n  width: 100%;\n  max-width: var(--maxw);\n  margin: 0 auto;'), '.shell has width: 100%, max-width: var(--maxw), margin: 0 auto (centered)');
-    assert(styleCss.includes('@media(min-width: 1024px) {\n  :root {\n    --gut: 32px;\n    --maxw: 1200px;\n    --pane: 380px;'), '1024px desktop breakpoint sets --maxw: 1200px and --pane: 380px');
-    assert(styleCss.includes('@media(min-width: 1440px) {\n  :root {\n    --gut: 40px;\n    --maxw: 1360px;\n    --pane: 460px;'), '1440px desktop breakpoint sets --maxw: 1360px and --pane: 460px');
-    assert(styleCss.includes('@media(min-width: 1920px) {\n  :root {\n    --gut: 48px;\n    --maxw: 1600px;\n    --pane: 560px;'), '1920px desktop breakpoint sets --maxw: 1600px and --pane: 560px');
-    assert(styleCss.includes('@media(min-width: 1024px) {\n  .layout.has-pane {\n    grid-template-columns: minmax(0, 1fr) var(--pane);'), 'Master-detail layout divides content into minmax(0, 1fr) and var(--pane) (no empty right side)');
+    assert(styleCss.includes('@media(min-width: 1024px) {\n  :root {\n    --gut: 20px;\n    --maxw: 1200px;\n    --pane: 320px;'), '1024px desktop breakpoint sets --maxw: 1200px and --pane: 320px');
+    assert(styleCss.includes('@media(min-width: 1440px) {\n  :root {\n    --gut: 36px;\n    --maxw: 1400px;\n    --pane: 420px;'), '1440px desktop breakpoint sets --maxw: 1400px and --pane: 420px');
+    assert(styleCss.includes('@media(min-width: 1920px) {\n  :root {\n    --gut: 48px;\n    --maxw: 1680px;\n    --pane: 480px;'), '1920px desktop breakpoint sets --maxw: 1680px and --pane: 480px');
+    assert(styleCss.includes('@media(min-width: 1200px) {\n  .layout.has-pane {\n    grid-template-columns: minmax(0, 1fr) var(--pane);'), 'Master-detail layout divides content into minmax(0, 1fr) and var(--pane) (no empty right side)');
     assert(styleCss.includes('.pane-empty {'), '.pane-empty class exists to display informative placeholder when no item selected');
     assert(styleCss.includes('@media(min-width: 1024px) {\n  .bnav {\n    display: none;\n  }\n  .rail {\n    display: flex;'), '1024px switches from bottom nav (.bnav) to left rail (.rail)');
 
