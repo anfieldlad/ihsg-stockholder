@@ -1,6 +1,5 @@
 """tests/test_auth_config.py — Pytest suite for M1-3 Frontend Auth & CSP configuration."""
 
-import json
 import os
 import re
 import sys
@@ -34,22 +33,6 @@ def test_auth_domain_env_override():
         importlib.reload(site_config)
 
 
-def test_csp_in_vercel_json_has_firebase():
-    """Verify vercel.json includes Firebase origins in connect-src and frame-src."""
-    vj_path = REPO_ROOT / "vercel.json"
-    vj = json.loads(vj_path.read_text(encoding="utf-8"))
-    csp = None
-    for entry in vj.get("headers", []):
-        for h in entry.get("headers", []):
-            if h.get("key") == "Content-Security-Policy":
-                csp = h.get("value")
-    assert csp is not None
-    assert "https://identitytoolkit.googleapis.com" in csp
-    assert "https://securetoken.googleapis.com" in csp
-    assert "https://accounts.google.com" in csp
-    assert "https://ihsg-storm.firebaseapp.com" in csp
-
-
 def test_cloudflare_headers_file_exists_and_matches():
     """Verify public/_headers exists and carries Content-Security-Policy with Firebase."""
     h_path = REPO_ROOT / "public" / "_headers"
@@ -57,6 +40,7 @@ def test_cloudflare_headers_file_exists_and_matches():
     content = h_path.read_text(encoding="utf-8")
     assert "Content-Security-Policy" in content
     assert "https://identitytoolkit.googleapis.com" in content
+    assert "https://securetoken.googleapis.com" in content
     assert "https://accounts.google.com" in content
     assert "https://ihsg-storm.firebaseapp.com" in content
 

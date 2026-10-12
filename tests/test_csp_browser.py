@@ -13,16 +13,13 @@ except ImportError:
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-def test_csp_header_in_vercel_json():
-    import json
-    vj_path = Path(__file__).resolve().parent.parent / "vercel.json"
-    with open(vj_path) as f:
-        vj = json.load(f)
+def test_csp_header_in_headers_file():
+    headers_path = Path(__file__).resolve().parent.parent / "public" / "_headers"
     csp_header = None
-    for entry in vj.get("headers", []):
-        for h in entry.get("headers", []):
-            if h.get("key") == "Content-Security-Policy":
-                csp_header = h.get("value")
+    for line in headers_path.read_text(encoding="utf-8").splitlines():
+        stripped = line.strip()
+        if stripped.startswith("Content-Security-Policy:"):
+            csp_header = stripped.split(":", 1)[1].strip()
     assert csp_header is not None
     assert "'unsafe-inline'" in csp_header
     assert "https://cloud.umami.is" in csp_header

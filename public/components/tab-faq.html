@@ -304,7 +304,7 @@
       </button>
       <div x-show="openItem === 'lag-2'" x-collapse class="px-5 pb-5 sm:px-6 sm:pb-6 text-sm text-slate-300 leading-relaxed border-t border-white/[0.04] pt-4">
         <p>
-          Pembaruan dilakukan secara <strong>bulanan</strong>. Begitu IDX dan KSEI mempublikasikan laporan rekapitulasi penutupan bulan baru di portal pengumuman resmi BEI, skrip otomasi kami (<code>scripts/update_data.py</code>) mengunduh dokumen, memverifikasi integritas angka, melakukan parsing tabel PDF ratusan halaman, dan memperbarui dataset dashboard.
+          Pembaruan dilakukan secara <strong>bulanan</strong>. Begitu IDX dan KSEI mempublikasikan laporan rekapitulasi penutupan bulan baru di portal pengumuman resmi BEI, skrip otomasi kami mengunduh dokumen, memverifikasi integritas angka, melakukan parsing tabel PDF ratusan halaman, dan memperbarui dataset dashboard.
         </p>
       </div>
     </div>
@@ -440,7 +440,7 @@
           Format dokumen PDF resmi KSEI menggunakan tata letak tabel tanpa garis pemisah sel (*unruled table columns*). Apabila nama emiten berakhiran kata "Tbk" sangat panjang atau nama investor melebihi koordinat standar, mesin PDF menggabungkan teks tersebut menjadi satu kata (misal: <code>TbkDRS.JOHNNY</code> atau <code>PartnershipL</code>).
         </p>
         <p>
-          Parser kami dilengkapi logika pemulihan (*regex recovery*), namun beberapa kombinasi nama unik baru dapat terlewat. Melalui laporan Anda, kami dapat menambahkan entri penimpa khusus di kamus <code>scripts/parser_overrides.json</code> agar data berikutnya 100% rapi.
+          Parser kami dilengkapi logika pemulihan (*regex recovery*), namun beberapa kombinasi nama unik baru dapat terlewat. Melalui laporan Anda, kami dapat menambahkan entri penimpa khusus agar data berikutnya 100% rapi.
         </p>
       </div>
     </div>

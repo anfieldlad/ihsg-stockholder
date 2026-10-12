@@ -31,8 +31,7 @@ const files = [
   `${prefix}favicon-512.png`,
   `${prefix}sitemap.xml`,
   `${prefix}robots.txt`,
-  'site_config.py',
-  'vercel.json'
+  'site_config.py'
 ];
 
 for (const f of files) {
@@ -47,14 +46,6 @@ for (const f of files) {
   }
   console.log(`OK: ${f} (${stat.size} bytes)`);
 }
-
-// Verify vercel.json is valid JSON
-const vercelConfig = JSON.parse(fs.readFileSync('vercel.json', 'utf8'));
-if (!vercelConfig.rewrites) {
-  console.error('Invalid vercel.json structure: missing rewrites');
-  process.exit(1);
-}
-console.log('OK: vercel.json contains valid rewrites configuration');
 
 // Run module import regression check
 const modPrefix = fs.existsSync('public/src') ? 'public/src/' : 'src/';

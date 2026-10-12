@@ -99,6 +99,7 @@ def scan_repo_for_unauthorized_badai_tech(root_dir: Path) -> list[str]:
         Path("site_config.py"),
         # Legal & documentation text:
         Path("README.md"),                          # Project documentation
+        Path("CHANGELOG.md"),                       # History of the retired host removal
         Path("feedback_submissions.json"),         # Historical mock CS data
         # Test suites:
         Path("tests/test_site_config.py"),          # This test suite

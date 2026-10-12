@@ -1,33 +1,16 @@
-# Python
+# Python (tests and build tools only)
 __pycache__/
 *.py[cod]
-*$py.class
-*.so
-.Python
-env/
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-share/python-wheels/
+.pytest_cache/
+.ruff_cache/
 *.egg-info/
-.installed.cfg
-*.egg
 
 # Virtual environments
 venv/
-.env
-.venv
-env.bak/
-venv.bak/
+.venv/
+
+# Node
+node_modules/
 
 # IDEs
 .idea/
@@ -39,15 +22,20 @@ venv.bak/
 .DS_Store
 Thumbs.db
 
-# Any temporary data or backups
+# Temporary files and backups
 *.log
 tmp/
 temp/
-.pytest_cache/
+
+# Local ticket exports may hold contact details; never commit. Remove this
+# line one release after the legacy feedback service is gone.
 feedback_submissions.json
 
-# Secrets & Local Configurations
+# Secrets and local configuration
+.env
 .env*
+.wrangler/
+.dev.vars
 *.pem
 *.key
 *.cert

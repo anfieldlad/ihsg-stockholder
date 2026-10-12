@@ -10,7 +10,6 @@ const repoRoot = process.cwd();
 const authModPath = path.resolve(repoRoot, 'public/src/auth.js');
 const vendorBundlePath = path.resolve(repoRoot, 'public/assets/vendor/firebase-auth.js');
 const indexHtmlPath = path.resolve(repoRoot, 'public/index.html');
-const vercelJsonPath = path.resolve(repoRoot, 'vercel.json');
 const headersPath = path.resolve(repoRoot, 'public/_headers');
 
 // 1. Module load smoke
@@ -107,23 +106,13 @@ assert(!indexHtml.includes('user.photoURL') && !indexHtml.includes('user.photoUr
 console.log('  [PASS] Header UI meets all UX/privacy specs');
 
 // 8. CSP additions
-console.log('[Test 8] CSP additions in vercel.json and public/_headers...');
-const vercelJson = JSON.parse(fs.readFileSync(vercelJsonPath, 'utf8'));
-let cspFound = '';
-for (const entry of vercelJson.headers || []) {
-  for (const h of entry.headers || []) {
-    if (h.key === 'Content-Security-Policy') cspFound = h.value;
-  }
-}
-assert(cspFound.includes('https://identitytoolkit.googleapis.com'), 'CSP must include identitytoolkit');
-assert(cspFound.includes('https://securetoken.googleapis.com'), 'CSP must include securetoken');
-assert(cspFound.includes('https://accounts.google.com'), 'CSP must include accounts.google.com');
-assert(cspFound.includes('https://ihsg-storm.firebaseapp.com'), 'CSP must include ihsg-storm.firebaseapp.com');
-
+console.log('[Test 8] CSP additions in public/_headers...');
 const headersText = fs.readFileSync(headersPath, 'utf8');
-assert(headersText.includes('identitytoolkit.googleapis.com'), '_headers must include identitytoolkit');
-assert(headersText.includes('accounts.google.com'), '_headers must include accounts.google.com');
-console.log('  [PASS] CSP headers verified across vercel.json and public/_headers');
+assert(headersText.includes('https://identitytoolkit.googleapis.com'), '_headers must include identitytoolkit');
+assert(headersText.includes('https://securetoken.googleapis.com'), '_headers must include securetoken');
+assert(headersText.includes('https://accounts.google.com'), '_headers must include accounts.google.com');
+assert(headersText.includes('https://ihsg-storm.firebaseapp.com'), '_headers must include ihsg-storm.firebaseapp.com');
+console.log('  [PASS] CSP headers verified in public/_headers');
 
 // 9. Session restoration on boot with lightweight hint 'ihsg_auth_hint'
 console.log('[Test 9] Session restoration on boot via ihsg_auth_hint...');
