@@ -28,6 +28,7 @@ import {
 
 // Free users see the first 20 rows of the investor ranking (Pro sees all).
 const INV_FREE_CAP = 20;
+const EARLY_ACCESS_TTL_MS = 60 * 1000;
 const PRO_TIERS = ['pro', 'pakar', 'investor'];
 
 export const storeConfig = {
@@ -85,6 +86,7 @@ export const storeConfig = {
     // Pro Gates & Freemium v2
     proOpen: false,
     proWhy: 'general',
+    earlyAccess: { seatsLeft: null, at: 0 },
 
     // Customer Success & Feedback Gating (B2)
     feedbackAvailable: false,
@@ -935,10 +937,43 @@ export const storeConfig = {
         }
         this.proWhy = why;
         this.proOpen = true;
+        this.loadEarlyAccess();
         trackLockedClick(why);
         if (window.location.hash !== `#/pro/${why}`) {
             history.pushState(null, '', `#/pro/${why}`);
         }
+    },
+
+    // Early-access seats (public endpoint). Cached 60s; failures are silent and
+    // leave the sheet in its safe default (disabled "belum dibuka" button).
+    async loadEarlyAccess() {
+        const now = Date.now();
+        if (this.earlyAccess.seatsLeft !== null && now - this.earlyAccess.at < EARLY_ACCESS_TTL_MS) return;
+        try {
+            const res = await fetch('/api/v1/early-access');
+            if (!res.ok) return;
+            const data = await res.json();
+            const n = Number(data && data.seats_left);
+            if (!Number.isFinite(n) || n < 0) return;
+            this.earlyAccess = { seatsLeft: Math.floor(n), at: Date.now() };
+        } catch (_) { /* silent */ }
+    },
+
+    // 'unknown' | 'cta' (signed out, seats left) | 'info' (signed in, seats left) | 'full'
+    get proEaState() {
+        const n = this.earlyAccess.seatsLeft;
+        if (n === null || n === undefined) return 'unknown';
+        if (n <= 0) return 'full';
+        if (this.user) return 'info';
+        // Session still restoring: do not offer sign-in yet (it may be a signed-in user).
+        return this.authRestoring ? 'unknown' : 'cta';
+    },
+
+    get proEaNote() {
+        const st = this.proEaState;
+        if (st === 'cta' || st === 'info') return COPY.pro_sheet.ea_open.replace('{n}', String(this.earlyAccess.seatsLeft));
+        if (st === 'full') return COPY.pro_sheet.ea_full;
+        return '';
     },
 
     closePro() {

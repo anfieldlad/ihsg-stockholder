@@ -1180,7 +1180,8 @@
         </div>
 
         <div class="pro-actions">
-          <button class="btn pri" type="button" disabled x-text="C.pro_sheet.cta_disabled">Pro belum dibuka untuk umum</button>
+          <p class="pro-ea-note" id="proEaNote" aria-live="polite" x-text="proEaNote"></p>
+          <button class="btn pri" id="proEaBtn" type="button" :disabled="proEaState !== 'cta' || authLoading" @click="proEaState === 'cta' && login()" x-text="proEaState === 'cta' ? C.pro_sheet.cta_early_access : C.pro_sheet.cta_disabled">Pro belum dibuka untuk umum</button>
           <button class="btn sec" type="button" @click="closePro()" x-text="C.pro_sheet.btn_close">Tutup</button>
         </div>
       </div>
