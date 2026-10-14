@@ -2937,8 +2937,10 @@ html { scroll-padding-bottom: calc(var(--bnav-h) + 16px); scroll-padding-top: ca
 .pt-soon { font-weight: 500; color: var(--ink3); }
 .pro-actions { display: grid; gap: 8px; margin-top: 20px; }
 .pro-actions .btn { width: 100%; }
-/* Reserved 2-line slot so the early-access note never shifts the buttons */
-.pro-ea-note { margin: 0; min-height: 2.8em; font-size: 13px; line-height: 1.4; color: var(--ink3); }
+/* Dedicated disabled look (opacity:.45 gave 2.09:1): label --ink3 on --sunk fill, >=4.5:1 light + dark */
+.pro-actions .btn:disabled { opacity: 1; background-color: var(--sunk); color: var(--ink3); border-color: var(--line2); }
+/* Reserved 3-line slot (longest CTA copy wraps to 3 lines at 375px) so the note never shifts the buttons */
+.pro-ea-note { margin: 0; min-height: 4.2em; font-size: 13px; line-height: 1.4; color: var(--ink3); }
 
 /* Quiet "not built yet" states for Pro: muted, not interactive */
 .soon {
