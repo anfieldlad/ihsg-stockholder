@@ -26,6 +26,7 @@ import {
     HINT_RESTORE_CAP_MS
 } from './auth.js';
 import { diffMixin } from './diff.js';
+import { screenerMixin, matchStock } from './screener.js';
 
 // Free users see the first 20 rows of the investor ranking (Pro sees all).
 const INV_FREE_CAP = 20;
@@ -171,6 +172,7 @@ export const storeConfig = {
                 if (!authState.user) this.akunOpen = false;
                 if (this.isPro && this.proOpen) this.closePro();
                 this.diffOnAuthChange();
+                this.screenerOnAuthChange();
             });
             const redirectPending = hasPendingRedirect();
             initAuth().catch((err) => {
@@ -368,6 +370,7 @@ export const storeConfig = {
 
         this.stockMap = sMap;
         this.investorMap = iMap;
+        this.ensureScreenerIndex();
 
         // Build sorted investor list (ranked by holdings count, then largest stake)
         this.investorList = Object.values(iMap).sort((a, b) => {
@@ -450,18 +453,24 @@ export const storeConfig = {
     get filteredStocks() {
         let stocks = Object.values(this.stockMap);
 
-        // Filter chips
-        if (this.stockFilter === 'foreign') {
-            stocks = stocks.filter(s => {
-                const fgnPct = s.holders
-                    .filter(h => h.local_foreign === 'F' || h.local_foreign === 'A')
-                    .reduce((sum, h) => sum + h.percentage, 0);
-                return fgnPct >= 20;
-            });
-        } else if (this.stockFilter === 'many') {
-            stocks = stocks.filter(s => s.holders.length >= 6);
-        } else if (this.stockFilter === 'scrip') {
-            stocks = stocks.filter(s => s.holders.some(h => !h.local_foreign || (h.local_foreign !== 'L' && h.local_foreign !== 'F' && h.local_foreign !== 'A')));
+        if (this.isScreenerActive) {
+            this.ensureScreenerIndex();
+            const matched = new Set(this.screenerIndex.filter(s => matchStock(s, this.screenerFilters)).map(s => s.c));
+            stocks = stocks.filter(s => matched.has(s.code));
+        } else {
+            // Filter chips
+            if (this.stockFilter === 'foreign') {
+                stocks = stocks.filter(s => {
+                    const fgnPct = s.holders
+                        .filter(h => h.local_foreign === 'F' || h.local_foreign === 'A')
+                        .reduce((sum, h) => sum + h.percentage, 0);
+                    return fgnPct >= 20;
+                });
+            } else if (this.stockFilter === 'many') {
+                stocks = stocks.filter(s => s.holders.length >= 6);
+            } else if (this.stockFilter === 'scrip') {
+                stocks = stocks.filter(s => s.holders.some(h => !h.local_foreign || (h.local_foreign !== 'L' && h.local_foreign !== 'F' && h.local_foreign !== 'A')));
+            }
         }
 
         // Sorting
@@ -512,6 +521,9 @@ export const storeConfig = {
     },
 
     setStockFilter(filter) {
+        if (this.isScreenerActive) {
+            this.screenerClear();
+        }
         this.stockFilter = filter;
         this.stockLimit = 30;
         this.fetchVisiblePrices();
@@ -940,6 +952,9 @@ export const storeConfig = {
             return;
         }
         this.proWhy = why;
+        if (why === 'screener') {
+            this.prepareScreenerProGate();
+        }
         this.proOpen = true;
         this.loadEarlyAccess();
         trackLockedClick(why);
@@ -1184,13 +1199,17 @@ export const storeConfig = {
             }
 
             // Escape closes search palette, pro sheet, or detail
-            if (e.key === 'Tab' && this.diffTrapKey(e)) {
+            if (e.key === 'Tab' && (this.diffTrapKey(e) || this.screenerTrapKey(e))) {
                 e.preventDefault();
                 return;
             }
             if (e.key === 'Escape') {
                 if (this.searchOpen) {
                     this.closeSearch();
+                    return;
+                }
+                if (this.screenerOpen) {
+                    this.screenerCloseSheet();
                     return;
                 }
                 if (this.diffOpen) {
@@ -1255,3 +1274,5 @@ export const storeConfig = {
 
 // F1 diff module: merge by descriptor so getters stay live getters (spread would evaluate them once).
 Object.defineProperties(storeConfig, Object.getOwnPropertyDescriptors(diffMixin));
+// F5 screener module: merge by descriptor
+Object.defineProperties(storeConfig, Object.getOwnPropertyDescriptors(screenerMixin));

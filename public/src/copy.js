@@ -156,10 +156,6 @@ export const COPY = {
     price_body: "Harga dari bursa dan tertunda sekitar 15 menit.",
     btn_close: "Tutup"
   },
-  soon: {
-    label: "Sedang dibangun",
-    screener: "Screener"
-  },
   pro_gates: {
     btn_see: "Lihat Fitur Pro",
     investor_rank: {
@@ -173,6 +169,10 @@ export const COPY = {
     investor_portfolio: {
       title: "Portofolio lengkap",
       benefit: "Lihat semua saham yang dimiliki investor ini, bukan hanya 8 teratas."
+    },
+    screener: {
+      title: "Screener saham",
+      benefit: "Saring 961 saham berdasarkan porsi asing, konsentrasi, jumlah pemegang, dan jenis pemegang."
     }
   },
   pro_sheet: {
@@ -188,7 +188,7 @@ export const COPY = {
       { feature: "Portofolio per investor", free: "8 teratas", pro: "Semua", soon: false },
       { feature: "Peringkat investor", free: "20 teratas", pro: "Semua", soon: false },
       { feature: "Perubahan antar-bulan", free: "Ringkasan 5 teratas", pro: "Lengkap", soon: false },
-      { feature: "Screener saham", free: "–", pro: "Segera", soon: true },
+      { feature: "Screener saham", free: "–", pro: "Ya", soon: false },
       { feature: "Daftar pantau saham", free: "–", pro: "Segera", soon: true },
       { feature: "Pengingat saat data KSEI diperbarui", free: "–", pro: "Segera", soon: true }
     ],
@@ -368,5 +368,37 @@ export const COPY = {
   mock_extras: {
     paneEmpty: "Pilih saham atau investor untuk melihat detail.",
     paneKeys: "↑ ↓ navigasi · Enter buka · Ctrl K cari · Esc tutup"
+  },
+  screener: {
+    title: "Screener Saham",
+    chip: "Screener",
+    foreign: "Kepemilikan asing",
+    foreign_hint: "Total porsi pemegang asing",
+    conc: "Konsentrasi",
+    conc_hint: "Porsi gabungan",
+    conc_basis: "Hitung dari",
+    holders: "Jumlah pemegang",
+    holders_hint: "Pemegang ≥1%",
+    types: "Jenis pemegang",
+    types_hint: "Boleh pilih lebih dari satu",
+    tags: {
+      b: "Ada BUMN / Sovereign",
+      d: "Ada Dapen / Asuransi",
+      x: "Institusi asing",
+      m: "Mayoritas individu"
+    },
+    count: "Menampilkan {n} dari {total} saham",
+    none: "Tidak ada saham yang cocok. Longgarkan satu filter.",
+    empty_t: "Tidak ada saham yang cocok",
+    empty_p: "Kombinasi filter ini tidak menghasilkan saham. Coba longgarkan satu filter.",
+    apply: "Terapkan Filter",
+    reset: "Reset",
+    clear: "Hapus semua filter",
+    note: "Klasifikasi berdasarkan tipe investor KSEI. Informasi umum, bukan nasihat investasi.",
+    opt_all: "Semua",
+    sub_top1: "Top 1",
+    sub_top3: "Top 3",
+    holders_6plus: "> 5",
+    edit: "Ubah"
   }
 };

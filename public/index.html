@@ -175,6 +175,7 @@
     <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><path d="M12 1v2m0 18v2M4.22 4.22l1.42 1.42m12.72 12.72 1.42 1.42M1 12h2m18 0h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></symbol>
     <symbol id="i-moon" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></symbol>
     <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+    <symbol id="i-sliders" viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></symbol>
   </svg>
 
   <!-- Desktop Left Rail (>=1024px) -->
@@ -342,16 +343,27 @@
 
               <div class="tools">
                 <div class="chips" role="group" id="chips-stocks">
-                  <button class="chip" type="button" @click="setStockFilter('all')" :aria-pressed="stockFilter === 'all'">Semua</button>
+                  <button class="chip" type="button" @click="setStockFilter('all')" :aria-pressed="stockFilter === 'all' && !isScreenerActive">Semua</button>
                   <button class="chip" type="button" @click="setStockFilter('foreign')" :aria-pressed="stockFilter === 'foreign'">Dominasi Asing</button>
                   <button class="chip" type="button" @click="setStockFilter('many')" :aria-pressed="stockFilter === 'many'">Pemegang Terbanyak</button>
                   <button class="chip" type="button" @click="setStockFilter('scrip')" :aria-pressed="stockFilter === 'scrip'">Warkat / Scrip</button>
-                  <button class="chip" type="button" x-show="!isPro" @click="openPro('screener')" aria-label="Screener saham (Fitur Pro)">
+                  <button class="chip lock-chip" type="button" id="chipLock" x-show="!isPro" @click="openPro('screener')" aria-label="Screener saham (Fitur Pro)">
                     <svg class="i s"><use href="#i-lock"/></svg>
                     <span>Screener</span>
                   </button>
-                  <span class="chip chip-soon" x-show="isPro" x-cloak role="note">
-                    <span x-text="C.soon.screener">Screener</span><span class="chip-soon-tag" x-text="C.soon.label">Sedang dibangun</span>
+                  <button class="chip" type="button" id="chipIdle" x-show="isPro && !isScreenerActive" x-cloak @click="screenerOpenSheet()" aria-haspopup="dialog" aria-label="Buka Screener saham">
+                    <svg class="i s"><use href="#i-sliders"/></svg>
+                    <span>Screener</span>
+                  </button>
+                  <span class="chip sc-on" id="chipOn" x-show="isPro && isScreenerActive" x-cloak role="group" aria-pressed="true">
+                    <button type="button" class="chip-inner-btn" id="chipOpen" @click="screenerOpenSheet()" aria-haspopup="dialog" :aria-label="`Screener, ${screenerActiveCount} filter aktif. Ubah`">
+                      <svg class="i s"><use href="#i-sliders"/></svg>
+                      <span>Screener</span>
+                      <span class="sc-n" x-text="screenerActiveCount"></span>
+                    </button>
+                    <button type="button" class="sc-x" id="chipClear" @click="screenerClear()" aria-label="Hapus semua filter Screener">
+                      <svg class="i s"><use href="#i-x"/></svg>
+                    </button>
                   </span>
                   <!-- Inline Sort Select (1-Row Unified Controls on Mobile) -->
                   <select class="sortsel" :value="stockSortKey" @change="setStockSort($event.target.value)" aria-label="Urutkan Saham">
@@ -361,6 +373,17 @@
                     <option value="local">Urutkan: Porsi Domestik</option>
                   </select>
                 </div>
+              </div>
+
+              <!-- Screener Active Summary Strip (Pro) -->
+              <div class="sc-sumline" id="sumline" x-show="isScreenerActive" x-cloak>
+                <span>Menampilkan <b class="num" x-text="fmtNum(filteredStocks.length)">0</b> dari <b class="num" x-text="fmtNum(totalStocks || 961)">961</b> saham</span>
+                <button class="sc-link" type="button" id="sumEdit" @click="screenerOpenSheet()" x-text="C.screener.edit">Ubah</button>
+              </div>
+              <div class="sc-tags" id="sumTags" x-show="isScreenerActive" x-cloak>
+                <template x-for="t in screenerActiveTags" :key="t">
+                  <span class="sc-tag" x-text="t"></span>
+                </template>
               </div>
             </div>
 
@@ -388,8 +411,9 @@
               <!-- Empty State -->
               <template x-if="!loading && !error && filteredStocks.length === 0">
                 <div class="state">
-                  <b x-text="C.search.empty_title">Tidak Ditemukan</b>
-                  <p>Tidak ada saham yang sesuai dengan filter.</p>
+                  <b x-text="isScreenerActive ? C.screener.empty_t : C.search.empty_title">Tidak Ditemukan</b>
+                  <p x-text="isScreenerActive ? C.screener.empty_p : 'Tidak ada saham yang sesuai dengan filter.'"></p>
+                  <button x-show="isScreenerActive" class="btn sec" type="button" id="emptyReset" @click="screenerClear()" x-text="C.screener.clear">Hapus semua filter</button>
                 </div>
               </template>
 
@@ -436,14 +460,15 @@
                   </span>
 
                   <!-- Mobile 3rd Line Info -->
-                  <span class="m3">
-                    <span x-text="`Pemegang terbesar ${fmtPct(s.topHolder ? s.topHolder.percentage : s.holders[0]?.percentage)} · ${toTitleCase(s.topHolder ? s.topHolder.investor : s.holders[0]?.investor)}`"></span>
+                  <span class="m3" :class="{ 'sc-m3-stat': isScreenerActive }">
+                    <span x-show="!isScreenerActive" x-text="`Pemegang terbesar ${fmtPct(s.topHolder ? s.topHolder.percentage : s.holders[0]?.percentage)} · ${toTitleCase(s.topHolder ? s.topHolder.investor : s.holders[0]?.investor)}`"></span>
+                    <span x-show="isScreenerActive" x-text="`Top1 ${fmtPct(s.screenerTop1 != null ? s.screenerTop1 : (s.topHolder ? s.topHolder.percentage : s.holders[0]?.percentage))} · Asing ${fmtPct(s.screenerForeign != null ? s.screenerForeign : 0)}`"></span>
                   </span>
 
                   <!-- Desktop Container Query Cells -->
                   <div class="cell r v num holder-cell">
                     <span class="num bold" x-text="fmtPct(s.topHolder ? s.topHolder.percentage : s.holders[0]?.percentage)"></span>
-                    <span class="sub-hname" :title="s.topHolder ? s.topHolder.investor : s.holders[0]?.investor" x-text="toTitleCase(s.topHolder ? s.topHolder.investor : s.holders[0]?.investor)"></span>
+                    <span class="sub-hname" :title="isScreenerActive ? `Asing ${fmtPct(s.screenerForeign)}` : (s.topHolder ? s.topHolder.investor : s.holders[0]?.investor)" x-text="isScreenerActive ? `Asing ${fmtPct(s.screenerForeign)}` : toTitleCase(s.topHolder ? s.topHolder.investor : s.holders[0]?.investor)"></span>
                   </div>
                   <span class="cell r v num opt1" x-text="s.holders.length"></span>
                   <span class="cell nm opt2" :title="s.topHolder ? s.topHolder.investor : s.holders[0]?.investor" x-text="toTitleCase(s.topHolder ? s.topHolder.investor : s.holders[0]?.investor)"></span>
@@ -1318,8 +1343,37 @@
       </div>
 
       <div class="db" tabindex="0" role="region" aria-label="Perbandingan Gratis dan Pro">
-        <h2 x-text="C.pro_sheet.title">Gratis dan Pro</h2>
-        <p class="sub" x-text="C.pro_sheet.subtitle"></p>
+        <!-- Screener Pro Gate Preview Block -->
+        <template x-if="proWhy === 'screener'">
+          <div class="sc-gate-block">
+            <span class="sc-pro-tag"><svg class="i s"><use href="#i-lock"/></svg>Fitur Pro</span>
+            <h2 class="sc-gate-h" x-text="C.pro_gates.screener.title">Screener saham</h2>
+            <p class="sub" x-text="C.pro_gates.screener.benefit">Saring 961 saham berdasarkan porsi asing, konsentrasi, jumlah pemegang, dan jenis pemegang.</p>
+            <div class="sc-prevbox" aria-label="Contoh tampilan Screener">
+              <div role="img" aria-label="Contoh hasil Screener: saham dengan porsi asing 50% atau lebih">
+                <div class="sc-pro-tag sc-ex-tag">Contoh · Asing ≥ 50%</div>
+                <div class="sc-gate-rows" id="gateRows">
+                  <template x-for="(s, idx) in screenerProGateRows" :key="s.c">
+                    <div class="sc-r" :class="`sc-fade-${idx}`" aria-hidden="true">
+                      <span class="sc-code" x-text="s.c"></span>
+                      <span class="sc-iss" x-text="toTitleCase(s.i)"></span>
+                      <span class="sc-stat">Asing <b x-text="`${fmtPct(s.f)}`"></b></span>
+                    </div>
+                  </template>
+                </div>
+                <div class="sc-prev sc-gate-n"><b x-text="fmtNum(screenerProGateCount)">128</b> saham cocok dari <span x-text="fmtNum(totalStocks || 961)">961</span></div>
+              </div>
+            </div>
+            <p class="sc-gate-ex">Contoh: <b><span x-text="`${fmtNum(screenerProGateCount)} saham`">128 saham</span></b> punya pemegang asing 50% atau lebih.</p>
+          </div>
+        </template>
+
+        <template x-if="proWhy !== 'screener'">
+          <div>
+            <h2 x-text="C.pro_sheet.title">Gratis dan Pro</h2>
+            <p class="sub" x-text="C.pro_sheet.subtitle"></p>
+          </div>
+        </template>
 
         <div class="pt-wrap">
           <table class="pt-table">
@@ -1442,6 +1496,107 @@
       </div>
     </div>
   </div>
+
+  <!-- F5: Screener Saham Sheet (Pro Only - Never rendered in Free DOM) -->
+  <template x-if="isPro">
+    <div class="sheet" id="screenerSheet" :class="{ on: screenerOpen }" role="dialog" aria-modal="true" aria-labelledby="scTitle">
+      <div class="sc-wrap">
+        <div class="dh">
+          <span class="tt" id="scTitle">Screener Saham <span class="sc-badge" id="scBadge" x-show="screenerDraftActiveCount > 0" :aria-label="`${screenerDraftActiveCount} filter aktif`" x-text="screenerDraftActiveCount"></span></span>
+          <button class="ib" type="button" id="screenerClose" @click="screenerCloseSheet()" aria-label="Tutup">
+            <svg class="i"><use href="#i-x"/></svg>
+          </button>
+        </div>
+        <div class="db" tabindex="0" id="screenerBody">
+          <div class="sc-g" id="g-foreign">
+            <div class="sc-gh">
+              <h3 x-text="C.screener.foreign">Kepemilikan asing</h3>
+              <span class="sc-hint" x-text="C.screener.foreign_hint">Total porsi pemegang asing</span>
+            </div>
+            <div class="sc-seg full" role="group" aria-label="Minimum porsi asing" data-key="foreign">
+              <button type="button" :aria-pressed="screenerDraft.foreign === '0'" @click="screenerSetDraft('foreign', '0')">Semua</button>
+              <button type="button" :aria-pressed="screenerDraft.foreign === '20'" @click="screenerSetDraft('foreign', '20')">≥ 20%</button>
+              <button type="button" :aria-pressed="screenerDraft.foreign === '50'" @click="screenerSetDraft('foreign', '50')">≥ 50%</button>
+              <button type="button" :aria-pressed="screenerDraft.foreign === '70'" @click="screenerSetDraft('foreign', '70')">≥ 70%</button>
+            </div>
+          </div>
+
+          <div class="sc-g" id="g-conc">
+            <div class="sc-gh">
+              <h3 x-text="C.screener.conc">Konsentrasi</h3>
+              <span class="sc-hint" x-text="C.screener.conc_hint">Porsi gabungan</span>
+            </div>
+            <div class="sc-sub">
+              <span x-text="C.screener.conc_basis">Hitung dari</span>
+              <div class="sc-seg" role="group" aria-label="Basis konsentrasi" data-key="base">
+                <button type="button" :aria-pressed="screenerDraft.base === 't1'" @click="screenerSetDraft('base', 't1')">Top 1</button>
+                <button type="button" :aria-pressed="screenerDraft.base === 't3'" @click="screenerSetDraft('base', 't3')">Top 3</button>
+              </div>
+            </div>
+            <div class="sc-seg full" role="group" aria-label="Minimum konsentrasi" data-key="conc">
+              <button type="button" :aria-pressed="screenerDraft.conc === '0'" @click="screenerSetDraft('conc', '0')">Semua</button>
+              <button type="button" :aria-pressed="screenerDraft.conc === '50'" @click="screenerSetDraft('conc', '50')">≥ 50%</button>
+              <button type="button" :aria-pressed="screenerDraft.conc === '70'" @click="screenerSetDraft('conc', '70')">≥ 70%</button>
+              <button type="button" :aria-pressed="screenerDraft.conc === '85'" @click="screenerSetDraft('conc', '85')">≥ 85%</button>
+            </div>
+          </div>
+
+          <div class="sc-g" id="g-holders">
+            <div class="sc-gh">
+              <h3 x-text="C.screener.holders">Jumlah pemegang</h3>
+              <span class="sc-hint" x-text="C.screener.holders_hint">Pemegang ≥1%</span>
+            </div>
+            <div class="sc-seg full" role="group" aria-label="Jumlah pemegang" data-key="holders">
+              <button type="button" :aria-pressed="screenerDraft.holders === 'all'" @click="screenerSetDraft('holders', 'all')">Semua</button>
+              <button type="button" :aria-pressed="screenerDraft.holders === '1-2'" @click="screenerSetDraft('holders', '1-2')">1–2</button>
+              <button type="button" :aria-pressed="screenerDraft.holders === '3-5'" @click="screenerSetDraft('holders', '3-5')">3–5</button>
+              <button type="button" :aria-pressed="screenerDraft.holders === '6+'" @click="screenerSetDraft('holders', '6+')">&gt; 5</button>
+            </div>
+          </div>
+
+          <div class="sc-g" id="g-tags">
+            <div class="sc-gh">
+              <h3 x-text="C.screener.types">Jenis pemegang</h3>
+              <span class="sc-hint" x-text="C.screener.types_hint">Boleh pilih lebih dari satu</span>
+            </div>
+            <button class="sc-chk" type="button" role="checkbox" :aria-checked="screenerDraft.tags.includes('b')" @click="screenerToggleTag('b')">
+              <span class="sc-box"><svg class="i s"><use href="#i-check"/></svg></span>
+              <span class="l">Ada BUMN / Sovereign<small>BUMN, pemerintah, dana kekayaan negara</small></span>
+              <span class="c" x-text="fmtNum(screenerTagCounts.b)"></span>
+            </button>
+            <button class="sc-chk" type="button" role="checkbox" :aria-checked="screenerDraft.tags.includes('d')" @click="screenerToggleTag('d')">
+              <span class="sc-box"><svg class="i s"><use href="#i-check"/></svg></span>
+              <span class="l">Ada Dapen / Asuransi<small>Dana pensiun dan perusahaan asuransi</small></span>
+              <span class="c" x-text="fmtNum(screenerTagCounts.d)"></span>
+            </button>
+            <button class="sc-chk" type="button" role="checkbox" :aria-checked="screenerDraft.tags.includes('x')" @click="screenerToggleTag('x')">
+              <span class="sc-box"><svg class="i s"><use href="#i-check"/></svg></span>
+              <span class="l">Institusi asing<small>Pemegang asing yang bukan individu</small></span>
+              <span class="c" x-text="fmtNum(screenerTagCounts.x)"></span>
+            </button>
+            <button class="sc-chk" type="button" role="checkbox" :aria-checked="screenerDraft.tags.includes('m')" @click="screenerToggleTag('m')">
+              <span class="sc-box"><svg class="i s"><use href="#i-check"/></svg></span>
+              <span class="l">Mayoritas individu<small>Porsi individu lebih besar dari non-individu</small></span>
+              <span class="c" x-text="fmtNum(screenerTagCounts.m)"></span>
+            </button>
+          </div>
+          <div class="sc-rm" x-text="C.screener.note">Klasifikasi berdasarkan tipe investor KSEI. Informasi umum, bukan nasihat investasi.</div>
+        </div>
+
+        <div class="sc-foot">
+          <div class="sc-prev" :class="{ zero: screenerDraftCount === 0 }" aria-live="polite">
+            <span x-show="screenerDraftCount > 0">Menampilkan <b x-text="fmtNum(screenerDraftCount)"></b> dari <span x-text="fmtNum(totalStocks || 961)"></span> saham</span>
+            <span x-show="screenerDraftCount === 0" x-text="C.screener.none">Tidak ada saham yang cocok. Longgarkan satu filter.</span>
+          </div>
+          <div class="sc-bar" aria-hidden="true"><i id="screenerPrevBar" x-effect="$el.style.width = ((screenerDraftCount / (totalStocks || 961)) * 100) + '%'"></i></div>
+          <div class="sc-acts">
+            <button class="btn sec ghost" type="button" id="screenerReset" :disabled="screenerDraftActiveCount === 0" @click="screenerResetDraft()" x-text="C.screener.reset">Reset</button>
+            <button class="btn pri" type="button" id="screenerApply" :disabled="screenerDraftCount === 0 && screenerDraftActiveCount > 0" @click="screenerApply()" x-text="C.screener.apply">Terapkan Filter</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </template>
 
   <!-- Akun Sheet -->
   <div class="sheet" id="akunSheet" :class="{ on: akunOpen }" role="dialog" aria-modal="true" aria-label="Akun">
@@ -1576,8 +1731,8 @@
 
   <!-- Shared Scrim Backdrop -->
   <div class="scrim" id="scrim"
-       :class="{ on: (cur && !window.matchMedia('(min-width: 1024px)').matches) || proOpen || akunOpen || infoOpen || searchOpen || showFeedbackModal || diffOpen }"
-       @click="closeDetail(); closePro(); closeAkun(); closeInfo(); closeSearch(); closeFeedbackModal(); diffCloseSheet()">
+       :class="{ on: (cur && !window.matchMedia('(min-width: 1024px)').matches) || proOpen || akunOpen || infoOpen || searchOpen || showFeedbackModal || diffOpen || screenerOpen }"
+       @click="closeDetail(); closePro(); closeAkun(); closeInfo(); closeSearch(); closeFeedbackModal(); diffCloseSheet(); screenerCloseSheet()">
   </div>
 
   <!-- Offline Status Toast -->

@@ -218,3 +218,20 @@ export function trackLoginStart() {
 export function trackLoginSuccess() {
   trackEvent('login_success');
 }
+
+/**
+ * F5 Screener Events (Pro)
+ */
+export function trackScreenerOpen() {
+  trackEvent('screener_open');
+}
+
+export function trackScreenerApply(activeGroups = 0) {
+  trackEvent('screener_apply', {
+    active_groups: Number(activeGroups) || 0
+  });
+}
+
+export function trackScreenerClear() {
+  trackEvent('screener_clear');
+}

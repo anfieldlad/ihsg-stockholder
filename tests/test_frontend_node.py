@@ -55,3 +55,8 @@ def test_node_analytics():
 def test_node_f1_diff_ui():
     """F1 diff UI: formatting, row states, gating, markup guards."""
     _run_node("tests/test_f1_diff.js")
+
+
+def test_node_screener():
+    """F5 Screener UI: acceptance metrics, derivation, gating, and store tests."""
+    _run_node("tests/test_screener.js")

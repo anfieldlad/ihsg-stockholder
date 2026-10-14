@@ -63,6 +63,20 @@ const requiredModules = [
       'initAuth',
       'FIREBASE_CONFIG'
     ]
+  },
+  {
+    path: `${srcPrefix}screener.js`,
+    exports: [
+      'deriveStockScreener',
+      'buildScreenerIndex',
+      'matchStock',
+      'countMatches',
+      'countActiveFilters',
+      'chipsText',
+      'screenerMixin',
+      'SCREENER_DEFAULT',
+      'SCREENER_STORAGE_KEY'
+    ]
   }
 ];
 
