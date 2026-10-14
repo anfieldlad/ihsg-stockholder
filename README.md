@@ -4,6 +4,11 @@
 
 IHSG Storm shows who owns what on the Indonesia Stock Exchange. It reads the monthly KSEI list of shareholders above 1 percent and lets you browse it by stock and by investor. It also shows delayed market prices.
 
+Key live features:
+- **F1 (Perubahan Antar-Bulan / Month-over-Month Diff Engine):** Analitik dashboard card, Pro sheet (all changes), and stock detail 'Riwayat Perubahan' toggle.
+- **F5 (Screener Saham Pro):** Multi-criteria client-side filter on tab Saham (Foreign %, Top 1/Top 3 concentration, holder count, institutional tags).
+- **Bantuan/FAQ overhaul:** 30 Q&As across 6 categories with dynamic category filtering and live search.
+
 This repository holds the website only: static files, the edge Worker, and the UI tests. It has no server code. The live site is https://ihsg.bad.ai.id.
 
 The data is a monthly snapshot and prices are delayed. This is not investment advice.
@@ -16,12 +21,16 @@ The data is a monthly snapshot and prices are delayed. This is not investment ad
        |-- static files from public/
        |-- /api/v1/*  -->  backend origin (repository: ihsg-backend)
 
-- public/ is plain HTML, CSS and JavaScript modules. Alpine.js handles state and ECharts draws charts. Fonts and libraries are vendored under public/assets, so the page loads nothing from a CDN.
+- public/ is plain HTML, CSS and JavaScript modules. Alpine.js handles state and ECharts draws charts. Fonts and libraries are vendored under public/assets, so the page loads nothing from a CDN. Modules in public/src/ power client features:
+  - diff.js: Month-over-Month Diff Engine (F1) view models, formatting, and row state.
+  - screener.js: Screener Saham Pro (F5) multi-criteria filtering, presets, and metrics.
+  - copy.js: Copy dictionary including all 30 FAQ Q&As and category definitions.
+  - store.js, auth.js, api.js, charts.js, normalize.js: Central Alpine store, authentication, backend API calls, charting, and data normalization.
 - worker.js serves public/ and forwards every request under /api/v1/ to the backend origin. It adds a shared secret header and the real client IP. Any other /api/ path returns 404, except four legacy price and feedback paths that the Worker maps to their /api/v1 equivalents for old cached copies of the site. That alias is temporary.
-- The backend repository (ihsg-backend) owns prices, feedback, login checks and billing. The browser calls it only through the Worker, so there is no cross-origin traffic.
+- The backend repository (ihsg-backend) owns prices, feedback, Month-over-Month diff data (/api/v1/diff/*), login checks and billing. The browser calls it only through the Worker, so there is no cross-origin traffic.
 - public/shareholder_data.json is built by the backend repository's data pipeline and committed here as a plain file.
 
-Pages: Saham (stocks), Investor, Analitik, Bantuan (FAQ). Routing uses the URL hash.
+Pages: Saham (stocks, with Screener Saham Pro), Investor, Analitik (whale map and F1 Diff card/sheet), Bantuan (FAQ with dynamic category filtering and live search). Routing uses the URL hash.
 
 ## 3. Local development
 
@@ -47,6 +56,11 @@ Site metadata (canonical URL, sitemap, robots, config.js) is generated from site
     python -m pytest                          # fast tests; browser tests are skipped by default
     for f in tests/test_*.js; do node "$f"; done
     python scripts/leak_guard.py
+
+Key Node test suites for frontend features:
+- `tests/test_f1_diff.js`: F1 Diff UI (formatting, row view models, gating, request behavior, and markup guards).
+- `tests/test_screener.js`: F5 Screener Saham (multi-criteria filter logic, presets, metrics derivation, and store integration).
+- `tests/test_faq.js`: FAQ overhaul (30 Q&As across 6 categories, dynamic category filtering, search, empty state, and 44px touch targets).
 
 Browser tests are run on demand, for example: python -m pytest tests/test_loading_state.py. Run them before changing layout or CSS, and check 375 px wide (phone) and 1024 px wide (desktop).
 
