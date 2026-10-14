@@ -60,3 +60,8 @@ def test_node_f1_diff_ui():
 def test_node_screener():
     """F5 Screener UI: acceptance metrics, derivation, gating, and store tests."""
     _run_node("tests/test_screener.js")
+
+
+def test_node_faq():
+    """FAQ: topic chips, search filter, empty state, and copy contracts."""
+    _run_node("tests/test_faq.js")

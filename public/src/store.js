@@ -1,5 +1,5 @@
 import { fetchHolderData, fetchPricesBatch, fetchSinglePrice } from './api.js';
-import { COPY } from './copy.js';
+import { COPY, FAQ_ITEMS, filterFaq } from './copy.js';
 import { toTitleCase, fmtNum, fmtShares, fmtPrice, fmtRp, fmtPct, fmtChangePct } from './utils.js';
 import { canonicalInvestorKey } from './normalize.js';
 import { renderWhaleChart } from './charts.js';
@@ -123,6 +123,15 @@ export const storeConfig = {
     faqCategory: 'all',
     faqSearch: '',
     openFaqIndex: null,
+    faqItems: FAQ_ITEMS,
+
+    get filteredFaq() {
+        return filterFaq(this.faqItems, this.faqCategory, this.faqSearch);
+    },
+
+    filterFaq(category, search) {
+        return filterFaq(this.faqItems, category !== undefined ? category : this.faqCategory, search !== undefined ? search : this.faqSearch);
+    },
 
     // Price debounce
     _priceDebounceTimer: null,

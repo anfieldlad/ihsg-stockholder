@@ -735,54 +735,19 @@
             </div>
 
             <div class="card" style="margin-top:16px">
-              <div class="faq-item">
-                <button class="faq-q" type="button" @click="openFaqIndex = openFaqIndex === 1 ? null : 1">
-                  <span>1. Apa itu IHSG Storm dan dari mana sumber datanya?</span>
-                  <svg class="i s" :style="openFaqIndex === 1 ? 'transform:rotate(180deg)' : ''"><use href="#i-chev"/></svg>
-                </button>
-                <div class="faq-a" x-show="openFaqIndex === 1">
-                  IHSG Storm adalah platform intelijen pasar modal independen untuk memantau struktur kepemilikan saham emiten BEI. Data kepemilikan bersumber dari arsip resmi KSEI (posisi akhir bulan), sedangkan harga saham bursa diperbarui dari Yahoo Finance dengan jeda waktu sekitar 15 menit.
+              <template x-for="item in filteredFaq" :key="item.id">
+                <div class="faq-item">
+                  <button class="faq-q" type="button" @click="openFaqIndex = openFaqIndex === item.id ? null : item.id" :aria-expanded="openFaqIndex === item.id ? 'true' : 'false'">
+                    <span x-text="item.q"></span>
+                    <svg class="i s" :style="openFaqIndex === item.id ? 'transform:rotate(180deg)' : ''"><use href="#i-chev"/></svg>
+                  </button>
+                  <div class="faq-a" x-show="openFaqIndex === item.id" x-html="item.a"></div>
                 </div>
-              </div>
+              </template>
 
-              <div class="faq-item">
-                <button class="faq-q" type="button" @click="openFaqIndex = openFaqIndex === 2 ? null : 2">
-                  <span>2. Mengapa IHSG Storm menggunakan ambang batas kepemilikan ≥1% bukan 5%?</span>
-                  <svg class="i s" :style="openFaqIndex === 2 ? 'transform:rotate(180deg)' : ''"><use href="#i-chev"/></svg>
-                </button>
-                <div class="faq-a" x-show="openFaqIndex === 2">
-                  Regulasi POJK mewajibkan keterbukaan publik untuk kepemilikan ≥5%. Namun, dokumen KSEI mencatat investor signifikan mulai dari 1%. Dengan menampilkan pemegang saham ≥1%, investor dapat melihat pergerakan pemegang saham tier-dua, sindikasi, dan investor institusi sebelum mereka mencapai batas 5%.
-                </div>
-              </div>
-
-              <div class="faq-item">
-                <button class="faq-q" type="button" @click="openFaqIndex = openFaqIndex === 3 ? null : 3">
-                  <span>3. Apa arti label Domestik, Asing, dan Warkat/Scrip?</span>
-                  <svg class="i s" :style="openFaqIndex === 3 ? 'transform:rotate(180deg)' : ''"><use href="#i-chev"/></svg>
-                </button>
-                <div class="faq-a" x-show="openFaqIndex === 3">
-                  Label <b>Domestik (Lokal)</b> menunjukkan entitas atau perorangan WNI berdomisili hukum di Indonesia. <b>Asing</b> adalah entitas internasional atau WNA. <b>Warkat / Scrip</b> adalah saham yang tercatat secara fisik (sertifikat warkat) di luar sistem tanpa warkat (scripless) C-BEST KSEI.
-                </div>
-              </div>
-
-              <div class="faq-item">
-                <button class="faq-q" type="button" @click="openFaqIndex = openFaqIndex === 4 ? null : 4">
-                  <span>4. Mengapa harga saham bursa tertunda 15 menit?</span>
-                  <svg class="i s" :style="openFaqIndex === 4 ? 'transform:rotate(180deg)' : ''"><use href="#i-chev"/></svg>
-                </button>
-                <div class="faq-a" x-show="openFaqIndex === 4">
-                  Feed data harga pasar modal disediakan melalui feed publik tertunda (delayed feed 15 menit) untuk kepatuhan regulasi bursa BEI. IHSG Storm dirancang untuk analisis kepemilikan struktural (smart money & konglomerasi), bukan platform eksekusi scalping harian.
-                </div>
-              </div>
-
-              <div class="faq-item">
-                <button class="faq-q" type="button" @click="openFaqIndex = openFaqIndex === 5 ? null : 5">
-                  <span>5. Bagaimana cara melaporkan jika ada data kepemilikan yang tidak sesuai?</span>
-                  <svg class="i s" :style="openFaqIndex === 5 ? 'transform:rotate(180deg)' : ''"><use href="#i-chev"/></svg>
-                </button>
-                <div class="faq-a" x-show="openFaqIndex === 5">
-                  Anda dapat menggunakan tombol <b>"Laporkan Kesalahan Data"</b> di bagian bawah halaman atau klik tombol lapor di dalam kartu detail saham. Tim audit data kami meninjau setiap masukan terhadap rujukan pengumuman resmi bursa dan KSEI dalam kurun 1x24-48 jam kerja.
-                </div>
+              <!-- Empty State -->
+              <div class="state" id="faqEmpty" x-show="filteredFaq.length === 0">
+                <p x-text="C.faq && C.faq.empty ? C.faq.empty : C.states.empty_search">Tidak ada pertanyaan yang sesuai.</p>
               </div>
             </div>
 

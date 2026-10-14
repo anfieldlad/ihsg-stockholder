@@ -1,5 +1,53 @@
 // Copy strings for IHSG Storm (from Andy's copy-strings.json + Oscar's freemium v2 + Pam's ui-spec v2)
 
+export const FAQ_ITEMS = [
+  {
+    id: 1,
+    cat: "ksei",
+    q: "1. Apa itu IHSG Storm dan dari mana sumber datanya?",
+    a: "IHSG Storm adalah platform intelijen pasar modal independen untuk memantau struktur kepemilikan saham emiten BEI. Data kepemilikan bersumber dari arsip resmi KSEI (posisi akhir bulan), sedangkan harga saham bursa diperbarui dari Yahoo Finance dengan jeda waktu sekitar 15 menit."
+  },
+  {
+    id: 2,
+    cat: "ksei",
+    q: "2. Mengapa IHSG Storm menggunakan ambang batas kepemilikan ≥1% bukan 5%?",
+    a: "Regulasi POJK mewajibkan keterbukaan publik untuk kepemilikan ≥5%. Namun, dokumen KSEI mencatat investor signifikan mulai dari 1%. Dengan menampilkan pemegang saham ≥1%, investor dapat melihat pergerakan pemegang saham tier-dua, sindikasi, dan investor institusi sebelum mereka mencapai batas 5%."
+  },
+  {
+    id: 3,
+    cat: "ksei",
+    q: "3. Apa arti label Domestik, Asing, dan Warkat/Scrip?",
+    a: "Label <b>Domestik (Lokal)</b> menunjukkan entitas atau perorangan WNI berdomisili hukum di Indonesia. <b>Asing</b> adalah entitas internasional atau WNA. <b>Warkat / Scrip</b> adalah saham yang tercatat secara fisik (sertifikat warkat) di luar sistem tanpa warkat (scripless) C-BEST KSEI."
+  },
+  {
+    id: 4,
+    cat: "jadwal",
+    q: "4. Mengapa harga saham bursa tertunda 15 menit?",
+    a: "Feed data harga pasar modal disediakan melalui feed publik tertunda (delayed feed 15 menit) untuk kepatuhan regulasi bursa BEI. IHSG Storm dirancang untuk analisis kepemilikan struktural (smart money & konglomerasi), bukan platform eksekusi scalping harian."
+  },
+  {
+    id: 5,
+    cat: "legal",
+    q: "5. Bagaimana cara melaporkan jika ada data kepemilikan yang tidak sesuai?",
+    a: "Anda dapat menggunakan tombol <b>\"Laporkan Kesalahan Data\"</b> di bagian bawah halaman atau klik tombol lapor di dalam kartu detail saham. Tim audit data kami meninjau setiap masukan terhadap rujukan pengumuman resmi bursa dan KSEI dalam kurun 1x24-48 jam kerja."
+  }
+];
+
+export const FAQ = FAQ_ITEMS;
+
+export function filterFaq(items = FAQ_ITEMS, category = 'all', search = '') {
+  const cat = (category || 'all').trim().toLowerCase();
+  const q = (search || '').trim().toLowerCase();
+  return (items || []).filter(item => {
+    const matchCat = cat === 'all' || item.cat.toLowerCase() === cat;
+    if (!matchCat) return false;
+    if (!q) return true;
+    const inQ = (item.q || '').toLowerCase().includes(q);
+    const inA = (item.a || '').toLowerCase().includes(q);
+    return inQ || inA;
+  });
+}
+
 export const COPY = {
   app: {
     name: "IHSG Storm",
@@ -400,5 +448,13 @@ export const COPY = {
     sub_top3: "Top 3",
     holders_6plus: "> 5",
     edit: "Ubah"
-  }
+  },
+  faq: {
+    title: "Pusat Bantuan & FAQ",
+    subtitle: "Pertanyaan umum seputar data kepemilikan efek KSEI dan keterbukaan publik IHSG Storm",
+    empty: "Tidak ada pertanyaan yang sesuai.",
+    empty_desc: "Coba gunakan kata kunci lain atau pilih topik Semua Topik.",
+    items: FAQ_ITEMS
+  },
+  faq_items: FAQ_ITEMS
 };

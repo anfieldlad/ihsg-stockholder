@@ -2032,6 +2032,21 @@ h1 {
   width: 100%;
   text-align: left;
   gap: 12px;
+  min-height: 44px;
+  cursor: pointer;
+}
+
+#v-faq .chips .chip {
+  position: relative;
+}
+#v-faq .chips .chip::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 44px;
+  transform: translateY(-50%);
 }
 
 .faq-a {
