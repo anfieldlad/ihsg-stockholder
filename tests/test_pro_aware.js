@@ -67,8 +67,8 @@ const skelIdx = html.indexOf('x-if="authRestoring && !user"');
 const masukIdx = html.indexOf('x-if="!authRestoring && !user"');
 assert(skelIdx > 0, 'header has a skeleton template for the restoring state');
 assert(masukIdx > skelIdx, 'Masuk button only renders when not restoring');
-assert(html.includes('x-show="!authRestoring && (!isPro || user)"') && html.includes("'pro-hold': tierLoading || isPro"), 'PRO button keeps its width (visibility hidden) while tier loads and for Pro users');
-assert(/\.pro\.pro-hold\s*\{[^}]*visibility:\s*hidden/.test(read('public/assets/css/style.css')), 'pro-hold hides but keeps layout');
+assert(html.includes('x-show="!authRestoring && !isPro && !tierLoading"') && html.includes("'pro-left': !!user"), 'PRO button hidden for Pro, while restoring, and while tier loads, orders left of avatar when signed in');
+assert(/\.pro\.pro-left\s*\{[^}]*order:\s*-1/.test(read('public/assets/css/style.css')), 'pro-left places PRO button left of avatar');
 {
   // Regression: Pro badge jumped right->left of avatar because the PRO upsell button showed during tier 'loading'.
   const userBlock = html.slice(html.indexOf('<div class="auth-user">'));

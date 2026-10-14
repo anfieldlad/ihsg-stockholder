@@ -52,6 +52,7 @@
   --num: var(--font);
   --r: 12px;
   --r-s: 8px;
+  --r-full: 999px;
   --shadow: 0 12px 40px -12px rgba(21, 24, 29, .25);
   --scrim: rgba(21, 24, 29, .45);
 }
@@ -91,6 +92,7 @@
   --num: var(--mono);
   --r: 10px;
   --r-s: 7px;
+  --r-full: 999px;
   --shadow: 0 20px 60px -10px rgba(0, 0, 0, .7);
   --scrim: rgba(0, 0, 0, .6);
 }
@@ -2869,8 +2871,9 @@ html { scroll-padding-bottom: calc(var(--bnav-h) + 16px); scroll-padding-top: ca
 @media (prefers-reduced-motion: reduce) { .auth-skel { animation: none; } }
 /* Tier skeleton reserves the Pro badge slot (left of avatar) so the badge swaps in without shifting */
 .auth-tier-skel { width: 38px; height: 24px; border-radius: 999px; }
-/* Header PRO upsell keeps its width (hidden) while tier loads and for Pro users, so the avatar x never moves */
-.pro.pro-hold { visibility: hidden; pointer-events: none; }
+/* When user is signed in, PRO button (for Free users) renders to the left of the avatar so the avatar docks cleanly at the right margin with 0px shift */
+.top-actions:has(.auth-user) .pro,
+.pro.pro-left { order: -1; }
 
 /* Avatar button: 32px visual, 44px invisible tap area */
 .auth-avatar {
@@ -2974,28 +2977,53 @@ html { scroll-padding-bottom: calc(var(--bnav-h) + 16px); scroll-padding-top: ca
    Small print >= 13px. --up/--down text only on --card/--bg, never on --sunk (4.25:1 in Terang). */
 #diffCard { grid-column: 1 / -1; }
 .df-period, .df-sub, .df-caveat, .df-src, .df-iss, .df-detail .df-note, .df-tile span { font-size: 13px; }
-.df-period { margin-top: 2px; color: var(--ink3); }
+.df-period {
+  margin-top: 2px;
+  color: var(--ink3);
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
 .df-period .df-change {
+  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 44px;
-  min-height: 44px;
+  height: 28px;
   padding: 0 10px;
-  margin-left: 8px;
+  margin-left: 0;
   vertical-align: middle;
-  font: 600 13px/1 var(--font);
+  font: 600 12px/1 var(--font);
   color: var(--accent-text);
-  background: var(--hover);
+  background: var(--card);
   border: 1px solid var(--line2);
   border-radius: var(--r-full);
   cursor: pointer;
   text-decoration: none;
-  transition: background-color var(--dur) var(--ease), border-color var(--dur) var(--ease), color var(--dur) var(--ease);
+  box-sizing: border-box;
+  flex-shrink: 0;
+  transition: background-color var(--dur) var(--ease), border-color var(--dur) var(--ease), color var(--dur) var(--ease), transform var(--dur) var(--ease);
+}
+.df-period .df-change::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  min-height: 44px;
+  transform: translate(-50%, -50%);
 }
 .df-period .df-change:hover {
+  background: var(--hover);
+  border-color: var(--ink3);
+  color: var(--ink);
+}
+.df-period .df-change:active {
+  transform: scale(0.97);
   background: var(--sunk);
-  border-color: var(--line);
 }
 .df-period .df-change:focus-visible {
   outline: 2px solid var(--accent-text);

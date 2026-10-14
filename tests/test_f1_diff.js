@@ -368,8 +368,8 @@ const diffHtml = html.slice(html.indexOf('id="diffCard"'), html.indexOf('<!-- Ca
 assert.ok(!/style="/.test(diffHtml), 'no inline style="" in new markup');
 const diffCss = css.slice(css.indexOf('/* ===== F1 diff'));
 assert.ok(!/#[0-9a-fA-F]{3,8}\b/.test(diffCss), 'no hex colours in diff CSS');
-assert.ok(/\.df-period\s+\.df-change\s*\{[^}]*min-width:\s*44px/.test(css), 'DEF-02: df-change has min-width: 44px');
-assert.ok(/\.df-period\s+\.df-change\s*\{[^}]*min-height:\s*44px/.test(css), 'DEF-02: df-change has min-height: 44px');
+assert.ok(/\.df-period\s+\.df-change::after\s*\{[^}]*width:\s*44px/.test(css) && /\.df-period\s+\.df-change::after\s*\{[^}]*height:\s*44px/.test(css), 'DEF-02: df-change has >=44px hit target via ::after');
+assert.ok(/\.df-period\s+\.df-change\s*\{[^}]*height:\s*28px/.test(css), 'DEF-02: df-change has sleek compact pill height');
 assert.ok(/\.fade-wrap\s*\{[^}]*padding-right:\s*28px/.test(css), 'DEF-03: fade-wrap reserves space for chevron');
 assert.ok(/OJK/.test(COPY.diff.source) && /KSEI via IDX/.test(COPY.diff.source), 'N-4: source + OJK not-advice line');
 assert.ok(/indikatif/i.test(COPY.diff.indicative), 'N-4: corporate-action heuristic flagged as indicative');
