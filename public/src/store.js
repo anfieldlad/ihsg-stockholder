@@ -86,7 +86,7 @@ export const storeConfig = {
     // Pro Gates & Freemium v2
     proOpen: false,
     proWhy: 'general',
-    earlyAccess: { seatsLeft: null, at: 0 },
+    earlyAccess: { seatsLeft: null, seatsTotal: null, at: 0 },
 
     // Customer Success & Feedback Gating (B2)
     feedbackAvailable: false,
@@ -955,7 +955,12 @@ export const storeConfig = {
             const data = await res.json();
             const n = Number(data && data.seats_left);
             if (!Number.isFinite(n) || n < 0) return;
-            this.earlyAccess = { seatsLeft: Math.floor(n), at: Date.now() };
+            const total = Number(data && data.seats_total);
+            this.earlyAccess = {
+              seatsLeft: Math.floor(n),
+              seatsTotal: Number.isFinite(total) && total >= 0 ? Math.floor(total) : null,
+              at: Date.now()
+            };
         } catch (_) { /* silent */ }
     },
 
@@ -971,7 +976,17 @@ export const storeConfig = {
 
     get proEaNote() {
         const st = this.proEaState;
-        if (st === 'cta' || st === 'info') return COPY.pro_sheet.ea_open.replace('{n}', String(this.earlyAccess.seatsLeft));
+        if (st === 'cta') {
+            let note = COPY.pro_sheet.ea_open.replace('{n}', String(this.earlyAccess.seatsLeft));
+            const total = this.earlyAccess.seatsTotal;
+            if (total !== null) {
+                note = note.replace('{total}', String(total) + ' ');
+            } else {
+                note = note.replace('{total}', '');
+            }
+            return note;
+        }
+        if (st === 'info') return COPY.pro_sheet.cta_disabled;
         if (st === 'full') return COPY.pro_sheet.ea_full;
         return '';
     },

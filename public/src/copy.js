@@ -200,8 +200,8 @@ export const COPY = {
       { feature: "Pengingat saat data KSEI diperbarui", free: "–", pro: "Segera", soon: true }
     ],
     cta_disabled: "Pro belum dibuka untuk umum",
-    cta_early_access: "Masuk dengan Google, dapat Pro gratis",
-    ea_open: "Pro belum dibuka untuk umum. 5 pengguna pertama yang masuk dengan Google otomatis dapat Pro (sisa {n} kursi).",
+    cta_early_access: "Masuk dengan Google",
+    ea_open: "Pro belum dibuka untuk umum. {total}pendaftar baru pertama yang masuk dengan Google otomatis dapat Pro (sisa {n} kursi).",
     ea_full: "Kursi akses awal sudah penuh.",
     btn_close: "Tutup"
   },
