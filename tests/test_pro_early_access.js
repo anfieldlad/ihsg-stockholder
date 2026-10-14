@@ -117,7 +117,8 @@ assert(html.includes(`:disabled="proEaState !== 'cta' || authLoading"`), 'button
 assert(html.includes(`@click="proEaState === 'cta' && login()"`), 'CTA starts existing Google sign-in');
 assert(html.includes('id="proEaNote"') && !/id="proEaNote"[^>]*x-show/.test(html) && !/id="proEaNote"[^>]*x-if/.test(html), 'note element always in DOM');
 const css = fs.readFileSync('public/assets/css/style.css', 'utf8');
-assert(/\.pro-ea-note\s*\{[^}]*min-height:\s*2\.8em/.test(css), 'note slot has reserved height');
+assert(/\.pro-ea-note\s*\{[^}]*min-height:\s*4\.2em/.test(css), 'note slot reserves 3 lines');
+assert(/\.pro-actions \.btn:disabled\s*\{[^}]*opacity:\s*1[^}]*color:\s*var\(--ink3\)/.test(css), 'pro sheet disabled button has dedicated high-contrast style');
 
 // 7. No promised duration in early-access copy, no hardcoded '5' in copy strings
 for (const k of ['cta_early_access', 'ea_open', 'ea_full']) assert(!/hari|bulan/i.test(COPY.pro_sheet[k]), `${k} has no duration`);
