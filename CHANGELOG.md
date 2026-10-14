@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Pro "Screener Saham" (F5): filter sheet, active-filter chip, summary strip and Free gate preview. New module `public/src/screener.js`, test `tests/test_screener.js`. Filter controls and chip have 44px touch targets. Known issue: the active Screener chip can be clipped at 375px width (the summary strip still shows the active state).
+- Screener (F5) fix: the active filter chip now scrolls fully into view at 375px width (D2 fix; `scrollTo` to its own snap point).
 - F1 "Perubahan Kepemilikan Bulanan": new card at the top of the Analitik tab (`#diffCard`) with Top 5 Akumulasi/Distribusi, real counts, source/as-of line, OJK not-advice line and an "indikatif" note for corporate-action/transfer flags. Free (and anonymous) sees the public `/api/v1/diff/summary` aggregate plus a lock card; Pro sees stat tiles and the full "Semua Perubahan" sheet (`#diffSheet`: search, chips incl. Aksi korporasi / Transfer / Pindah nama, type and origin filters, month selectors once 3+ snapshots exist, 100-row pages, row detail with exact shares). Stock sheet and pane gain a `Pemegang Saat Ini | Riwayat Perubahan` toggle. Gate is the single `history_mom` flag from `/me` (every paid tier is "Pro"); the server is the real check. New module `public/src/diff.js`, copy under `COPY.diff`, test `tests/test_f1_diff.js`.
 
 ### Changed
