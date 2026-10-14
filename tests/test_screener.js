@@ -323,7 +323,9 @@ assert.ok(/padding-block:\s*7px\s*!important;\s*margin-block:\s*-5px/.test(css),
 // D2: apply scrolls Screener chip into view (inline nearest, reduced-motion aware)
 {
   const src = fs.readFileSync('public/src/screener.js', 'utf8');
-  assert.ok(/getElementById\('chipOn'\)/.test(src) && /inline:\s*'nearest'/.test(src), 'apply scrolls chipOn inline:nearest');
+  assert.ok(/getElementById\('chipOn'\)/.test(src) && /chipsEl\.scrollTo\(\{\s*left:\s*Math\.max\(0,\s*left - gut\)/.test(src), 'apply scrolls chips row to chipOn snap point');
+  assert.ok(!/chip\.scrollIntoView/.test(src), 'chipOn must not use scrollIntoView (re-snapped by CSS scroll-snap)');
+  assert.ok(/scrollPaddingInlineStart/.test(src), 'scroll offset honours scroll-padding-inline-start');
   assert.ok(/prefers-reduced-motion: reduce/.test(src) && /reduce \? 'auto' : 'smooth'/.test(src), 'smooth scroll respects reduced motion');
   assert.ok(/\$nextTick\(afterRender\)/.test(src) && /offsetWidth !== 0/.test(src), 'chip scroll runs after Alpine $nextTick and guards zero-size chip');
 }

@@ -296,13 +296,16 @@ export const screenerMixin = {
     const scrollChip = () => {
       const chipsEl = document.getElementById('chips-stocks');
       if (chipsEl) chipsEl.scrollIntoView({ block: 'nearest' });
-      // D2: bring the Screener chip into view inside the horizontal chip scroller
+      // D2: align the Screener chip to the scroller's start edge so the target equals
+      // its own scroll-snap point (scrollIntoView gets re-snapped and left clipped).
       const chip = document.getElementById('chipOn');
       // Skip if chip has no layout box (x-show not rendered yet / hidden)
-      if (chip && chip.offsetWidth !== 0 && typeof chip.scrollIntoView === 'function') {
+      if (chipsEl && chip && chip.offsetWidth !== 0 && typeof chipsEl.scrollTo === 'function') {
         const reduce = typeof window !== 'undefined' && typeof window.matchMedia === 'function' &&
           window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-        chip.scrollIntoView({ inline: 'nearest', block: 'nearest', behavior: reduce ? 'auto' : 'smooth' });
+        const left = chip.getBoundingClientRect().left - chipsEl.getBoundingClientRect().left + chipsEl.scrollLeft;
+        const gut = parseFloat(getComputedStyle(chipsEl).scrollPaddingInlineStart) || 0;
+        chipsEl.scrollTo({ left: Math.max(0, left - gut), behavior: reduce ? 'auto' : 'smooth' });
       }
     };
     // Wait for Alpine to render x-show (#chipOn), then for layout via rAF
