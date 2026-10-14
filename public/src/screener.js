@@ -297,6 +297,13 @@ export const screenerMixin = {
       window.requestAnimationFrame(() => {
         const chipsEl = document.getElementById('chips-stocks');
         if (chipsEl) chipsEl.scrollIntoView({ block: 'nearest' });
+        // D2: bring the Screener chip into view inside the horizontal chip scroller
+        const chip = document.getElementById('chipOn');
+        if (chip && typeof chip.scrollIntoView === 'function') {
+          const reduce = typeof window !== 'undefined' && typeof window.matchMedia === 'function' &&
+            window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+          chip.scrollIntoView({ inline: 'nearest', block: 'nearest', behavior: reduce ? 'auto' : 'smooth' });
+        }
       });
     }
   },

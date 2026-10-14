@@ -941,7 +941,9 @@ h1 {
     width: calc(100% + (var(--gut) * 2)) !important;
     margin-inline: calc(var(--gut) * -1) !important;
     padding-inline: var(--gut) !important;
-    padding-block: 2px !important;
+    /* 7px block padding keeps 44px chip hit areas inside the scroll clip; negative margin cancels the extra layout height */
+    padding-block: 7px !important;
+    margin-block: -5px !important;
     gap: 6px !important;
   }
   .chips::-webkit-scrollbar {
@@ -3256,6 +3258,7 @@ button.df-row:focus-visible { outline: 2px solid var(--accent-text); outline-off
   height: 44px;
   min-width: 44px;
   min-height: 44px;
+  z-index: 1;
 }
 .sc-x:hover {
   background: rgba(255, 255, 255, 0.18);
@@ -3263,6 +3266,24 @@ button.df-row:focus-visible { outline: 2px solid var(--accent-text); outline-off
 .sc-x:focus-visible {
   outline: 2px solid var(--accent-text);
   outline-offset: 2px;
+}
+
+/* Screener chips: >=44px tall hit area, visual size unchanged */
+#chipIdle,
+#chipLock,
+#chipOpen {
+  position: relative;
+}
+#chipIdle::after,
+#chipLock::after,
+#chipOpen::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 44px;
+  transform: translateY(-50%);
 }
 
 .sc-sumline {
@@ -3288,6 +3309,17 @@ button.df-row:focus-visible { outline: 2px solid var(--accent-text); outline-off
   cursor: pointer;
   padding: 0;
   font-size: 13px;
+  position: relative;
+}
+/* >=44px hit area without changing visual size */
+.sc-link::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: -8px;
+  right: -8px;
+  height: 44px;
+  transform: translateY(-50%);
 }
 .sc-tags {
   display: flex;

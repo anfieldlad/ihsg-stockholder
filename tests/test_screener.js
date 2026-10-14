@@ -311,6 +311,22 @@ assert.ok(
   'sc-x clear button must have >=44px hit target via ::after'
 );
 
+// D1: 44px hit areas for Ubah link and Screener chips
+assert.ok(/\.sc-link::after\s*\{[^}]*height:\s*44px/.test(css), 'sc-link must have 44px hit area');
+assert.ok(
+  /#chipIdle::after,\s*#chipLock::after,\s*#chipOpen::after\s*\{[^}]*height:\s*44px/.test(css),
+  'Screener chips must have 44px hit area'
+);
+assert.ok(/\.sc-x::after\s*\{[^}]*z-index:\s*1/.test(css), 'sc-x hit area must stack above chip button');
+assert.ok(/padding-block:\s*7px\s*!important;\s*margin-block:\s*-5px/.test(css), 'chip scroller must not clip 44px hit areas');
+
+// D2: apply scrolls Screener chip into view (inline nearest, reduced-motion aware)
+{
+  const src = fs.readFileSync('public/src/screener.js', 'utf8');
+  assert.ok(/getElementById\('chipOn'\)/.test(src) && /inline:\s*'nearest'/.test(src), 'apply scrolls chipOn inline:nearest');
+  assert.ok(/prefers-reduced-motion: reduce/.test(src) && /reduce \? 'auto' : 'smooth'/.test(src), 'smooth scroll respects reduced motion');
+}
+
 // Desktop modal width 560px
 assert.ok(
   /#screenerSheet\s*\{[^}]*width:\s*560px/.test(css),
