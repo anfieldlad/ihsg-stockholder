@@ -2867,6 +2867,10 @@ html { scroll-padding-bottom: calc(var(--bnav-h) + 16px); scroll-padding-top: ca
   flex: 0 0 auto;
 }
 @media (prefers-reduced-motion: reduce) { .auth-skel { animation: none; } }
+/* Tier skeleton reserves the Pro badge slot (left of avatar) so the badge swaps in without shifting */
+.auth-tier-skel { width: 38px; height: 24px; border-radius: 999px; }
+/* Header PRO upsell keeps its width (hidden) while tier loads and for Pro users, so the avatar x never moves */
+.pro.pro-hold { visibility: hidden; pointer-events: none; }
 
 /* Avatar button: 32px visual, 44px invisible tap area */
 .auth-avatar {
