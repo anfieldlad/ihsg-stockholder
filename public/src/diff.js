@@ -11,6 +11,7 @@ const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', '
 const MINUS = '\u2212';
 const PAGE = 100;
 const BIG_PAGE = 500;
+const MAX_CLIENT_PAGES = 20;
 const CLIENT_CHIPS = ['CORP', 'TRANSFER']; // no backend param yet: filtered client-side over all pages
 export const DIFF_FEATURE = 'history_mom';
 
@@ -146,7 +147,7 @@ export function rowView(r, typeName = (t) => t) {
 
     let ppText; let ppCls; let sharesText; let extra = '';
     if (isEntity) {
-        ppText = D.val_not_counted; ppCls = 'zero'; sharesText = D.val_zero_shares;
+        ppText = D.val_not_counted; ppCls = 'zero'; sharesText = D.val_entity_shares;
         extra = fill(D.extra_prev_name, { name: toTitleCase(r.prev_investor || '') });
         pctLine = `${fmtPct2(currPct)}`;
     } else if (isDiluted) {
@@ -168,6 +169,7 @@ export function rowView(r, typeName = (t) => t) {
     const notes = [];
     if (isEntity) notes.push(fill(D.note_entity, { name: toTitleCase(r.prev_investor || '') }));
     if (isDiluted) notes.push(D.note_diluted);
+    if (r.status === 'EXIT') notes.push(D.note_exit);
     if (corp && !isDiluted) {
         const c = num(r.issuer_shares_change_pct);
         notes.push(fill(D.note_corp_event, { code: r.code, dir: c < 0 ? D.dir_down : D.dir_up, pct: NF[1].format(Math.abs(c)) }));
@@ -180,6 +182,15 @@ export function rowView(r, typeName = (t) => t) {
 
     const investor = toTitleCase(r.investor || '');
     const ariaPP = (isEntity || isDiluted || unchanged) ? '' : `, ${dPct < 0 ? D.aria_down : D.aria_up} ${NF[2].format(Math.abs(dPct))} ${D.aria_pp}`;
+
+    let exactCurr = fmtInt(r.curr_shares);
+    let exactDelta = sgn(dShares, fmtInt(Math.abs(dShares)));
+    if (r.status === 'EXIT') {
+        exactCurr = D.exact_exit_curr;
+        exactDelta = D.exact_exit_delta;
+    } else if (isEntity) {
+        exactDelta = D.exact_entity_delta;
+    }
 
     return {
         key: `${r.code}|${r.investor}|${r.status}`,
@@ -196,7 +207,7 @@ export function rowView(r, typeName = (t) => t) {
         hasNote,
         notes,
         exact: {
-            prev: fmtInt(r.prev_shares), curr: fmtInt(r.curr_shares), delta: sgn(dShares, fmtInt(Math.abs(dShares))),
+            prev: fmtInt(r.prev_shares), curr: exactCurr, delta: exactDelta,
             prevDate: fmtDateId(r.prev_date), currDate: fmtDateId(r.curr_date)
         },
         aria: `${r.code}, ${investor}, ${statusWord(r, unchanged)}${ariaPP}`
@@ -295,6 +306,8 @@ export const diffMixin = {
     _diffAbort: null,
     _diffTimer: null,
     _diffOpener: null,
+    _authEpoch: 0,
+    _stkAbort: null,
     _stkCache: {},
 
     // ----- gating (cosmetic; server enforces history_mom) -----
@@ -497,6 +510,7 @@ export const diffMixin = {
         };
         let all = [];
         let cursor = reset ? 0 : (s.cursor || 0);
+        let pages = 0;
         let res;
         do {
             res = await diffGet(`/api/v1/diff/table${qs({ ...base, limit: client ? BIG_PAGE : PAGE, cursor })}`, { token, signal: ctl && ctl.signal });
@@ -504,7 +518,8 @@ export const diffMixin = {
             if (!res.ok || !res.data || res.data.available === false) break;
             all = all.concat(res.data.rows || []);
             cursor = res.data.next_cursor;
-        } while (client && cursor != null);
+            pages++;
+        } while (client && cursor != null && pages < MAX_CLIENT_PAGES);
 
         s.loading = false; s.more = false;
         if (!res.ok) {
@@ -543,20 +558,52 @@ export const diffMixin = {
         // Free: never switch, pulse the inline lock block (no empty state ever appears)
         this.stkFlash = true;
         setTimeout(() => { this.stkFlash = false; }, 900);
+        this.stkScrollLockIntoView();
+    },
+    stkScrollLockIntoView() {
+        if (typeof document === 'undefined') return;
+        const sheet = document.getElementById('sheet');
+        const pane = document.getElementById('pane');
+        let el = null;
+        if (sheet && sheet.classList.contains('on')) {
+            el = sheet.querySelector('.df-lockinline');
+        } else if (pane && pane.offsetParent !== null) {
+            el = pane.querySelector('.df-lockinline');
+        } else {
+            const all = document.querySelectorAll('.df-lockinline');
+            for (let i = 0; i < all.length; i++) {
+                if (all[i].offsetParent !== null) { el = all[i]; break; }
+            }
+            if (!el && all.length) el = all[0];
+        }
+        if (!el || typeof el.scrollIntoView !== 'function') return;
+        const prefersReduced = typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        const isMobile = typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(max-width: 767px)').matches;
+        el.scrollIntoView({
+            behavior: prefersReduced ? 'auto' : 'smooth',
+            block: isMobile ? 'center' : 'nearest',
+            inline: 'nearest'
+        });
     },
     async stkLoad() {
         const code = this.cur && this.cur.kind === 'stock' ? this.cur.arg : null;
         if (!code || !this.canDiff) return;
         if (this._stkCache[code]) { this.stkChg = { code, loading: false, state: this._stkCache[code].state, rows: this._stkCache[code].rows, meta: this._stkCache[code].meta }; return; }
+        if (this._stkAbort) { try { this._stkAbort.abort(); } catch (_) {} }
+        const ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+        this._stkAbort = ctrl;
+        const epoch = this._authEpoch || 0;
         this.stkChg = { code, loading: true, state: '', rows: [], meta: null };
         const token = getToken();
         const out = (state, rows = [], meta = null) => {
+            if ((this._authEpoch || 0) !== epoch || !this.canDiff) return;
             if (!this.cur || this.cur.arg !== code) return;
             this.stkChg = { code, loading: false, state, rows, meta };
             if (state === '' || state === 'empty') this._stkCache[code] = { state, rows, meta };
         };
         if (!token) return out('expired');
-        const res = await diffGet(`/api/v1/diff/ticker/${encodeURIComponent(code)}`, { token });
+        const res = await diffGet(`/api/v1/diff/ticker/${encodeURIComponent(code)}`, { token, signal: ctrl ? ctrl.signal : undefined });
+        if ((this._authEpoch || 0) !== epoch || !this.canDiff) return;
         if (!res.ok) return out(res.status === 401 ? 'expired' : res.status === 403 ? 'noactive' : 'error');
         if (!res.data || res.data.available === false) return out('na');
         const tn = (t) => this.getTypeName(t);
@@ -591,6 +638,11 @@ export const diffMixin = {
 
     // Session tier changed (login / logout / /me resolved): drop gated data, reset tabs.
     diffOnAuthChange() {
+        this._authEpoch = (this._authEpoch || 0) + 1;
+        if (this._stkAbort) {
+            try { this._stkAbort.abort(); } catch (_) {}
+            this._stkAbort = null;
+        }
         this._stkCache = {};
         this.stkChg = { code: null, loading: false, state: '', rows: [], meta: null };
         this.stkTab = 'now';

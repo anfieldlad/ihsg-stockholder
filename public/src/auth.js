@@ -500,3 +500,8 @@ export function _resetAuthForTesting() {
   _firebaseAuth = null;
   _listeners.clear();
 }
+
+/** Test helper to inject an in-memory token for unit tests without full Firebase auth flow. */
+export function _setTokenForTesting(t) {
+  _inMemoryToken = t;
+}

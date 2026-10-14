@@ -81,11 +81,15 @@ assert.strictEqual(v.sharesText, '+65,2 jt lembar', 'NEW rows are signed + unit 
 v = D.rowView({ ...base, status: 'EXIT', prev_pct: 1.05, curr_pct: null, delta_shares: -50000000, delta_pct: -1.05 }, tn);
 assert.strictEqual(v.pctLine, '1,05% \u2192 <1%');
 assert.strictEqual(v.ppCls, 'down');
+assert.ok(/<1%/.test(v.exact.curr) && /batas lapor/.test(v.exact.curr) && /belum tentu 0/.test(v.exact.curr), 'DEF-04: EXIT exact.curr explains <1% threshold / not necessarily 0');
+assert.ok(/tidak dipublikasikan/i.test(v.exact.delta), 'DEF-04: EXIT exact.delta indicates undisclosed holding');
+assert.ok(v.notes.some((n) => /batas lapor 1%/.test(n)), 'DEF-04: EXIT note explains 1% disclosure limit');
 
 v = D.rowView({ ...base, status: 'ENTITY_CHANGE', delta_shares: 0, delta_pct: 0, prev_investor: 'PT LAMA NAMA', name_overlap: false }, tn);
 assert.strictEqual(v.tags[0].text, 'Pindah nama');
 assert.strictEqual(v.ppText, 'tidak dihitung');
-assert.strictEqual(v.sharesText, '0 lembar');
+assert.strictEqual(v.sharesText, 'tetap (hanya ganti nama)', 'DEF-04: ENTITY_CHANGE shows holding unchanged / name change, not 0 lembar');
+assert.ok(/jumlah lembar tetap/.test(v.exact.delta), 'DEF-04: ENTITY_CHANGE exact.delta clarifies holding unchanged');
 assert.ok(/sebelumnya PT Lama Nama/.test(v.extra));
 assert.ok(v.notes.some((n) => /Tidak dihitung sebagai Masuk atau Keluar/.test(n)));
 assert.ok(!/up|down/.test(v.ppCls), 'entity change never uses buy/sell colours');
@@ -251,11 +255,91 @@ assert.deepStrictEqual(store._stkCache, {}, 'gated rows are not kept after logou
 assert.strictEqual(store.stkChg.rows.length, 0);
 assert.strictEqual(store.stkTab, 'now');
 
+// N2: late stkLoad response after auth change / logout does not write into stkChg or _stkCache
+auth._setTokenForTesting('mock-jwt-pakar');
+store.userTier = 'pakar'; store.userProfile = { tier: 'pakar', features: ['history_mom'] };
+store.cur = { kind: 'stock', arg: 'BBCA' };
+let stkResolve;
+handler = async (u) => {
+  if (u.includes('/diff/ticker/BBCA')) {
+    return new Promise((resolve) => {
+      stkResolve = () => resolve({
+        ok: true, status: 200,
+        json: async () => ({
+          available: true, from_as_of: '2026-08-31', to_as_of: '2026-09-30',
+          rows: [{ code: 'BBCA', investor: 'PT DWIMURIA', status: 'INCREASE', delta_shares: 1000 }]
+        })
+      });
+    });
+  }
+  return { ok: false, status: 404, json: async () => ({}) };
+};
+const inFlightLoad = store.stkLoad();
+// User logs out while request is still pending
+auth._resetAuthForTesting();
+store.userTier = 'gratis'; store.userProfile = null;
+store.diffOnAuthChange();
+assert.deepStrictEqual(store._stkCache, {});
+// In-flight network response returns late
+if (stkResolve) stkResolve();
+await inFlightLoad;
+assert.deepStrictEqual(store._stkCache, {}, 'N2: late response dropped after auth change, _stkCache remains clean');
+assert.strictEqual(store.stkChg.rows.length, 0, 'N2: late response dropped, stkChg.rows remains empty');
+
+// N3: CORP/TRANSFER chip pager loop has a max-pages cap (20 pages)
+auth._setTokenForTesting('mock-jwt-pakar');
+store.userTier = 'pakar'; store.userProfile = { tier: 'pakar', features: ['history_mom'] };
+store.diffSheet = {
+  to: '2026-09-30', from: '2026-08-31', chip: 'CORP', q: '', type: '', lf: '', sort: 'abs',
+  rows: [], cursor: 0, total: null, loading: false, more: false, error: null, state: '',
+  expanded: null, types: [], clientAll: null, shown: 0, meta: null
+};
+let pageCount = 0;
+handler = async (u) => {
+  if (u.includes('/diff/table')) {
+    pageCount++;
+    return {
+      ok: true, status: 200,
+      json: async () => ({
+        available: true, from_as_of: '2026-08-31', to_as_of: '2026-09-30',
+        next_cursor: pageCount, // infinite cursor loop from server
+        total: 99999,
+        rows: [{ code: 'BTEL', investor: 'TEST CORP', status: 'DILUTED', corporate_action: true }]
+      })
+    };
+  }
+  return { ok: false, status: 404, json: async () => ({}) };
+};
+await store.diffLoad(true);
+assert.strictEqual(pageCount, 20, 'N3: client pager loop capped at 20 pages max');
+assert.strictEqual(store.diffSheet.rows.length > 0, true, 'N3: results rendered safely after cap reached');
+
 // ---- 6. stock toggle: Free never switches tab, Pro does, pro_no_diff shows note ----
 store.userTier = 'gratis'; store.userProfile = null; store.stkTab = 'now';
+let scrollIntoViewCalled = false;
+let scrollIntoViewOpts = null;
+const mockLockEl = {
+  scrollIntoView(opts) {
+    scrollIntoViewCalled = true;
+    scrollIntoViewOpts = opts;
+  }
+};
+const origGetElementById = globalThis.document.getElementById;
+globalThis.document.getElementById = (id) => {
+  if (id === 'sheet') {
+    return {
+      classList: { contains: (cls) => cls === 'on' },
+      querySelector: (sel) => sel === '.df-lockinline' ? mockLockEl : null
+    };
+  }
+  return null;
+};
 store.stkSelect('chg');
 assert.strictEqual(store.stkTab, 'now', 'Free tap does NOT switch the tab');
 assert.strictEqual(store.stkFlash, true, 'Free tap pulses the inline lock');
+assert.strictEqual(scrollIntoViewCalled, true, 'DEF-01: stkSelect scrolls lock card into view');
+assert.ok(scrollIntoViewOpts && typeof scrollIntoViewOpts.block === 'string', 'DEF-01: scroll options specified');
+globalThis.document.getElementById = origGetElementById;
 store.userTier = 'investor'; store.userProfile = { features: [] };
 store.stkSelect('chg');
 assert.strictEqual(store.stkTab, 'chg', 'paid without flag sees the neutral note');
@@ -284,6 +368,9 @@ const diffHtml = html.slice(html.indexOf('id="diffCard"'), html.indexOf('<!-- Ca
 assert.ok(!/style="/.test(diffHtml), 'no inline style="" in new markup');
 const diffCss = css.slice(css.indexOf('/* ===== F1 diff'));
 assert.ok(!/#[0-9a-fA-F]{3,8}\b/.test(diffCss), 'no hex colours in diff CSS');
+assert.ok(/\.df-period\s+\.df-change\s*\{[^}]*min-width:\s*44px/.test(css), 'DEF-02: df-change has min-width: 44px');
+assert.ok(/\.df-period\s+\.df-change\s*\{[^}]*min-height:\s*44px/.test(css), 'DEF-02: df-change has min-height: 44px');
+assert.ok(/\.fade-wrap\s*\{[^}]*padding-right:\s*28px/.test(css), 'DEF-03: fade-wrap reserves space for chevron');
 assert.ok(/OJK/.test(COPY.diff.source) && /KSEI via IDX/.test(COPY.diff.source), 'N-4: source + OJK not-advice line');
 assert.ok(/indikatif/i.test(COPY.diff.indicative), 'N-4: corporate-action heuristic flagged as indicative');
 assert.ok(/class="df-src"/.test(html), 'source/as-of box in card and sheets');

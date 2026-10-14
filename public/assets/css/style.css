@@ -2975,7 +2975,32 @@ html { scroll-padding-bottom: calc(var(--bnav-h) + 16px); scroll-padding-top: ca
 #diffCard { grid-column: 1 / -1; }
 .df-period, .df-sub, .df-caveat, .df-src, .df-iss, .df-detail .df-note, .df-tile span { font-size: 13px; }
 .df-period { margin-top: 2px; color: var(--ink3); }
-.df-period .df-change { margin-left: 8px; min-height: 44px; vertical-align: middle; }
+.df-period .df-change {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 10px;
+  margin-left: 8px;
+  vertical-align: middle;
+  font: 600 13px/1 var(--font);
+  color: var(--accent-text);
+  background: var(--hover);
+  border: 1px solid var(--line2);
+  border-radius: var(--r-full);
+  cursor: pointer;
+  text-decoration: none;
+  transition: background-color var(--dur) var(--ease), border-color var(--dur) var(--ease), color var(--dur) var(--ease);
+}
+.df-period .df-change:hover {
+  background: var(--sunk);
+  border-color: var(--line);
+}
+.df-period .df-change:focus-visible {
+  outline: 2px solid var(--accent-text);
+  outline-offset: 2px;
+}
 .df-gapm { margin: 12px 0 0; }
 .df-gap { display: flex; gap: 8px; align-items: flex-start; margin-top: 12px; padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--r-s); background: var(--sunk); color: var(--ink2); font-size: 13px; line-height: 1.4; }
 .df-gap::before { content: ""; flex: 0 0 8px; height: 8px; margin-top: 6px; border-radius: 50%; background: var(--warn); }
@@ -3037,7 +3062,7 @@ button.df-row:focus-visible { outline: 2px solid var(--accent-text); outline-off
 .df-filters2 > * { flex: 1 1 0; min-width: 0; }
 .df-filters2 .sortsel { margin-left: 0; max-width: none; width: 100%; min-height: 36px; }
 .df-sticky { position: sticky; top: 0; z-index: 2; background: var(--bg); padding: 8px 0 4px; margin-top: 4px; border-bottom: 1px solid var(--line); }
-.df-chips { display: flex; gap: 8px; padding-right: 36px; padding-bottom: 6px; }
+.df-chips { display: flex; gap: 8px; padding-right: 8px; padding-bottom: 6px; }
 .df-chips .chip { min-height: 36px; font-size: 14px; }
 .df-more { width: 100%; margin-top: 12px; }
 
@@ -3048,13 +3073,13 @@ button.df-row:focus-visible { outline: 2px solid var(--accent-text); outline-off
 .df-neutral { margin-top: 12px; border: 1px solid var(--line); border-radius: var(--r-s); background: var(--sunk); padding: 16px; }
 
 /* Scroll affordance on horizontally scrolling chip rows: edge fade + chevron, only on the side with more content */
-.fade-wrap { position: relative; }
+.fade-wrap { position: relative; padding-right: 28px; }
 .fade-scroll { overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; scroll-snap-type: x proximity; }
 .fade-scroll::-webkit-scrollbar { display: none; }
 .fade-scroll > * { scroll-snap-align: start; }
-.df-chips.fade-scroll { scroll-padding-left: 0; scroll-padding-right: 36px; }
+.df-chips.fade-scroll { scroll-padding-left: 0; scroll-padding-right: 8px; }
 .fade-edge { position: absolute; top: 0; bottom: 0; width: 40px; display: flex; align-items: center; pointer-events: none; opacity: 0; transition: opacity var(--dur) var(--ease); color: var(--ink2); }
-.fade-edge.r { right: 0; width: 48px; justify-content: flex-end; padding-right: 4px; background: linear-gradient(to right, transparent, var(--bg) 60%); }
+.fade-edge.r { right: 0; width: 44px; justify-content: flex-end; padding-right: 6px; background: linear-gradient(to right, transparent, var(--bg) 16px, var(--bg)); }
 .fade-edge.l { left: 0; background: linear-gradient(to left, transparent, var(--bg) 70%); }
 .fade-wrap.can-r .fade-edge.r, .fade-wrap.can-l .fade-edge.l { opacity: 1; }
 
