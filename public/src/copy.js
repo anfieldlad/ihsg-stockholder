@@ -1,35 +1,196 @@
 // Copy strings for IHSG Storm (from Andy's copy-strings.json + Oscar's freemium v2 + Pam's ui-spec v2)
 
 export const FAQ_ITEMS = [
+  // --- Kategori ksei (5: K1-K5) ---
   {
-    id: 1,
+    id: "K1",
     cat: "ksei",
-    q: "1. Apa itu IHSG Storm dan dari mana sumber datanya?",
-    a: "IHSG Storm adalah platform intelijen pasar modal independen untuk memantau struktur kepemilikan saham emiten BEI. Data kepemilikan bersumber dari arsip resmi KSEI (posisi akhir bulan), sedangkan harga saham bursa diperbarui dari Yahoo Finance dengan jeda waktu sekitar 15 menit."
+    q: "Apa itu IHSG Storm dan dari mana sumber datanya?",
+    a: "IHSG Storm adalah alat bantu independen untuk melihat struktur kepemilikan saham emiten BEI. Data kepemilikan bersumber dari arsip resmi KSEI posisi akhir bulan. Data harga bursa diperbarui dari Yahoo Finance dengan jeda waktu sekitar 15 menit."
   },
   {
-    id: 2,
+    id: "K2",
     cat: "ksei",
-    q: "2. Mengapa IHSG Storm menggunakan ambang batas kepemilikan ≥1% bukan 5%?",
-    a: "Regulasi POJK mewajibkan keterbukaan publik untuk kepemilikan ≥5%. Namun, dokumen KSEI mencatat investor signifikan mulai dari 1%. Dengan menampilkan pemegang saham ≥1%, investor dapat melihat pergerakan pemegang saham tier-dua, sindikasi, dan investor institusi sebelum mereka mencapai batas 5%."
+    q: "Mengapa memakai ambang kepemilikan ≥1%, bukan 5%?",
+    a: "Regulasi POJK mewajibkan keterbukaan publik untuk kepemilikan saham mulai dari 5%. Namun, dokumen KSEI mencatat pemegang efek mulai dari ambang 1%. Dengan menampilkan data ≥1%, Anda dapat memantau pergerakan investor institusi, sindikasi, dan pemegang tier-dua sebelum mereka mencapai batas 5%."
   },
   {
-    id: 3,
+    id: "K3",
     cat: "ksei",
-    q: "3. Apa arti label Domestik, Asing, dan Warkat/Scrip?",
-    a: "Label <b>Domestik (Lokal)</b> menunjukkan entitas atau perorangan WNI berdomisili hukum di Indonesia. <b>Asing</b> adalah entitas internasional atau WNA. <b>Warkat / Scrip</b> adalah saham yang tercatat secara fisik (sertifikat warkat) di luar sistem tanpa warkat (scripless) C-BEST KSEI."
+    q: "Apa arti label Domestik, Asing, dan Warkat/Scrip?",
+    a: "<b>Domestik</b> menandakan perorangan WNI atau badan hukum yang berdomisili di Indonesia. <b>Asing</b> adalah perorangan atau badan hukum internasional. <b>Warkat / Scrip</b> merujuk pada saham berbentuk sertifikat fisik di luar sistem penyimpanan elektronik (scripless) C-BEST KSEI."
   },
   {
-    id: 4,
+    id: "K4",
+    cat: "ksei",
+    q: "Kalau seseorang tidak muncul di daftar, berarti dia tidak punya saham itu?",
+    a: "Belum tentu. Daftar ini hanya memuat pemegang saham dengan kepemilikan mulai dari 1% (≥1%). Pemegang dengan porsi di bawah 1% tidak dipublikasikan dalam dokumen resmi KSEI sehingga tidak tampil di aplikasi. Porsi saham yang tersisa dimiliki oleh pemegang saham di bawah 1% dan publik (free float)."
+  },
+  {
+    id: "K5",
+    cat: "ksei",
+    q: "Seberapa akurat datanya? Apa batasnya?",
+    a: "Kami menyajikan data resmi KSEI dengan penyeragaman penulisan nama entitas (seperti \"PT\", \"TBK\", dan tanda baca) agar kepemilikan yang sama tidak terpecah. Batasnya, perubahan nama total dapat terbaca sebagai entitas berbeda, dan satu pemegang bisa terdaftar melalui beberapa kustodian terpisah. Data ini merupakan potret posisi penutupan akhir bulan, bukan riwayat transaksi harian. Jika menemukan ketidaksesuaian, Anda dapat melaporkannya melalui tombol Laporkan Kesalahan Data."
+  },
+
+  // --- Kategori jadwal (4: J1-J4) ---
+  {
+    id: "J1",
     cat: "jadwal",
-    q: "4. Mengapa harga saham bursa tertunda 15 menit?",
-    a: "Feed data harga pasar modal disediakan melalui feed publik tertunda (delayed feed 15 menit) untuk kepatuhan regulasi bursa BEI. IHSG Storm dirancang untuk analisis kepemilikan struktural (smart money & konglomerasi), bukan platform eksekusi scalping harian."
+    q: "Seberapa sering data kepemilikan diperbarui?",
+    a: "Data kepemilikan diperbarui sebulan sekali mengikuti rilis arsip resmi penutupan buku KSEI. Tanggal posisi data yang sedang ditampilkan selalu dicantumkan di aplikasi, misalnya \"per 30 September 2026\"."
   },
   {
-    id: 5,
+    id: "J2",
+    cat: "jadwal",
+    q: "Kenapa data bulan terbaru belum ada?",
+    a: "KSEI umumnya merilis arsip data kepemilikan beberapa hari kerja setelah penutupan akhir bulan. Begitu dokumen resmi terbit, data langsung kami verifikasi dan muat ke dalam sistem. Oleh karena itu, posisi kepemilikan selalu mencerminkan akhir bulan sebelumnya dan memiliki jeda dari transaksi hari ini."
+  },
+  {
+    id: "J3",
+    cat: "jadwal",
+    q: "Mengapa harga saham tertunda sekitar 15 menit?",
+    a: "Feed harga pasar bursa disediakan melalui feed publik dengan jeda waktu sekitar 15 menit sesuai ketentuan bursa. IHSG Storm dirancang untuk menganalisis struktur kepemilikan dan pergerakan investor strategis, bukan sebagai platform eksekusi perdagangan harian."
+  },
+  {
+    id: "J4",
+    cat: "jadwal",
+    q: "Kenapa perbandingan antar-bulan kadang menyebut \"4 bulan lalu\"?",
+    a: "Perbandingan antar-bulan membandingkan data dengan posisi bulan rilis sebelumnya yang tersedia di sistem. Jika terdapat jeda bulan yang belum terbit dari KSEI, rentang waktu tersebut dicantumkan secara transparan di atas daftar (misalnya \"4 bulan lalu\"). Perubahan tetap dihitung secara akurat, namun mencerminkan akumulasi selama periode tersebut, bukan perubahan satu bulan kalender."
+  },
+
+  // --- Kategori baca (5: B1-B5) ---
+  {
+    id: "B1",
+    cat: "baca",
+    q: "Bagaimana cara membaca daftar Pemegang Saham (Top Holders)?",
+    a: "Setiap baris menampilkan satu pemegang saham ≥1% yang diurutkan dari porsi kepemilikan terbesar. Informasi yang disajikan meliputi nama, jenis investor, label Domestik/Asing, persentase dari seluruh saham beredar, dan jumlah lembar. Pengguna paket Gratis dapat melihat 5 pemegang teratas, sedangkan pengguna Pro dapat melihat seluruh pemegang saham terdaftar."
+  },
+  {
+    id: "B2",
+    cat: "baca",
+    q: "Apa arti diagram lingkaran (donut) struktur kepemilikan?",
+    a: "Diagram lingkaran menggambarkan proporsi kepemilikan masing-masing pemegang saham ≥1% terhadap seluruh saham beredar emiten. Bagian porsi sisa mewakili kepemilikan gabungan investor di bawah 1% dan publik (free float). Diagram ini menyajikan gambaran distribusi modal, bukan penentu mutlak kendali operasional perseroan."
+  },
+  {
+    id: "B3",
+    cat: "baca",
+    q: "Apa itu Peta Relasi Pemegang dan Peta Portofolio Konglomerasi?",
+    a: "<b>Peta Relasi Pemegang</b> di halaman saham menampilkan pemegang saham signifikan beserta hubungan kepemilikan antar-entitas. <b>Peta Portofolio Konglomerasi</b> di halaman investor merangkum seluruh emiten yang dimiliki oleh investor atau grup yang sama. Garis penghubung pada peta murni menunjukkan pencatatan kepemilikan efek resmi, bukan bukti adanya afiliasi atau kerja sama bisnis di antara pihak terkait."
+  },
+  {
+    id: "B4",
+    cat: "baca",
+    q: "Apa bedanya persentase dan jumlah lembar saham?",
+    a: "Jumlah lembar mencerminkan kuantitas unit saham yang dimiliki secara fisik atau tercatat di kustodian. Persentase diperoleh dari jumlah lembar tersebut dibagi total seluruh saham beredar emiten. Dua emiten dengan jumlah lembar kepemilikan yang sama dapat memiliki nilai persentase yang jauh berbeda tergantung modal disetor perseroan."
+  },
+  {
+    id: "B5",
+    cat: "baca",
+    q: "Apa arti Peringkat Investor dan portofolio per investor?",
+    a: "Peringkat Investor mengurutkan pemegang saham berdasarkan kepemilikan efek ≥1% terbanyak di berbagai emiten BEI. Portofolio investor menampilkan daftar emiten yang dimiliki oleh investor tersebut beserta porsi lembarnya. Pengguna paket Gratis dapat melihat 20 investor teratas dan 8 emiten per investor, sedangkan pengguna Pro dapat mengakses seluruh portofolio secara lengkap."
+  },
+
+  // --- Kategori fitur (8: F1-F8) ---
+  {
+    id: "F1",
+    cat: "fitur",
+    q: "Apa itu Perubahan Antar-Bulan?",
+    a: "Fitur ini membandingkan data kepemilikan saham ≥1% antara dua periode rilis bulanan KSEI untuk melacak siapa yang menambah, mengurangi, baru masuk, atau keluar. Pengguna paket Gratis dapat melihat ringkasan 5 emiten teratas untuk kategori akumulasi dan distribusi. Daftar perubahan lengkap seluruh emiten serta Riwayat Perubahan per saham dapat diakses khusus oleh pengguna Pro."
+  },
+  {
+    id: "F2",
+    cat: "fitur",
+    q: "Apa arti label Naik, Turun, Masuk >1%, dan Keluar >1%?",
+    a: "<b>Naik</b> menunjukkan penambahan jumlah lembar saham dibanding periode sebelumnya, sedangkan <b>Turun</b> menunjukkan pengurangan lembar. <b>Masuk >1%</b> menandai pemegang saham yang baru melampaui ambang batas kepemilikan 1%, dan <b>Keluar >1%</b> menandai pemegang yang porsinya turun di bawah 1% sehingga tidak lagi tercatat. Label Masuk dan Keluar hanya menandai perlintasan ambang 1%, bukan berarti membeli dari nol atau menjual seluruh kepemilikannya."
+  },
+  {
+    id: "F3",
+    cat: "fitur",
+    q: "Apa arti Pindah nama?",
+    a: "<b>Pindah nama</b> menandakan jumlah lembar dan persentase saham sama persis dengan bulan sebelumnya, namun tercatat dengan nama entitas berbeda pada dokumen KSEI. Sistem kami menandai kejadian ini secara khusus dan tidak menghitungnya sebagai Masuk atau Keluar. Hal ini umumnya disebabkan oleh perubahan nama resmi badan hukum, restrukturisasi korporasi, atau pemindahan rekening kustodian."
+  },
+  {
+    id: "F4",
+    cat: "fitur",
+    q: "Apa arti Turun <1% (Terdilusi)?",
+    a: "Label <b>Turun <1%</b> diberikan jika persentase pemegang saham turun ke bawah 1% semata-mata karena emiten menambah total saham beredar (misalnya lewat rights issue atau penambahan modal), bukan karena penjualan saham. Baris kepemilikan ini tidak dihitung sebagai transaksi Keluar, serta tidak dimasukkan ke dalam daftar peringkat akumulasi maupun distribusi."
+  },
+  {
+    id: "F5",
+    cat: "fitur",
+    q: "Bagaimana perubahan dihitung, dan apa batasnya?",
+    a: "Perhitungan dilakukan secara otomatis dengan mencocokkan identitas pemegang saham menggunakan nama yang diseragamkan, lalu membandingkan selisih jumlah lembar saham antar-bulan. Karena menggunakan aturan heuristik, terdapat batasan: dua penulisan nama yang berbeda dari pihak yang sama berpotensi tidak terhubung, atau sebaliknya. Perubahan volume juga dapat bersumber dari aksi korporasi emiten atau transfer antar-rekening, bukan transaksi beli-jual di pasar reguler. Analisis ini hanya mencakup pemegang saham yang tercatat di atas ambang 1%."
+  },
+  {
+    id: "F6",
+    cat: "fitur",
+    q: "Apakah \"akumulasi\" berarti pemegang itu membeli di pasar?",
+    a: "Tidak selalu. Angka akumulasi menunjukkan penambahan bersih lembar saham di antara pemegang saham ≥1% yang tercatat dalam arsip bulanan. Selisih tersebut dapat bersumber dari pembelian di pasar modal, pelaksanaan aksi korporasi, maupun transfer efek antar-pemegang. Kasus transfer terindikasi dan aksi korporasi besar secara otomatis diberi tanda khusus dan dikeluarkan dari peringkat akumulasi utama. Data ini murni bersifat informatif, bukan sinyal rekomendasi beli atau jual."
+  },
+  {
+    id: "F7",
+    cat: "fitur",
+    q: "Apa itu Screener Saham dan apa saja filternya?",
+    a: "Screener Saham menyaring seluruh 961 saham BEI secara instan berdasarkan kriteria kepemilikan institusional. Filter yang tersedia meliputi <b>Kepemilikan asing</b> (≥20%, ≥50%, ≥70%), <b>Konsentrasi</b> pemegang Top 1 atau Top 3 (≥50%, ≥70%, ≥85%), <b>Jumlah pemegang</b> (1–2, 3–5, >5), dan <b>Jenis pemegang</b> (BUMN/Sovereign, Dapen/Asuransi, Institusi asing, Mayoritas individu). Semua filter yang aktif digabungkan menggunakan logika DAN, dan fitur ini dapat diakses khusus oleh pengguna Pro."
+  },
+  {
+    id: "F8",
+    cat: "fitur",
+    q: "Bagaimana Screener menentukan jenis pemegang?",
+    a: "Penentuan jenis pemegang dilakukan berdasarkan klasifikasi tipe investor resmi yang tercatat pada dokumen KSEI. Pengelompokan ini bersifat indikatif dan heuristik, sehingga pemegang dengan data tipe kosong atau format nonstandar mungkin belum masuk ke dalam kelompok yang diharapkan. Hasil penyaringan Screener murni merupakan alat bantu riset kuantitatif, bukan rekomendasi investasi saham."
+  },
+
+  // --- Kategori akun-pro (4: A1-A4) ---
+  {
+    id: "A1",
+    cat: "akun-pro",
+    q: "Apa beda paket Gratis dan Pro?",
+    a: "Platform kami hanya menyediakan dua tingkatan paket. Paket <b>Gratis</b> mencakup pencarian emiten dan investor, 5 pemegang teratas per saham, 8 emiten per portofolio investor, 20 peringkat investor teratas, serta ringkasan 5 teratas Perubahan Antar-Bulan. Paket <b>Pro</b> membuka seluruh pemegang saham, portofolio dan peringkat lengkap, tabel Perubahan Antar-Bulan lengkap beserta riwayat per emiten, dan fitur Screener Saham. Fitur daftar pantau saham dan notifikasi pembaruan KSEI akan menyusul kemudian untuk pengguna Pro."
+  },
+  {
+    id: "A2",
+    cat: "akun-pro",
+    q: "Apakah Pro sudah dibuka untuk umum?",
+    a: "Belum. Saat ini akses Pro baru tersedia secara terbatas melalui program akses awal (early access). Jadwal peluncuran resmi serta skema biaya berlangganan publik belum diumumkan."
+  },
+  {
+    id: "A3",
+    cat: "akun-pro",
+    q: "Bagaimana cara masuk, dan apa itu akses awal?",
+    a: "Anda dapat masuk dengan mudah menggunakan akun Google melalui tombol <b>Masuk</b>. Selama program akses awal, kuota terbatas (5 pendaftar baru pertama) yang masuk dengan Google otomatis mendapatkan akses Pro gratis. Informasi sisa kursi akses awal yang tersedia ditampilkan secara langsung pada lembar informasi Pro. Akun yang telah terdaftar sebelum periode kuota dibuka tidak memperoleh upgrade otomatis."
+  },
+  {
+    id: "A4",
+    cat: "akun-pro",
+    q: "Bagaimana saya tahu Pro saya aktif, dan sampai kapan?",
+    a: "Buka menu <b>Akun</b> pada bilah navigasi untuk melihat status paket aktif serta tanggal masa berlaku akses Pro Anda. Setelah masa berlaku akses awal berakhir, status akun akan bertransisi kembali ke paket Gratis secara otomatis. Data akun Google dan preferensi Anda tidak akan dihapus saat masa aktif berakhir."
+  },
+
+  // --- Kategori legal (4: L1-L4) ---
+  {
+    id: "L1",
     cat: "legal",
-    q: "5. Bagaimana cara melaporkan jika ada data kepemilikan yang tidak sesuai?",
-    a: "Anda dapat menggunakan tombol <b>\"Laporkan Kesalahan Data\"</b> di bagian bawah halaman atau klik tombol lapor di dalam kartu detail saham. Tim audit data kami meninjau setiap masukan terhadap rujukan pengumuman resmi bursa dan KSEI dalam kurun 1x24-48 jam kerja."
+    q: "Apakah IHSG Storm memberi saran investasi?",
+    a: "Tidak. Seluruh data yang disajikan pada IHSG Storm bersumber dari publikasi resmi KSEI dan bursa untuk tujuan riset informasi publik serta edukasi. Data ini bukan merupakan rekomendasi investasi, anjuran beli atau jual saham, maupun penawaran produk keuangan apapun. Keputusan investasi sepenuhnya menjadi tanggung jawab mandiri masing-masing pemodal (Do Your Own Research / DYOR)."
+  },
+  {
+    id: "L2",
+    cat: "legal",
+    q: "Data pribadi apa yang dikumpulkan?",
+    a: "Anda dapat menggunakan sebagian besar fitur eksplorasi saham tanpa perlu masuk atau mendaftar akun. Jika masuk menggunakan Google, kami hanya mencatat data profil Google dasar untuk mengidentifikasi kepemilikan akun dan hak akses paket Anda. Kami tidak memasang pelacak analitik pihak ketiga yang invasif maupun cookie periklanan. Token autentikasi hanya disimpan di memori peramban, dan preferensi penyaringan Screener hanya disimpan di sesi browser (sessionStorage) Anda."
+  },
+  {
+    id: "L3",
+    cat: "legal",
+    q: "Apakah data saya dijual atau dibagikan?",
+    a: "Tidak. Kami tidak pernah menjual, menyewakan, atau membagikan data identitas pengguna kepada pihak ketiga mana pun. Layanan ini sepenuhnya bersih dari iklan komersial maupun monetisasi data pribadi."
+  },
+  {
+    id: "L4",
+    cat: "legal",
+    q: "Bagaimana cara melaporkan data yang tidak sesuai?",
+    a: "Anda dapat menekan tombol <b>Laporkan Kesalahan Data</b> di bagian bawah halaman atau menggunakan tombol lapor di dalam kartu detail saham. Tim kami akan meninjau dan memverifikasi setiap laporan terhadap rujukan pengumuman resmi bursa dan arsip KSEI dalam kurun 1–2 hari kerja (24–48 jam kerja)."
   }
 ];
 
