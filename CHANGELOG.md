@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `openPro()` accepts the new keys `diff` and `diff_ticker` (analytics `locked_click` feature).
 
 ### Fixed
+- Edge Worker: `wrangler.json` `assets` now declares `"binding": "ASSETS"`, so `env.ASSETS.fetch(request)` in `worker.js` is defined. Unknown URLs (e.g. `/healthz`, `/nonexistent-xyz`) return a 404 instead of Cloudflare error 1101. Guarded by `tests/test_wrangler_config.py`.
 - `tests/test_qa_suite.js` no longer fails with "window.matchMedia is not a function": the Node test harness now stubs `window.matchMedia` (plus `scrollTo`, `querySelector`, and URL-updating `history`), and the stale assertions that sat behind it (renamed store API, filter keys, search terms, CSS breakpoint values) were updated to the current code. Test-only change.
 - Stock detail panel and list no longer throw Alpine TypeErrors when a change percentage is null: every `fmtChangePct(...)` result is read with `?.cls` / `?.text`; `tests/test_detail_null_guard.js` now rejects `fmtChangePct(...).cls|text`.
 
