@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- F1 "Perubahan Kepemilikan Bulanan": new card at the top of the Analitik tab (`#diffCard`) with Top 5 Akumulasi/Distribusi, real counts, source/as-of line, OJK not-advice line and an "indikatif" note for corporate-action/transfer flags. Free (and anonymous) sees the public `/api/v1/diff/summary` aggregate plus a lock card; Pro sees stat tiles and the full "Semua Perubahan" sheet (`#diffSheet`: search, chips incl. Aksi korporasi / Transfer / Pindah nama, type and origin filters, month selectors once 3+ snapshots exist, 100-row pages, row detail with exact shares). Stock sheet and pane gain a `Pemegang Saat Ini | Riwayat Perubahan` toggle. Gate is the single `history_mom` flag from `/me` (every paid tier is "Pro"); the server is the real check. New module `public/src/diff.js`, copy under `COPY.diff`, test `tests/test_f1_diff.js`.
+
+### Changed
+- Removed the old "Perubahan antar-bulan" lock/"Sedang dibangun" card (superseded) and the `delta` Pro-gate copy. Pro sheet row now reads "Perubahan antar-bulan: Ringkasan 5 teratas / Lengkap".
+- `openPro()` accepts the new keys `diff` and `diff_ticker` (analytics `locked_click` feature).
+
 ### Fixed
 - `tests/test_qa_suite.js` no longer fails with "window.matchMedia is not a function": the Node test harness now stubs `window.matchMedia` (plus `scrollTo`, `querySelector`, and URL-updating `history`), and the stale assertions that sat behind it (renamed store API, filter keys, search terms, CSS breakpoint values) were updated to the current code. Test-only change.
 - Stock detail panel and list no longer throw Alpine TypeErrors when a change percentage is null: every `fmtChangePct(...)` result is read with `?.cls` / `?.text`; `tests/test_detail_null_guard.js` now rejects `fmtChangePct(...).cls|text`.

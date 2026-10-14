@@ -25,6 +25,7 @@ import {
     hasPendingRedirect,
     HINT_RESTORE_CAP_MS
 } from './auth.js';
+import { diffMixin } from './diff.js';
 
 // Free users see the first 20 rows of the investor ranking (Pro sees all).
 const INV_FREE_CAP = 20;
@@ -169,6 +170,7 @@ export const storeConfig = {
                 this.authLoading = false;
                 if (!authState.user) this.akunOpen = false;
                 if (this.isPro && this.proOpen) this.closePro();
+                this.diffOnAuthChange();
             });
             const redirectPending = hasPendingRedirect();
             initAuth().catch((err) => {
@@ -439,6 +441,7 @@ export const storeConfig = {
         if (tab === 'analytics') {
             this.cur = null;
             this.detailStack = [];
+            this.diffEnsureLoaded();
         }
         window.scrollTo({ top: 0, behavior: 'smooth' });
     },
@@ -562,6 +565,7 @@ export const storeConfig = {
             this.detailStack = [];
         }
 
+        if (!this.cur || this.cur.kind !== 'stock' || this.cur.arg !== code) this.stkReset();
         this.cur = { kind: 'stock', arg: code };
         this.showWhaleMap = false;
         this.addRecent('stock', code);
@@ -1180,9 +1184,17 @@ export const storeConfig = {
             }
 
             // Escape closes search palette, pro sheet, or detail
+            if (e.key === 'Tab' && this.diffTrapKey(e)) {
+                e.preventDefault();
+                return;
+            }
             if (e.key === 'Escape') {
                 if (this.searchOpen) {
                     this.closeSearch();
+                    return;
+                }
+                if (this.diffOpen) {
+                    this.diffCloseSheet();
                     return;
                 }
                 if (this.akunOpen) {
@@ -1240,3 +1252,6 @@ export const storeConfig = {
         }
     }
 };
+
+// F1 diff module: merge by descriptor so getters stay live getters (spread would evaluate them once).
+Object.defineProperties(storeConfig, Object.getOwnPropertyDescriptors(diffMixin));

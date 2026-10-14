@@ -50,3 +50,8 @@ def test_node_analytics():
     """Verify cookieless privacy analytics and store integration."""
     for script in ["tests/test_analytics.js", "tests/test_analytics_store.js"]:
         _run_node(script)
+
+
+def test_node_f1_diff_ui():
+    """F1 diff UI: formatting, row states, gating, markup guards."""
+    _run_node("tests/test_f1_diff.js")

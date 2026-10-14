@@ -535,6 +535,98 @@
             <p class="sub" id="sub-an" x-text="`Ringkasan struktur kepemilikan efek KSEI per ${asOfLabel || '30 September 2026'}`"></p>
 
             <div class="grid2">
+              <!-- F1: Perubahan Kepemilikan Bulanan (replaces the old "Perubahan antar-bulan" lock card) -->
+              <div class="card span2" id="diffCard" aria-labelledby="diffTitle">
+                <h3 id="diffTitle" x-text="D.title">Perubahan Kepemilikan Bulanan</h3>
+
+                <template x-if="diff.error">
+                  <div class="state"><b x-text="D.err_t"></b><p x-text="D.err_p"></p><button class="btn pri" type="button" @click="diffReload()" x-text="D.err_btn">Coba Lagi</button></div>
+                </template>
+                <template x-if="!diff.error && !diff.loaded">
+                  <div aria-busy="true"><div class="skel"><span class="sk w60"></span><span class="sk w40"></span></div><div class="skel"><span class="sk w60"></span><span class="sk w40"></span></div><div class="skel"><span class="sk w60"></span><span class="sk w40"></span></div></div>
+                </template>
+                <template x-if="diff.loaded && !diffAvail">
+                  <div class="state"><b x-text="D.na_t"></b><p x-text="D.na_p"></p></div>
+                </template>
+
+                <template x-if="diff.loaded && diffAvail">
+                  <div>
+                    <p class="df-period"><span x-text="diffPeriodText"></span>
+                      <button class="go df-change" type="button" x-show="diffReady && canDiff && diffHasPeriods" x-cloak @click="diffOpenSheet('ALL', true)" x-text="D.change_period">Ubah</button>
+                    </p>
+                    <div class="df-gap" role="note" x-show="diffGapBanner" x-text="diffGapBanner"></div>
+
+                    <!-- Gated block: waits for session restore + /me so Free never flashes before Pro -->
+                    <div x-show="!diffReady" aria-busy="true"><div class="skel"><span class="sk w60"></span><span class="sk w40"></span></div></div>
+
+                    <div x-show="diffReady && canDiff" x-cloak>
+                      <div class="df-tiles">
+                        <template x-for="t in diffTiles" :key="t.f">
+                          <button class="df-tile" type="button" :aria-label="t.aria" @click="diffOpenSheet(t.f)"><b class="num" x-text="t.n"></b><span x-text="t.label"></span></button>
+                        </template>
+                      </div>
+                      <p class="df-period df-gapm" x-show="diffNotCounted" x-text="diffNotCounted"></p>
+                    </div>
+
+                    <div class="df-seg" role="group" :aria-label="D.seg_aria">
+                      <button type="button" :aria-pressed="diff.seg === 'acc'" @click="diff.seg = 'acc'" x-text="D.seg_acc">Akumulasi</button>
+                      <button type="button" :aria-pressed="diff.seg === 'dist'" @click="diff.seg = 'dist'" x-text="D.seg_dist">Distribusi</button>
+                    </div>
+
+                    <div class="df-list">
+                      <template x-if="diffReady && canDiff">
+                        <div>
+                          <template x-for="(e, i) in diffTop" :key="e.code">
+                            <button class="df-row" type="button" :aria-label="e.aria" @click="diffOpenStock(e.code)">
+                              <span class="df-rank num" x-text="i + 1"></span>
+                              <span class="df-who"><span class="df-code" x-text="e.code"></span><span class="df-iss" x-text="e.issuer"></span><span class="df-sub" x-text="e.holders"></span></span>
+                              <span class="df-val"><span class="df-pp num" :class="e.ppCls" x-text="e.ppText"></span><span class="df-sub num" x-text="e.sharesText"></span></span>
+                            </button>
+                          </template>
+                        </div>
+                      </template>
+                      <template x-if="!(diffReady && canDiff)">
+                        <div>
+                          <template x-for="(e, i) in diffTop" :key="e.code">
+                            <div class="df-row">
+                              <span class="df-rank num" x-text="i + 1"></span>
+                              <span class="df-who"><span class="df-code" x-text="e.code"></span><span class="df-iss" x-text="e.issuer"></span><span class="df-sub" x-text="e.holders"></span></span>
+                              <span class="df-val"><span class="df-pp num" :class="e.ppCls" x-text="e.ppText"></span><span class="df-sub num" x-text="e.sharesText"></span></span>
+                            </div>
+                          </template>
+                        </div>
+                      </template>
+                    </div>
+                    <p class="df-period df-gapm" x-show="diffExcluded" x-text="diffExcluded"></p>
+
+                    <!-- Free: placeholder bars (blurred, never real data) + REAL counts + the one primary CTA -->
+                    <div class="df-locked" x-show="diffReady && diffTier === 'free'" x-cloak>
+                      <div class="df-teaser" aria-hidden="true">
+                        <div class="df-blur">
+                          <template x-for="n in 3" :key="n">
+                            <div class="df-row"><span class="df-bar w0"></span><span class="df-who"><span class="df-bar w1"></span><span class="df-bar w4"></span></span><span class="df-val"><span class="df-bar w2"></span><span class="df-bar w4"></span></span></div>
+                          </template>
+                        </div>
+                        <div class="df-veil"><span class="df-lockbadge"><svg class="i"><use href="#i-lock"/></svg></span></div>
+                      </div>
+                      <div class="df-lockcard">
+                        <h4 x-show="diffLockCounts" x-text="diffLockCounts"></h4>
+                        <p x-text="D.lock_sub"></p>
+                        <button class="btn pri df-cta" type="button" @click="openPro('diff')"><span x-text="C.pro_gates.btn_see || D.lock_btn">Lihat Fitur Pro</span> <svg class="i s"><use href="#i-chev"/></svg></button>
+                      </div>
+                    </div>
+
+                    <!-- Paid account whose /me lacks history_mom: neutral note, no lock, no error -->
+                    <div class="state df-neutral" x-show="diffReady && diffTier === 'pro_no_diff'" x-cloak role="note"><b x-text="D.not_active_t"></b><p x-text="D.not_active_p"></p></div>
+
+                    <button class="btn sec df-open" type="button" x-show="diffReady && canDiff" x-cloak @click="diffOpenSheet('ALL')" x-text="D.open_all">Lihat semua perubahan</button>
+
+                    <p class="df-caveat" x-text="D.caveat"></p>
+                    <div class="df-src" role="note"><p x-text="diffSourceLine"></p><p x-text="D.indicative"></p></div>
+                  </div>
+                </template>
+              </div>
+
               <!-- Card 1: Domestik vs Asing vs Warkat -->
               <div class="card">
                 <h3 x-text="C.analytics.card_lf_title">Investor Domestik vs Asing vs Warkat</h3>
@@ -596,23 +688,6 @@
                 </div>
               </div>
 
-              <!-- Card 5 (Span 2): MoM Delta Lock Card -->
-              <div class="span2">
-                <div class="soon" x-show="isPro" x-cloak role="note">
-                  <b x-text="C.soon.delta">Perubahan antar-bulan</b>
-                  <span x-text="C.soon.label">Sedang dibangun</span>
-                </div>
-                <div class="lock" style="margin-top:0" x-show="!isPro">
-                  <svg class="i s"><use href="#i-lock"/></svg>
-                  <div>
-                    <h4 x-text="C.analytics.card_delta_title">Perubahan Kepemilikan Antar-Bulan</h4>
-                    <p x-text="C.analytics.card_delta_desc">Pantau siapa yang akumulasi atau melepas saham besar setiap bulan.</p>
-                    <button class="go" type="button" @click="openPro('delta')">
-                      Lihat Fitur Pro <svg class="i s"><use href="#i-chev"/></svg>
-                    </button>
-                  </div>
-                </div>
-              </div>
             </div>
           </section>
 
@@ -761,6 +836,11 @@
                 </div>
 
                 <!-- Holders List -->
+                <div class="df-seg" role="group" :aria-label="D.hist_group">
+                  <button type="button" :aria-pressed="stkTab === 'now'" @click="stkSelect('now')" x-text="D.hist_seg_now">Pemegang Saat Ini</button>
+                  <button type="button" :aria-pressed="stkTab === 'chg'" :aria-label="canDiff ? D.hist_seg_chg : D.hist_seg_chg_pro" @click="stkSelect('chg')"><svg class="i s" x-show="!canDiff" x-cloak aria-hidden="true"><use href="#i-lock"/></svg><span x-text="D.hist_seg_chg">Riwayat Perubahan</span></button>
+                </div>
+                <div class="stk-now" x-show="stkTab === 'now'">
                 <h3 class="sec-h">Daftar Pemegang Saham</h3>
                 <div>
                   <template x-for="(h, i) in (detailStock?.listHolders || [])" :key="h.investor">
@@ -795,6 +875,45 @@
                       Lihat Fitur Pro <svg class="i s"><use href="#i-chev"/></svg>
                     </button>
                   </div>
+                </div>
+
+                <!-- F1: inline Pro lock (Free tapped Riwayat Perubahan) -->
+                <div class="df-lockinline" :class="{ flash: stkFlash }" x-show="diffReady && diffTier === 'free'" x-cloak>
+                  <svg class="i"><use href="#i-lock"/></svg>
+                  <div><b x-text="D.hist_lock"></b><p x-text="D.hist_lock_sub"></p>
+                    <button class="btn pri df-cta" type="button" @click="openPro('diff_ticker')"><span x-text="C.pro_gates.btn_see">Lihat Fitur Pro</span> <svg class="i s"><use href="#i-chev"/></svg></button></div>
+                </div>
+                </div>
+
+                <!-- F1: Riwayat Perubahan (Pro) -->
+                <div class="stk-chg" x-show="stkTab === 'chg'" x-cloak>
+                  <template x-if="canDiff"><div>
+                    <p class="df-period df-gapm" x-show="stkChgHeader" x-text="stkChgHeader"></p>
+                    <div class="df-gap" role="note" x-show="stkChgGap" x-text="stkChgGap"></div>
+                    <template x-if="stkChg.loading"><div aria-busy="true"><div class="skel"><span class="sk w60"></span><span class="sk w40"></span></div><div class="skel"><span class="sk w60"></span><span class="sk w40"></span></div><div class="skel"><span class="sk w60"></span><span class="sk w40"></span></div></div></template>
+                    <template x-if="!stkChg.loading && stkChg.state === 'error'"><div class="state"><b x-text="D.err_t"></b><button class="btn pri" type="button" @click="stkLoad()" x-text="D.err_btn"></button></div></template>
+                    <template x-if="!stkChg.loading && stkChg.state === 'expired'"><div class="state"><b x-text="D.expired"></b></div></template>
+                    <template x-if="!stkChg.loading && stkChg.state === 'noactive'"><div class="state"><b x-text="D.not_active_t"></b><p x-text="D.not_active_p"></p></div></template>
+                    <template x-if="!stkChg.loading && stkChg.state === 'na'"><div class="state"><b x-text="D.na_t"></b><p x-text="D.na_p"></p></div></template>
+                    <template x-if="!stkChg.loading && stkChg.state === 'empty'"><div class="state"><p x-text="D.hist_empty"></p></div></template>
+                    <div class="df-list" x-show="!stkChg.loading && !stkChg.state">
+                      <template x-for="r in stkChg.rows" :key="r.key">
+                        <div class="df-row full">
+                          <span class="df-who">
+                            <span class="df-head"><template x-for="t in r.tags" :key="t.text"><span class="df-tag" :class="t.cls" x-text="t.text"></span></template></span>
+                            <span class="df-inv" x-text="r.investor"></span>
+                            <span class="df-sub num" x-text="r.pctLine"></span>
+                            <span class="df-sub" x-show="r.extra" x-text="r.extra"></span>
+                            <span class="df-sub" x-text="r.meta"></span>
+                            <span class="df-sub" x-show="r.hasNote" x-text="r.notes.join(' ')"></span>
+                          </span>
+                          <span class="df-val"><span class="df-pp num" :class="r.ppCls" x-text="r.ppText"></span><span class="df-sub num" x-show="r.sharesText" x-text="r.sharesText"></span></span>
+                        </div>
+                      </template>
+                    </div>
+                    <div class="df-src" role="note"><p x-text="stkChgSource"></p><p x-text="D.indicative"></p></div>
+                  </div></template>
+                  <template x-if="!canDiff && isPro"><div class="state" role="note"><b x-text="D.not_active_t"></b><p x-text="D.not_active_p"></p></div></template>
                 </div>
 
                 <!-- Feedback Button (B2 Gated) -->
@@ -965,6 +1084,11 @@
             <p class="note" style="color:var(--ink2);font-size:13px" x-text="`Sisa ${fmtPct(detailStock?.restPct)} dimiliki publik.`"></p>
           </div>
 
+          <div class="df-seg" role="group" :aria-label="D.hist_group">
+            <button type="button" :aria-pressed="stkTab === 'now'" @click="stkSelect('now')" x-text="D.hist_seg_now">Pemegang Saat Ini</button>
+            <button type="button" :aria-pressed="stkTab === 'chg'" :aria-label="canDiff ? D.hist_seg_chg : D.hist_seg_chg_pro" @click="stkSelect('chg')"><svg class="i s" x-show="!canDiff" x-cloak aria-hidden="true"><use href="#i-lock"/></svg><span x-text="D.hist_seg_chg">Riwayat Perubahan</span></button>
+          </div>
+          <div class="stk-now" x-show="stkTab === 'now'">
           <h3 class="sec-h">Daftar Pemegang Saham</h3>
           <div>
             <template x-for="(h, i) in (detailStock?.listHolders || [])" :key="h.investor">
@@ -997,6 +1121,45 @@
                 Lihat Fitur Pro <svg class="i s"><use href="#i-chev"/></svg>
               </button>
             </div>
+          </div>
+
+          <!-- F1: inline Pro lock (Free tapped Riwayat Perubahan) -->
+          <div class="df-lockinline" :class="{ flash: stkFlash }" x-show="diffReady && diffTier === 'free'" x-cloak>
+            <svg class="i"><use href="#i-lock"/></svg>
+            <div><b x-text="D.hist_lock"></b><p x-text="D.hist_lock_sub"></p>
+              <button class="btn pri df-cta" type="button" @click="openPro('diff_ticker')"><span x-text="C.pro_gates.btn_see">Lihat Fitur Pro</span> <svg class="i s"><use href="#i-chev"/></svg></button></div>
+          </div>
+          </div>
+
+          <!-- F1: Riwayat Perubahan (Pro) -->
+          <div class="stk-chg" x-show="stkTab === 'chg'" x-cloak>
+            <template x-if="canDiff"><div>
+              <p class="df-period df-gapm" x-show="stkChgHeader" x-text="stkChgHeader"></p>
+              <div class="df-gap" role="note" x-show="stkChgGap" x-text="stkChgGap"></div>
+              <template x-if="stkChg.loading"><div aria-busy="true"><div class="skel"><span class="sk w60"></span><span class="sk w40"></span></div><div class="skel"><span class="sk w60"></span><span class="sk w40"></span></div><div class="skel"><span class="sk w60"></span><span class="sk w40"></span></div></div></template>
+              <template x-if="!stkChg.loading && stkChg.state === 'error'"><div class="state"><b x-text="D.err_t"></b><button class="btn pri" type="button" @click="stkLoad()" x-text="D.err_btn"></button></div></template>
+              <template x-if="!stkChg.loading && stkChg.state === 'expired'"><div class="state"><b x-text="D.expired"></b></div></template>
+              <template x-if="!stkChg.loading && stkChg.state === 'noactive'"><div class="state"><b x-text="D.not_active_t"></b><p x-text="D.not_active_p"></p></div></template>
+              <template x-if="!stkChg.loading && stkChg.state === 'na'"><div class="state"><b x-text="D.na_t"></b><p x-text="D.na_p"></p></div></template>
+              <template x-if="!stkChg.loading && stkChg.state === 'empty'"><div class="state"><p x-text="D.hist_empty"></p></div></template>
+              <div class="df-list" x-show="!stkChg.loading && !stkChg.state">
+                <template x-for="r in stkChg.rows" :key="r.key">
+                  <div class="df-row full">
+                    <span class="df-who">
+                      <span class="df-head"><template x-for="t in r.tags" :key="t.text"><span class="df-tag" :class="t.cls" x-text="t.text"></span></template></span>
+                      <span class="df-inv" x-text="r.investor"></span>
+                      <span class="df-sub num" x-text="r.pctLine"></span>
+                      <span class="df-sub" x-show="r.extra" x-text="r.extra"></span>
+                      <span class="df-sub" x-text="r.meta"></span>
+                      <span class="df-sub" x-show="r.hasNote" x-text="r.notes.join(' ')"></span>
+                    </span>
+                    <span class="df-val"><span class="df-pp num" :class="r.ppCls" x-text="r.ppText"></span><span class="df-sub num" x-show="r.sharesText" x-text="r.sharesText"></span></span>
+                  </div>
+                </template>
+              </div>
+              <div class="df-src" role="note"><p x-text="stkChgSource"></p><p x-text="D.indicative"></p></div>
+            </div></template>
+            <template x-if="!canDiff && isPro"><div class="state" role="note"><b x-text="D.not_active_t"></b><p x-text="D.not_active_p"></p></div></template>
           </div>
 
           <div x-show="feedbackAvailable" style="margin-top:20px;border-top:1px solid var(--line);padding-top:14px">
@@ -1188,6 +1351,98 @@
     </div>
   </div>
 
+  <!-- F1: Semua Perubahan Kepemilikan (Pro) -->
+  <div class="sheet" id="diffSheet" :class="{ on: diffOpen }" role="dialog" aria-modal="true" aria-labelledby="diffSheetTitle" x-cloak>
+    <div class="pane-wrap">
+      <div class="dh">
+        <span class="tt" id="diffSheetTitle" x-text="D.sheet_title">Semua Perubahan Kepemilikan</span>
+        <button class="ib" type="button" @click="diffCloseSheet()" :aria-label="D.close">
+          <svg class="i"><use href="#i-x"/></svg>
+        </button>
+      </div>
+      <div class="db" tabindex="0" role="region" aria-label="Daftar perubahan kepemilikan">
+        <div class="df-controls">
+          <p class="df-period" x-show="!diffHasPeriods" x-text="diffSheetPeriod"></p>
+          <div class="df-periods" x-show="diffHasPeriods" x-cloak>
+            <div><label class="form-label" for="diffPeriodTo" x-text="D.label_to">Bulan</label>
+              <select class="form-select" id="diffPeriodTo" :value="diffSheet.to" @change="diffSetTo($event.target.value)">
+                <template x-for="o in diffToOptions" :key="o.v"><option :value="o.v" :selected="o.v === diffSheet.to" x-text="o.t"></option></template>
+              </select></div>
+            <div><label class="form-label" for="diffPeriodFrom" x-text="D.label_from">Dibanding</label>
+              <select class="form-select" id="diffPeriodFrom" :value="diffSheet.from" @change="diffSetFrom($event.target.value)">
+                <template x-for="o in diffFromOptions" :key="o.v"><option :value="o.v" :selected="o.v === diffSheet.from" x-text="o.t"></option></template>
+              </select></div>
+          </div>
+          <div class="df-gap" role="note" x-show="diffSheetGap" x-text="diffSheetGap"></div>
+          <input class="form-input" id="diffSearch" type="search" x-model="diffSheet.q" @input="diffOnSearch()" :placeholder="D.search_ph" :aria-label="D.search_aria" autocomplete="off" maxlength="100">
+          <div class="df-filters2">
+            <select class="sortsel" :aria-label="D.f_type" :value="diffSheet.type" @change="diffSetType($event.target.value)">
+              <option value="" x-text="D.t_all">Semua jenis</option>
+              <template x-for="o in diffTypeOptions" :key="o.v"><option :value="o.v" :selected="o.v === diffSheet.type" x-text="o.t"></option></template>
+            </select>
+            <select class="sortsel" :aria-label="D.f_origin" :value="diffSheet.lf" @change="diffSetLf($event.target.value)">
+              <option value="" x-text="D.f_origin + ': ' + D.o_all">Asal: Semua</option>
+              <option value="L" x-text="D.o_local">Lokal</option>
+              <option value="F" x-text="D.o_foreign">Asing</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="df-sticky">
+          <div class="fade-wrap" x-init="fadeInit($el)">
+            <div class="df-chips fade-scroll" role="group" :aria-label="D.chips_aria">
+              <template x-for="c in diffChips" :key="c.f">
+                <button class="chip" type="button" :aria-pressed="diffSheet.chip === c.f" @click="diffSetChip(c.f)" x-text="c.label"></button>
+              </template>
+            </div>
+            <span class="fade-edge l" aria-hidden="true"></span>
+            <span class="fade-edge r" aria-hidden="true"><svg class="i s"><use href="#i-chev"/></svg></span>
+          </div>
+          <div class="meta-line" aria-live="polite"><span x-show="diffSheet.total !== null" x-text="dfT('results', { n: fmtInt(diffSheet.total) })"></span></div>
+        </div>
+
+        <!-- states -->
+        <div aria-busy="true" x-show="diffSheet.loading && !diffSheet.rows.length && !diffSheet.state">
+          <template x-for="n in 6" :key="n"><div class="skel"><span class="sk w60"></span><span class="sk w40"></span></div></template>
+        </div>
+        <div class="state" x-show="diffSheet.state === 'empty'" x-cloak><b x-text="D.empty_t"></b><p x-text="D.empty_p"></p><button class="btn sec" type="button" @click="diffReset()" x-text="D.reset">Atur ulang filter</button></div>
+        <div class="state" x-show="diffSheet.state === 'error'" x-cloak><b x-text="D.err_t"></b><p x-text="D.err_p"></p><button class="btn pri" type="button" @click="diffLoad(true)" x-text="D.err_btn">Coba Lagi</button></div>
+        <div class="state" x-show="diffSheet.state === 'expired'" x-cloak><b x-text="D.expired"></b><button class="btn sec" type="button" @click="login()" :disabled="authLoading" x-text="D.login">Masuk dengan Google</button></div>
+        <div class="state" x-show="diffSheet.state === 'toofar'" x-cloak><b x-text="D.too_far"></b></div>
+        <div class="state" x-show="diffSheet.state === 'noactive'" x-cloak><b x-text="D.not_active_t"></b><p x-text="D.not_active_p"></p></div>
+        <div class="state" x-show="diffSheet.state === 'na'" x-cloak><b x-text="D.na_t"></b><p x-text="D.na_p"></p></div>
+
+        <div class="df-list" id="diffList">
+          <template x-for="r in diffSheet.rows" :key="r.key">
+            <div class="df-item">
+              <button class="df-row full" type="button" :aria-expanded="diffSheet.expanded === r.key" :aria-label="r.aria" @click="diffToggleRow(r.key)">
+                <span class="df-who">
+                  <span class="df-head"><span class="df-code" x-text="r.code"></span><template x-for="t in r.tags" :key="t.text"><span class="df-tag" :class="t.cls" x-text="t.text"></span></template></span>
+                  <span class="df-inv"><span x-text="r.investor"></span><span class="df-dot" x-show="r.hasNote" role="img" :aria-label="D.has_note"></span></span>
+                  <span class="df-sub num" x-text="r.pctLine"></span>
+                  <span class="df-sub" x-show="r.extra" x-text="r.extra"></span>
+                  <span class="df-sub" x-text="r.meta"></span>
+                </span>
+                <span class="df-val"><span class="df-pp num" :class="r.ppCls" x-text="r.ppText"></span><span class="df-sub num" x-show="r.sharesText" x-text="r.sharesText"></span></span>
+              </button>
+              <dl class="df-detail" x-show="diffSheet.expanded === r.key" x-cloak>
+                <dt x-text="D.prev_shares">Lembar sebelumnya</dt><dd class="num"><span x-text="r.exact.prev"></span> <small x-text="r.exact.prevDate"></small></dd>
+                <dt x-text="D.curr_shares">Lembar sekarang</dt><dd class="num"><span x-text="r.exact.curr"></span> <small x-text="r.exact.currDate"></small></dd>
+                <dt x-text="D.delta_shares">Selisih lembar</dt><dd class="num" x-text="r.exact.delta"></dd>
+                <template x-for="n in r.notes" :key="n"><p class="df-note" x-text="n"></p></template>
+                <button class="go" type="button" @click="diffOpenStock(r.code)" x-text="dfT('see_stock', { code: r.code })"></button>
+              </dl>
+            </div>
+          </template>
+        </div>
+        <button class="btn sec df-more" type="button" x-show="diffMoreVisible" x-cloak :disabled="diffSheet.more" @click="diffMore()" x-text="diffSheet.more ? D.more_loading : D.more">Muat Lebih Banyak</button>
+
+        <p class="df-caveat" x-text="D.caveat"></p>
+        <div class="df-src" role="note"><p x-text="diffSheetSource"></p><p x-text="D.indicative"></p></div>
+      </div>
+    </div>
+  </div>
+
   <!-- Akun Sheet -->
   <div class="sheet" id="akunSheet" :class="{ on: akunOpen }" role="dialog" aria-modal="true" aria-label="Akun">
     <div class="pane-wrap">
@@ -1321,8 +1576,8 @@
 
   <!-- Shared Scrim Backdrop -->
   <div class="scrim" id="scrim"
-       :class="{ on: (cur && !window.matchMedia('(min-width: 1024px)').matches) || proOpen || akunOpen || infoOpen || searchOpen || showFeedbackModal }"
-       @click="closeDetail(); closePro(); closeAkun(); closeInfo(); closeSearch(); closeFeedbackModal()">
+       :class="{ on: (cur && !window.matchMedia('(min-width: 1024px)').matches) || proOpen || akunOpen || infoOpen || searchOpen || showFeedbackModal || diffOpen }"
+       @click="closeDetail(); closePro(); closeAkun(); closeInfo(); closeSearch(); closeFeedbackModal(); diffCloseSheet()">
   </div>
 
   <!-- Offline Status Toast -->
