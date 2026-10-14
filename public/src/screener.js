@@ -293,19 +293,26 @@ export const screenerMixin = {
     this.fetchVisiblePrices();
     try { trackScreenerApply(countActiveFilters(this.screenerFilters)); } catch (_) {}
 
-    if (typeof window !== 'undefined' && window.requestAnimationFrame) {
-      window.requestAnimationFrame(() => {
-        const chipsEl = document.getElementById('chips-stocks');
-        if (chipsEl) chipsEl.scrollIntoView({ block: 'nearest' });
-        // D2: bring the Screener chip into view inside the horizontal chip scroller
-        const chip = document.getElementById('chipOn');
-        if (chip && typeof chip.scrollIntoView === 'function') {
-          const reduce = typeof window !== 'undefined' && typeof window.matchMedia === 'function' &&
-            window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-          chip.scrollIntoView({ inline: 'nearest', block: 'nearest', behavior: reduce ? 'auto' : 'smooth' });
-        }
-      });
-    }
+    const scrollChip = () => {
+      const chipsEl = document.getElementById('chips-stocks');
+      if (chipsEl) chipsEl.scrollIntoView({ block: 'nearest' });
+      // D2: bring the Screener chip into view inside the horizontal chip scroller
+      const chip = document.getElementById('chipOn');
+      // Skip if chip has no layout box (x-show not rendered yet / hidden)
+      if (chip && chip.offsetWidth !== 0 && typeof chip.scrollIntoView === 'function') {
+        const reduce = typeof window !== 'undefined' && typeof window.matchMedia === 'function' &&
+          window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        chip.scrollIntoView({ inline: 'nearest', block: 'nearest', behavior: reduce ? 'auto' : 'smooth' });
+      }
+    };
+    // Wait for Alpine to render x-show (#chipOn), then for layout via rAF
+    const afterRender = () => {
+      if (typeof window !== 'undefined' && window.requestAnimationFrame) {
+        window.requestAnimationFrame(scrollChip);
+      }
+    };
+    if (typeof this.$nextTick === 'function') this.$nextTick(afterRender);
+    else afterRender();
   },
 
   screenerClear() {

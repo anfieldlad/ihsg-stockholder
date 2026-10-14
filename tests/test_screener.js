@@ -325,6 +325,7 @@ assert.ok(/padding-block:\s*7px\s*!important;\s*margin-block:\s*-5px/.test(css),
   const src = fs.readFileSync('public/src/screener.js', 'utf8');
   assert.ok(/getElementById\('chipOn'\)/.test(src) && /inline:\s*'nearest'/.test(src), 'apply scrolls chipOn inline:nearest');
   assert.ok(/prefers-reduced-motion: reduce/.test(src) && /reduce \? 'auto' : 'smooth'/.test(src), 'smooth scroll respects reduced motion');
+  assert.ok(/\$nextTick\(afterRender\)/.test(src) && /offsetWidth !== 0/.test(src), 'chip scroll runs after Alpine $nextTick and guards zero-size chip');
 }
 
 // Desktop modal width 560px
