@@ -270,7 +270,7 @@ assert.ok(!/\b(beli|jual)\b/i.test(W.footnote.replace('bukan saran jual atau bel
 const html = read('public/index.html');
 assert.ok(html.includes('id="v-watch"'), 'view exists');
 assert.ok((html.match(/setTab\('watch'\)/g) || []).length === 2, 'tab in rail and bottom nav');
-assert.ok((html.match(/aria-pressed="wlIsWatched\(cur\.arg\)"/g) || (html.match(/:aria-pressed="wlIsWatched\(cur\.arg\)"/g)) || []).length === 2, 'star in sheet and pane headers');
+assert.ok((html.match(/aria-pressed="wlIsWatched\(cur\?\.arg\)"/g) || (html.match(/:aria-pressed="wlIsWatched\(cur\?\.arg\)"/g)) || []).length === 2, 'star in sheet and pane headers');
 assert.ok(!/id="bnav"[\s\S]*openSearch\(\)[\s\S]*<\/nav>/.test(html.slice(html.indexOf('id="bnav"'), html.indexOf('</nav>', html.indexOf('id="bnav"')) + 6)), 'bottom nav is five items: Cari moved out (search stays in header)');
 const bnav = html.slice(html.indexOf('id="bnav"'), html.indexOf('</nav>', html.indexOf('id="bnav"')));
 assert.strictEqual((bnav.match(/class="nb"/g) || []).length, 5, 'bottom nav has 5 items');
@@ -285,4 +285,32 @@ assert.ok(/noindex/.test(un) && !/<script(?![^>]*src)/.test(un), 'unsubscribe pa
 assert.ok(!/innerHTML/.test(read('public/src/unsubscribe.js')), 'unsubscribe page builds DOM with textContent only');
 assert.ok(!/localStorage\.setItem|sessionStorage\.setItem/.test(read('public/src/watchlist.js') + read('public/src/watchlist-core.js')), 'watchlist data never persisted client side');
 
+// ---- QA D1/D3 regressions ----
+{
+  const html2 = read('public/index.html');
+  const bad = html2.split('\n').filter((l) => /wl(IsWatched|StarLabel)\(cur\.arg/.test(l));
+  assert.strictEqual(bad.length, 0, 'D1: no star binding reads cur.arg unguarded (cur is null while the sheet closes)');
+  assert.strictEqual((html2.match(/wlIsWatched\(cur\?\.arg\)/g) || []).length, 2, 'D1: both header star bindings are null-safe');
+  assert.strictEqual((html2.match(/wlStarLabel\(cur\?\.arg\)/g) || []).length, 2);
+  const nullCur = makeStore({ cur: null });
+  assert.doesNotThrow(() => { nullCur.wlIsWatched(nullCur.cur?.arg); nullCur.wlStarLabel(nullCur.cur?.arg); }, 'D1: null cur does not throw');
+
+  // D3: Pro lapsed mid-session; write returns 403 tier_required -> gate sheet, not error toast.
+  for (const mode of ['add', 'remove']) {
+    handler = async (u, o) => {
+      if ((o.method || 'GET') === 'GET') return { status: 200, body: listBody(mode === 'remove' ? ['KOTA'] : ['BBCA']) };
+      return { status: 403, body: { detail: { error: 'tier_required', required_feature: 'watchlist' } } };
+    };
+    const d3 = makeStore({ userTier: 'pro' });
+    delete d3.isPro;
+    Object.defineProperty(d3, 'isPro', { get() { return ['pro', 'pakar'].includes(this.userTier); }, configurable: true });
+    await d3.wlLoad();
+    await d3.wlToggle('KOTA');
+    assert.strictEqual(d3.proOpen, true, `D3 (${mode}): gate sheet opens on 403 tier_required`);
+    assert.strictEqual(d3.wlToast.on, false, `D3 (${mode}): no error toast`);
+    assert.strictEqual(d3.userTier, 'gratis', `D3 (${mode}): cached tier dropped to gratis`);
+    assert.strictEqual(d3.wlCan, false);
+    assert.strictEqual(d3.wlGateCode, 'KOTA');
+  }
+}
 console.log('All test_watchlist.js assertions PASSED!');

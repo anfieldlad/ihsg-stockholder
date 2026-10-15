@@ -862,7 +862,7 @@
                   <svg class="i"><use href="#i-back"/></svg>
                 </button>
                 <span class="tt">Detail Saham</span>
-                <button class="star" type="button" :aria-pressed="wlIsWatched(cur.arg)" :aria-label="wlStarLabel(cur.arg)" @click="wlToggle(cur.arg, $el)"><svg class="i"><use href="#i-star"/></svg></button>
+                <button class="star" type="button" :aria-pressed="wlIsWatched(cur?.arg)" :aria-label="wlStarLabel(cur?.arg)" @click="cur && wlToggle(cur.arg, $el)"><svg class="i"><use href="#i-star"/></svg></button>
                 <button class="ib" type="button" @click="closeDetail()" aria-label="Tutup">
                   <svg class="i"><use href="#i-x"/></svg>
                 </button>
@@ -1114,7 +1114,7 @@
             <svg class="i"><use href="#i-back"/></svg>
           </button>
           <span class="tt">Detail Saham</span>
-          <button class="star" type="button" :aria-pressed="wlIsWatched(cur.arg)" :aria-label="wlStarLabel(cur.arg)" @click="wlToggle(cur.arg, $el)"><svg class="i"><use href="#i-star"/></svg></button>
+          <button class="star" type="button" :aria-pressed="wlIsWatched(cur?.arg)" :aria-label="wlStarLabel(cur?.arg)" @click="cur && wlToggle(cur.arg, $el)"><svg class="i"><use href="#i-star"/></svg></button>
           <button class="ib" type="button" @click="closeDetail()" aria-label="Tutup">
             <svg class="i"><use href="#i-x"/></svg>
           </button>

@@ -173,7 +173,7 @@ export const watchlistMixin = {
     this.wl.codes = rest;
     const kind = classifyError(res);
     if (kind === 'full') this.wlOpenFull();
-    else if (kind === 'tier' || kind === 'auth') { this.wl.lapsed = kind === 'tier'; this.wlOpenGate(code); }
+    else if (kind === 'tier' || kind === 'auth') { this.wl.lapsed = kind === 'tier'; if (kind === 'tier') this.wlDropTier(); this.wlOpenGate(code); }
     else this.wlToastShow(COPY.watchlist.toast_error);
     return false;
   },
@@ -189,7 +189,7 @@ export const watchlistMixin = {
     if (!res.ok) {
       this.wl.codes = { ...this.wl.codes, [code]: true };
       const kind = classifyError(res);
-      if (kind === 'tier' || kind === 'auth') { this.wl.lapsed = kind === 'tier'; this.wlOpenGate(code); }
+      if (kind === 'tier' || kind === 'auth') { this.wl.lapsed = kind === 'tier'; if (kind === 'tier') this.wlDropTier(); this.wlOpenGate(code); }
       else this.wlToastShow(COPY.watchlist.toast_error);
       return;
     }
@@ -235,6 +235,13 @@ export const watchlistMixin = {
   // ----- sheets -----
   get wlAnyOpen() { return this.wlFullOpen || this.wlAlertOpen; },
   // Free gate reuses the shared Pro sheet (login CTA and early-access note live there).
+  // Server says tier_required: the cached tier is stale (Pro lapsed mid-session). Fall back to
+  // gratis locally so the shared Pro gate sheet opens instead of an error toast (design 7.3).
+  wlDropTier() {
+    this.userTier = 'gratis';
+    this.userTierLabel = 'Gratis';
+    this.userProfile = this.userProfile ? { ...this.userProfile, features: [], tier: 'gratis' } : null;
+  },
   wlOpenGate(code) {
     this.wlGateCode = code || '';
     if (this.isPro) { this.wlToastShow(COPY.watchlist.toast_error); return; } // openPro is a no-op for Pro
