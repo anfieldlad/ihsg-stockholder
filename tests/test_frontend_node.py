@@ -70,3 +70,8 @@ def test_node_faq():
 def test_node_watchlist():
     """Watchlist Pantauan (P1): row states, sorting, star flows, gates, unsubscribe logic."""
     _run_node("tests/test_watchlist.js")
+
+
+def test_node_xshow_boolean():
+    """WL-11: row price x-show bindings must always be boolean (Alpine hide-promise crash)."""
+    _run_node("tests/test_xshow_boolean.js")

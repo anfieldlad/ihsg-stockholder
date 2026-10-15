@@ -451,13 +451,13 @@
                   <!-- Price -->
                   <span class="px num">
                     <span x-show="priceLoadingBatch && !priceMap[s.code]" class="skel-px sk" aria-hidden="true"></span>
-                    <span x-show="priceMap[s.code] && priceMap[s.code].last_price != null" x-text="fmtPrice(priceMap[s.code]?.last_price)"></span>
-                    <span x-show="(!priceLoadingBatch && !priceMap[s.code]) || (priceMap[s.code] && priceMap[s.code].last_price == null)" class="na-badge">n/a</span>
+                    <span x-show="!!(priceMap[s.code] && priceMap[s.code].last_price != null)" x-text="fmtPrice(priceMap[s.code]?.last_price)"></span>
+                    <span x-show="!!((!priceLoadingBatch && !priceMap[s.code]) || (priceMap[s.code] && priceMap[s.code].last_price == null))" class="na-badge">n/a</span>
                   </span>
 
                   <!-- Change Chip -->
                   <span class="ch">
-                    <span x-show="fmtChangePct(priceMap[s.code]?.change_pct)"
+                    <span x-show="!!fmtChangePct(priceMap[s.code]?.change_pct)"
                           class="chg"
                           :class="fmtChangePct(priceMap[s.code]?.change_pct)?.cls"
                           x-text="fmtChangePct(priceMap[s.code]?.change_pct)?.text">
