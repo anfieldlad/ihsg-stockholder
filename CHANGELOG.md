@@ -8,6 +8,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Watchlist "Pantauan" (WL-4, phase 1): star toggle in the stock sheet and pane header, new Pantauan tab (bottom nav and left rail, between Investor and Analitik), per-stock holder change since the previous KSEI month (net poin, holder count, `Aksi korporasi` rows with no coloured delta, unchanged / no data / listed / delisted states), 3-number summary, 30-stock cap with the "Pantauan penuh" sheet (also for server 409 `watchlist_full`), Free / logged-out gate (reuses the Pro sheet with a blurred sample), Pro-lapsed state (403 `tier_required`, items kept), empty, quiet and no-data states, undo toast. New modules `public/src/watchlist.js`, `public/src/watchlist-core.js`, copy under `COPY.watchlist`, tests `tests/test_watchlist.js`. Talks to `/api/v1/watchlist*` (backend branch `feat/watchlist-p1`); the server is the real gate.
+- Email reminder settings sheet and public unsubscribe page (`public/unsubscribe.html`) are built but hidden until P2 ships: the reminder strip only renders with `localStorage ihsg_wl_alerts=1` or `?wl_alerts=1`, and nothing links to the unsubscribe page.
+- The Pro sheet row "Daftar pantau saham (sampai 30)" is now live ("Ya"); "Pengingat saat data KSEI diperbarui" stays "Segera".
+
+### Changed
+- Bottom navigation is now Saham | Investor | Pantauan | Analitik | Bantuan. The "Cari" bottom-nav item was removed to keep five items; search remains in the header search button and via Ctrl K.
+
 - Help/FAQ overhaul: 30 Q&A entries across 6 topic chips (KSEI, Jadwal, Cara Baca, Fitur, Akun & Pro, Legal & CS) with dynamic category and search filtering, empty state with reset action, and test suite (`tests/test_faq.js`).
 - Pro "Screener Saham" (F5): filter sheet, active-filter chip, summary strip and Free gate preview. New module `public/src/screener.js`, test `tests/test_screener.js`. Filter controls and chip have 44px touch targets. Known issue: the active Screener chip can be clipped at 375px width (the summary strip still shows the active state).
 - Screener (F5) fix: the active filter chip now scrolls fully into view at 375px width (D2 fix; `scrollTo` to its own snap point).

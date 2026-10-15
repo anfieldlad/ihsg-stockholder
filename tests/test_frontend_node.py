@@ -65,3 +65,8 @@ def test_node_screener():
 def test_node_faq():
     """FAQ: topic chips, search filter, empty state, and copy contracts."""
     _run_node("tests/test_faq.js")
+
+
+def test_node_watchlist():
+    """Watchlist Pantauan (P1): row states, sorting, star flows, gates, unsubscribe logic."""
+    _run_node("tests/test_watchlist.js")

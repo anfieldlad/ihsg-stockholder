@@ -27,6 +27,7 @@ import {
 } from './auth.js';
 import { diffMixin } from './diff.js';
 import { screenerMixin, matchStock } from './screener.js';
+import { watchlistMixin } from './watchlist.js';
 
 // Free users see the first 20 rows of the investor ranking (Pro sees all).
 const INV_FREE_CAP = 20;
@@ -61,7 +62,7 @@ export const storeConfig = {
     scripCount: 0,
 
     // Navigation & Tabs
-    currentTab: 'stocks', // 'stocks' | 'investors' | 'analytics' | 'faq'
+    currentTab: 'stocks', // 'stocks' | 'investors' | 'watch' | 'analytics' | 'faq'
 
     // Stocks List State
     stockFilter: 'all', // 'all' | 'foreign' | 'many' | 'scrip'
@@ -182,6 +183,7 @@ export const storeConfig = {
                 if (this.isPro && this.proOpen) this.closePro();
                 this.diffOnAuthChange();
                 this.screenerOnAuthChange();
+                this.wlOnAuthChange();
             });
             const redirectPending = hasPendingRedirect();
             initAuth().catch((err) => {
@@ -455,6 +457,7 @@ export const storeConfig = {
             this.detailStack = [];
             this.diffEnsureLoaded();
         }
+        if (tab === 'watch') this.wlOnTabOpen();
         window.scrollTo({ top: 0, behavior: 'smooth' });
     },
 
@@ -1208,11 +1211,15 @@ export const storeConfig = {
             }
 
             // Escape closes search palette, pro sheet, or detail
-            if (e.key === 'Tab' && (this.diffTrapKey(e) || this.screenerTrapKey(e))) {
+            if (e.key === 'Tab' && (this.diffTrapKey(e) || this.screenerTrapKey(e) || this.wlTrapKey(e))) {
                 e.preventDefault();
                 return;
             }
             if (e.key === 'Escape') {
+                if (this.wlAnyOpen) {
+                    this.wlClose();
+                    return;
+                }
                 if (this.searchOpen) {
                     this.closeSearch();
                     return;
@@ -1273,6 +1280,8 @@ export const storeConfig = {
             this.setTab('faq');
         } else if (hash === '#/analytics') {
             this.setTab('analytics');
+        } else if (hash === '#/pantauan') {
+            this.setTab('watch');
         } else if (hash === '#/investors') {
             this.setTab('investors');
         } else if (hash === '#/stocks') {
@@ -1285,3 +1294,5 @@ export const storeConfig = {
 Object.defineProperties(storeConfig, Object.getOwnPropertyDescriptors(diffMixin));
 // F5 screener module: merge by descriptor
 Object.defineProperties(storeConfig, Object.getOwnPropertyDescriptors(screenerMixin));
+// Watchlist module (WL-4): merge by descriptor so getters stay live
+Object.defineProperties(storeConfig, Object.getOwnPropertyDescriptors(watchlistMixin));

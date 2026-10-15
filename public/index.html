@@ -176,6 +176,8 @@
     <symbol id="i-moon" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></symbol>
     <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
     <symbol id="i-sliders" viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></symbol>
+    <symbol id="i-star" viewBox="0 0 24 24"><path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/></symbol>
+    <symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 17V11a6 6 0 0 1 12 0v6l2 2H4z"/><path d="M10 21a2 2 0 0 0 4 0"/></symbol>
   </svg>
 
   <!-- Desktop Left Rail (>=1024px) -->
@@ -195,6 +197,10 @@
     <button class="nb" type="button" @click="setTab('investors')" :aria-current="currentTab === 'investors' ? 'page' : null">
       <svg class="i"><use href="#i-users"/></svg>
       <span>Investor</span>
+    </button>
+    <button class="nb" type="button" id="railWatch" @click="setTab('watch')" :aria-current="currentTab === 'watch' ? 'page' : null">
+      <svg class="i"><use href="#i-star"/></svg>
+      <span x-text="C.watchlist.nav">Pantauan</span>
     </button>
     <button class="nb" type="button" @click="setTab('analytics')" :aria-current="currentTab === 'analytics' ? 'page' : null">
       <svg class="i"><use href="#i-chart"/></svg>
@@ -554,7 +560,80 @@
             </div>
           </section>
 
-          <!-- VIEW: ANALYTICS (Pure CSS, 0 KB Canvas) -->
+          <!-- VIEW: PANTAUAN (Watchlist, WL-4) -->
+          <section class="view" :class="{ on: currentTab === 'watch' }" id="v-watch" aria-labelledby="h-watch">
+            <div class="wl-wrap">
+              <div class="wl-head">
+                <h1 id="h-watch" x-text="W.title">Pantauan</h1>
+                <span class="sc-pro-tag" x-show="wlMode === 'gate' || wlMode === 'lapsed'" x-cloak><svg class="i"><use href="#i-lock"/></svg>Pro</span>
+                <span class="wl-count" :class="{ warn: wlWarn }" x-show="wlMode === 'list' || wlMode === 'empty'" :aria-label="wlCountAria" x-text="wlCountText">0 / 30</span>
+              </div>
+
+              <!-- Session still resolving: neutral skeleton, no Free-gate flash -->
+              <div class="wl-list" x-show="!wlReady || (wlCan && wl.loading && !wl.loaded)" x-cloak aria-hidden="true">
+                <div class="wl-skel"></div><div class="wl-skel"></div><div class="wl-skel"></div><div class="wl-skel"></div>
+              </div>
+
+              <!-- Free / logged out / Pro lapsed -->
+              <div class="wl-empty" x-show="wlReady && (wlMode === 'gate' || wlMode === 'lapsed')" x-cloak>
+                <svg class="i"><use href="#i-lock"/></svg>
+                <h2 x-text="W.gate_page_title">Pantauan adalah fitur Pro</h2>
+                <p x-show="wlMode === 'lapsed'" x-text="wlT('lapsed', { n: wlLapsedCount })"></p>
+                <p x-text="W.gate_page_body"></p>
+                <button class="btn pri" type="button" @click="wlOpenGate('')" x-text="C.pro_gates.btn_see">Lihat Fitur Pro</button>
+              </div>
+
+              <!-- Load error (inline, not a toast) -->
+              <div class="wl-empty" x-show="wlReady && wlCan && wl.error && !wl.loaded && !wl.lapsed" x-cloak role="alert">
+                <h2 x-text="W.load_error">Pantauan tidak bisa dimuat.</h2>
+                <button class="btn sec" type="button" @click="wlLoad()" x-text="W.retry">Coba lagi</button>
+              </div>
+
+              <!-- Empty (Pro, 0 items) -->
+              <div class="wl-empty" x-show="wlReady && wl.loaded && wlMode === 'empty'" x-cloak>
+                <svg class="i"><use href="#i-star"/></svg>
+                <h2 x-text="W.empty_title">Belum ada saham dipantau</h2>
+                <p x-text="W.empty_body"></p>
+                <button class="btn pri" type="button" @click="openSearch()" x-text="W.empty_cta">Cari saham</button>
+              </div>
+
+              <!-- List -->
+              <div x-show="wlReady && wl.loaded && wlMode === 'list'" x-cloak>
+                <div class="wl-banner" x-show="wlFull" x-text="W.full_banner"></div>
+                <div class="wl-banner neutral" x-show="wlNoData" x-text="W.nodata_banner"></div>
+                <template x-if="!wlNoData">
+                  <div>
+                    <p class="wl-meta" x-show="wlPeriod"><span x-text="wlPeriod?.lead"></span> <b x-text="wlPeriod?.range"></b><span x-text="wlPeriod?.gap"></span></p>
+                    <div class="wl-sum">
+                      <div><b x-text="wlSum.changed">0</b><span x-text="W.sum_changed">berubah</span></div>
+                      <div><b x-text="wlSum.same">0</b><span x-text="W.sum_same">tetap</span></div>
+                      <div><b x-text="wlSum.ca">0</b><span x-text="W.sum_ca">aksi korporasi</span></div>
+                    </div>
+                  </div>
+                </template>
+                <button class="wl-alert" type="button" x-show="wlAlertsUi" x-cloak @click="wlOpenAlerts($el)">
+                  <svg class="i"><use href="#i-bell"/></svg>
+                  <span class="t"><b x-text="W.alert.strip_title">Pengingat email</b><span x-text="wlAlertOn ? W.alert.strip_on : W.alert.strip_off"></span></span>
+                  <span class="wl-state" :class="{ on: wlAlertOn }" x-text="wlAlertOn ? W.alert.on : W.alert.off">Mati</span>
+                </button>
+                <p class="wl-quiet" x-show="wlQuiet" x-text="W.quiet"></p>
+                <div class="wl-list" id="wlList">
+                  <template x-for="r in wlRows" :key="r.code">
+                    <div class="wl-r" :class="{ gone: r.removing }">
+                      <button class="wl-go" type="button" @click="openStock(r.code)" :aria-label="r.aria + ', buka detail'">
+                        <span class="c" x-text="r.code"></span>
+                        <span class="n" x-text="toTitleCase(r.name)"></span>
+                        <span class="wl-tag" x-show="r.chip" x-text="r.chip"></span>
+                      </button>
+                      <span class="wl-d" :class="r.cls"><span x-text="r.main"></span><small x-show="r.sub" x-text="r.sub"></small></span>
+                      <button class="star" type="button" :aria-pressed="!r.removing" :aria-label="wlStarLabel(r.code)" @click="wlToggle(r.code, $el)"><svg class="i"><use href="#i-star"/></svg></button>
+                    </div>
+                  </template>
+                </div>
+                <p class="wl-note" x-text="W.footnote"></p>
+              </div>
+            </div>
+          </section>
           <section class="view" :class="{ on: currentTab === 'analytics' }" id="v-analytics" aria-labelledby="h-an">
             <h1 id="h-an" x-text="C.analytics.title">Analitik</h1>
             <p class="sub" id="sub-an" x-text="`Ringkasan struktur kepemilikan efek KSEI per ${asOfLabel || '30 September 2026'}`"></p>
@@ -783,6 +862,7 @@
                   <svg class="i"><use href="#i-back"/></svg>
                 </button>
                 <span class="tt">Detail Saham</span>
+                <button class="star" type="button" :aria-pressed="wlIsWatched(cur.arg)" :aria-label="wlStarLabel(cur.arg)" @click="wlToggle(cur.arg, $el)"><svg class="i"><use href="#i-star"/></svg></button>
                 <button class="ib" type="button" @click="closeDetail()" aria-label="Tutup">
                   <svg class="i"><use href="#i-x"/></svg>
                 </button>
@@ -1010,6 +1090,10 @@
       <svg class="i"><use href="#i-users"/></svg>
       <span>Investor</span>
     </button>
+    <button class="nb" type="button" id="bnavWatch" @click="setTab('watch')" :aria-current="currentTab === 'watch' ? 'page' : null">
+      <svg class="i"><use href="#i-star"/></svg>
+      <span x-text="C.watchlist.nav">Pantauan</span>
+    </button>
     <button class="nb" type="button" @click="setTab('analytics')" :aria-current="currentTab === 'analytics' ? 'page' : null">
       <svg class="i"><use href="#i-chart"/></svg>
       <span>Analitik</span>
@@ -1017,10 +1101,6 @@
     <button class="nb" type="button" @click="setTab('faq')" :aria-current="currentTab === 'faq' ? 'page' : null">
       <svg class="i"><use href="#i-help"/></svg>
       <span>Bantuan</span>
-    </button>
-    <button class="nb" type="button" @click="openSearch()">
-      <svg class="i"><use href="#i-search"/></svg>
-      <span>Cari</span>
     </button>
   </nav>
 
@@ -1034,6 +1114,7 @@
             <svg class="i"><use href="#i-back"/></svg>
           </button>
           <span class="tt">Detail Saham</span>
+          <button class="star" type="button" :aria-pressed="wlIsWatched(cur.arg)" :aria-label="wlStarLabel(cur.arg)" @click="wlToggle(cur.arg, $el)"><svg class="i"><use href="#i-star"/></svg></button>
           <button class="ib" type="button" @click="closeDetail()" aria-label="Tutup">
             <svg class="i"><use href="#i-x"/></svg>
           </button>
@@ -1336,7 +1417,28 @@
           </div>
         </template>
 
-        <template x-if="proWhy !== 'screener'">
+        <!-- Watchlist Pro Gate Block -->
+        <template x-if="proWhy === 'watchlist'">
+          <div class="sc-gate-block">
+            <span class="sc-pro-tag"><svg class="i s"><use href="#i-lock"/></svg>Fitur Pro</span>
+            <h2 class="sc-gate-h" x-text="W.gate_sheet_title">Pantau saham pilihan Anda</h2>
+            <p class="sub" x-text="W.gate_sheet_body"></p>
+            <p class="sub" x-show="wlGateCode" x-text="wlT('gate_context', { code: wlGateCode })"></p>
+            <div class="gate-prev" role="img" :aria-label="W.gate_example_aria">
+              <span class="sc-pro-tag" x-text="W.gate_example">Contoh</span>
+              <div class="blur" aria-hidden="true">
+                <template x-for="r in wlGateSample" :key="r.code">
+                  <div class="wl-r">
+                    <span class="wl-go"><span class="c" x-text="r.code"></span></span>
+                    <span class="wl-d" :class="r.cls"><span x-text="r.main"></span><small x-text="r.sub"></small></span>
+                  </div>
+                </template>
+              </div>
+            </div>
+          </div>
+        </template>
+
+        <template x-if="proWhy !== 'screener' && proWhy !== 'watchlist'">
           <div>
             <h2 x-text="C.pro_sheet.title">Gratis dan Pro</h2>
             <p class="sub" x-text="C.pro_sheet.subtitle"></p>
@@ -1371,6 +1473,53 @@
         </div>
       </div>
     </div>
+  </div>
+
+  <!-- Watchlist: Pantauan penuh (30) -->
+  <div class="sheet" id="wlFullSheet" :class="{ on: wlFullOpen }" role="dialog" aria-modal="true" aria-labelledby="wlFullT" x-cloak>
+    <div class="pane-wrap">
+      <div class="dh">
+        <span class="tt" id="wlFullT" x-text="W.full_title">Pantauan penuh</span>
+        <button class="ib" type="button" @click="wlClose()" :aria-label="W.close"><svg class="i"><use href="#i-x"/></svg></button>
+      </div>
+      <div class="db" tabindex="0">
+        <p class="wl-sheet-p" x-text="W.full_body"></p>
+        <div class="pro-actions">
+          <button class="btn pri" type="button" @click="wlManage()" x-text="W.full_cta">Kelola Pantauan</button>
+          <button class="btn sec" type="button" @click="wlClose()" x-text="W.close">Tutup</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Watchlist: Pengingat email (P2, hidden unless wlAlertsUi) -->
+  <div class="sheet" id="wlAlertSheet" :class="{ on: wlAlertOpen }" role="dialog" aria-modal="true" aria-labelledby="wlAlertT" x-cloak>
+    <div class="pane-wrap">
+      <div class="dh">
+        <span class="tt" id="wlAlertT" x-text="W.alert.sheet_title">Pengingat email</span>
+        <button class="ib" type="button" @click="wlClose()" :aria-label="W.close"><svg class="i"><use href="#i-x"/></svg></button>
+      </div>
+      <div class="db" tabindex="0">
+        <p class="wl-sheet-p" x-text="W.alert.lead"></p>
+        <button class="wl-sw" type="button" role="switch" :aria-checked="wlAlert.email_alerts" :disabled="wlAlertNoEmail || wlAlert.busy" @click="wlAlertToggle()">
+          <span class="l"><span x-text="W.alert.switch">Kirim pengingat ke email</span><small x-text="wlAlertNoEmail ? W.alert.no_email : W.alert.switch_sub"></small></span>
+          <span class="sw-t" aria-hidden="true"></span>
+        </button>
+        <p class="wl-sheet-p" x-show="wlAlertUnsubText" x-text="wlAlertUnsubText"></p>
+        <ul class="al-list">
+          <li><svg class="i"><use href="#i-check"/></svg><span x-show="wlAlert.email_masked"><span x-text="wlAlertTo[0]"></span><span class="al-mail" x-text="wlAlert.email_masked"></span><span x-text="wlAlertTo[1]"></span></span></li>
+          <li><svg class="i"><use href="#i-check"/></svg><span x-text="W.alert.f_rule"></span></li>
+          <li><svg class="i"><use href="#i-check"/></svg><span x-text="W.alert.f_freq"></span></li>
+          <li><svg class="i"><use href="#i-check"/></svg><span x-text="W.alert.f_unsub"></span></li>
+        </ul>
+        <div class="al-msg" role="status" x-show="wlAlert.msg" x-text="wlAlert.msg"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Watchlist toast (Undo) -->
+  <div class="toast wl-toast" :class="{ on: wlToast.on }" role="status" @mouseenter="wlToastPause()" @mouseleave="wlToast.on && wlToastArm()" @focusin="wlToastPause()" @focusout="wlToast.on && wlToastArm()">
+    <span x-text="wlToast.msg"></span><button type="button" x-show="wlToast.undo" @click="wlToastUndoClick()" x-text="W.undo">Urungkan</button>
   </div>
 
   <!-- F1: Semua Perubahan Kepemilikan (Pro) -->
@@ -1699,8 +1848,8 @@
 
   <!-- Shared Scrim Backdrop -->
   <div class="scrim" id="scrim"
-       :class="{ on: (cur && !window.matchMedia('(min-width: 1024px)').matches) || proOpen || akunOpen || infoOpen || searchOpen || showFeedbackModal || diffOpen || screenerOpen }"
-       @click="closeDetail(); closePro(); closeAkun(); closeInfo(); closeSearch(); closeFeedbackModal(); diffCloseSheet(); screenerCloseSheet()">
+       :class="{ on: (cur && !window.matchMedia('(min-width: 1024px)').matches) || proOpen || akunOpen || infoOpen || searchOpen || showFeedbackModal || diffOpen || screenerOpen || wlAnyOpen }"
+       @click="closeDetail(); closePro(); closeAkun(); closeInfo(); closeSearch(); closeFeedbackModal(); diffCloseSheet(); screenerCloseSheet(); wlClose()">
   </div>
 
   <!-- Offline Status Toast -->

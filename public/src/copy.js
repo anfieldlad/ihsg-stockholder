@@ -382,6 +382,10 @@ export const COPY = {
     screener: {
       title: "Screener saham",
       benefit: "Saring 961 saham berdasarkan porsi asing, konsentrasi, jumlah pemegang, dan jenis pemegang."
+    },
+    watchlist: {
+      title: "Pantau saham pilihan Anda",
+      benefit: "Bintangi sampai 30 saham dan lihat perubahan pemegang sahamnya di satu halaman."
     }
   },
   pro_sheet: {
@@ -398,7 +402,7 @@ export const COPY = {
       { feature: "Peringkat investor", free: "20 teratas", pro: "Semua", soon: false },
       { feature: "Perubahan antar-bulan", free: "Ringkasan 5 teratas", pro: "Lengkap", soon: false },
       { feature: "Screener saham", free: "–", pro: "Ya", soon: false },
-      { feature: "Daftar pantau saham", free: "–", pro: "Segera", soon: true },
+      { feature: "Daftar pantau saham (sampai 30)", free: "–", pro: "Ya", soon: false },
       { feature: "Pengingat saat data KSEI diperbarui", free: "–", pro: "Segera", soon: true }
     ],
     cta_disabled: "Pro belum dibuka untuk umum",
@@ -406,6 +410,70 @@ export const COPY = {
     ea_open: "Pro belum dibuka untuk umum. {total}pendaftar baru pertama yang masuk dengan Google otomatis dapat Pro (sisa {n} kursi).",
     ea_full: "Kursi akses awal sudah penuh.",
     btn_close: "Tutup"
+  },
+  // Watchlist "Pantauan" (WL-4). Spec: company/ihsg/watchlist/design.md rev 1, section 10.2.
+  watchlist: {
+    nav: "Pantauan",
+    title: "Pantauan",
+    count: "{n} / 30",
+    count_aria: "{n} dari 30 saham",
+    period_lead: "Perubahan",
+    range: "{from} ke {to}",
+    gap_suffix: " ({months} bulan)",
+    period: "Perubahan {from} ke {to}",
+    period_gap: "Perubahan {from} ke {to} ({months} bulan)",
+    sum_changed: "berubah", sum_same: "tetap", sum_ca: "aksi korporasi",
+    holders_changed: "{n} pemegang berubah",
+    up: "naik", down: "turun", unit: "poin",
+    unchanged: "Tidak berubah", ca: "Aksi korporasi", ca_sub: "tidak dihitung",
+    no_data: "Belum ada data", listed: "Baru tercatat", delisted: "Dihapus dari bursa",
+    quiet: "Tidak ada perubahan berarti pada saham Anda bulan ini.",
+    nodata_banner: "Belum ada dua periode data untuk dibandingkan. Perubahan muncul setelah data KSEI berikutnya terbit.",
+    footnote: "Poin = selisih porsi kepemilikan yang tercatat KSEI (≥1%). Ini data kepemilikan, bukan saran jual atau beli. Aksi korporasi dan pergantian nama tidak dihitung sebagai perubahan.",
+    star_add: "Pantau {code}", star_remove: "Lepas {code} dari Pantauan",
+    toast_added: "{code} dipantau ({n} dari 30)", toast_removed: "{code} dilepas dari Pantauan", undo: "Urungkan",
+    toast_error: "Gagal menyimpan. Coba lagi.",
+    load_error: "Pantauan tidak bisa dimuat.", retry: "Coba lagi",
+    empty_title: "Belum ada saham dipantau",
+    empty_body: "Ketuk bintang di halaman saham mana pun. Perubahan pemegang saham di sana akan muncul di sini setiap data KSEI baru terbit.",
+    empty_cta: "Cari saham",
+    full_banner: "Pantauan penuh (30 dari 30). Lepas satu saham untuk menambah yang baru.",
+    full_title: "Pantauan penuh",
+    full_body: "Pantauan Anda sudah berisi 30 saham, batas maksimum. Lepas satu saham untuk menambah yang baru.",
+    full_cta: "Kelola Pantauan",
+    close: "Tutup",
+    gate_page_title: "Pantauan adalah fitur Pro",
+    gate_page_body: "Bintangi sampai 30 saham dan lihat perubahan pemegang sahamnya di satu halaman.",
+    gate_sheet_title: "Pantau saham pilihan Anda",
+    gate_sheet_body: "Bintangi sampai 30 saham. Lihat siapa yang menambah atau melepas porsi di sana, dan terima email saat data KSEI baru terbit.",
+    gate_example: "Contoh",
+    gate_example_aria: "Contoh Pantauan: HATM naik 5,36 poin, LUCY turun 15,86 poin, KOTA naik 2,72 poin",
+    gate_context: "Pantau {code}",
+    lapsed: "Pantauan Anda tersimpan ({n} saham). Aktifkan Pro lagi untuk melihatnya.",
+    alert: {
+      strip_title: "Pengingat email", strip_on: "Dikirim saat data KSEI baru terbit", strip_off: "Dapatkan email saat saham Anda berubah",
+      on: "Aktif", off: "Mati",
+      sheet_title: "Pengingat email",
+      lead: "Kirim satu email setiap data KSEI baru terbit, hanya jika ada saham pantauan Anda yang berubah.",
+      switch: "Kirim pengingat ke email", switch_sub: "Default mati. Bisa dimatikan kapan saja.",
+      f_to: "Dikirim ke {email} (email akun Google Anda)",
+      f_rule: "Isi: pemegang saham yang naik atau turun 1 poin persentase atau lebih, atau masuk / keluar daftar 1%",
+      f_freq: "Paling banyak 1 email per bulan, tanpa iklan",
+      f_unsub: "Setiap email punya tautan berhenti langganan",
+      msg_on: "Pengingat aktif. Email berikutnya dikirim saat data KSEI bulan depan terbit, jika ada saham Anda yang berubah.",
+      msg_off: "Pengingat dimatikan. Daftar Pantauan Anda tidak berubah.",
+      no_email: "Akun Anda belum punya email terverifikasi.",
+      unsubscribed_on: "Anda berhenti berlangganan lewat email pada {date}. Nyalakan lagi untuk menerima email."
+    },
+    unsub: {
+      title: "Berhenti terima email Pantauan?",
+      body: "Kami berhenti mengirim pengingat ke email Anda. Daftar Pantauan tetap tersimpan, dan Anda bisa menyalakan pengingat lagi di aplikasi.",
+      confirm: "Ya, berhenti kirim email", cancel: "Batal",
+      done_title: "Selesai", done_body: "Pengingat email dimatikan. Anda tidak akan menerima email Pantauan lagi.",
+      bad_title: "Tautan tidak valid",
+      bad_body: "Tautan ini rusak atau tidak lengkap. Buka IHSG Storm, lalu matikan pengingat di tab Pantauan.",
+      open_app: "Buka IHSG Storm", error: "Gagal memproses. Coba lagi."
+    }
   },
   feedback: {
     btn_open: "Bantuan & Lapor",

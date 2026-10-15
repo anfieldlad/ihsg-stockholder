@@ -77,6 +77,14 @@ const requiredModules = [
       'SCREENER_DEFAULT',
       'SCREENER_STORAGE_KEY'
     ]
+  },
+  {
+    path: `${srcPrefix}watchlist-core.js`,
+    exports: ['rowView', 'sortItems', 'summarize', 'periodParts', 'classifyError', 'fmtPoin', 'alertsUiEnabled']
+  },
+  {
+    path: `${srcPrefix}watchlist.js`,
+    exports: ['watchlistMixin', 'wlFetch']
   }
 ];
 
