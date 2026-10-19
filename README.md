@@ -26,7 +26,7 @@ The data is a monthly snapshot and prices are delayed. This is not investment ad
   - screener.js: Screener Saham Pro (F5) multi-criteria filtering, presets, and metrics.
   - copy.js: Copy dictionary including all 30 FAQ Q&As and category definitions.
   - store.js, auth.js, api.js, charts.js, normalize.js: Central Alpine store, authentication, backend API calls, charting, and data normalization.
-- worker.js serves public/ and forwards every request under /api/v1/ to the backend origin. It adds a shared secret header and the real client IP. Any other /api/ path returns 404, except four legacy price and feedback paths that the Worker maps to their /api/v1 equivalents for old cached copies of the site. That alias is temporary.
+- worker.js serves public/ and forwards every request under /api/v1/ to the backend origin. It adds a shared secret header and the real client IP. Any other /api/ path returns 404.
 - The backend repository (ihsg-backend) owns prices, feedback, Month-over-Month diff data (/api/v1/diff/*), login checks and billing. The browser calls it only through the Worker, so there is no cross-origin traffic.
 - public/shareholder_data.json is built by the backend repository's data pipeline and committed here as a plain file.
 

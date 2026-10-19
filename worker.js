@@ -1,16 +1,5 @@
-// Legacy paths kept for 14 days so cached copies of api.js/store.js keep working.
-// The window ends 2026-10-25; remove the alias in the follow-up PR (FE-3).
-const LEGACY_ALIASES = {
-  '/api/prices': '/api/v1/prices',
-  '/api/feedback/status': '/api/v1/feedback/status',
-  '/api/feedback': '/api/v1/feedback'
-};
-
 function resolveV1Path(pathname) {
   if (pathname === '/api/v1' || pathname.startsWith('/api/v1/')) return pathname;
-  if (Object.hasOwn(LEGACY_ALIASES, pathname)) return LEGACY_ALIASES[pathname];
-  const m = /^\/api\/price\/([A-Za-z0-9]+)$/.exec(pathname);
-  if (m) return `/api/v1/prices/${m[1]}`;
   return null;
 }
 

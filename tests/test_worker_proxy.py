@@ -39,7 +39,8 @@ def test_worker_file_exists():
     assert "forwarded" in content
     assert "private, no-store" in content
     assert "badai.tech" not in content
-    assert "/api/v1/prices" in content
+    assert "/api/v1" in content
+    assert "LEGACY_ALIASES" not in content
     assert "ihsg-storm.firebaseapp.com" in content
     assert "/__/auth" in content
     assert "/__/firebase" in content
@@ -97,38 +98,40 @@ def test_worker_proxy_routing_logic_python():
     """Verify proxy URL rewrite logic in Python matches worker.js spec."""
     v1_origin = "https://ihsg-origin.bad.ai.id"
 
-    # Legacy aliases map onto /api/v1 paths on the V1 origin; no external fallback host
-    alias_urls = [
-        ("https://ihsg.bad.ai.id/api/price/BBCA", f"{v1_origin}/api/v1/prices/BBCA"),
-        ("https://ihsg.bad.ai.id/api/prices?codes=BBCA,BBRI", f"{v1_origin}/api/v1/prices?codes=BBCA,BBRI"),
-        ("https://ihsg.bad.ai.id/api/feedback/status", f"{v1_origin}/api/v1/feedback/status"),
-        ("https://ihsg.bad.ai.id/api/feedback", f"{v1_origin}/api/v1/feedback"),
+    def resolve_v1_path(pathname: str) -> str | None:
+        if pathname == "/api/v1" or pathname.startswith("/api/v1/"):
+            return pathname
+        return None
+
+    # Legacy paths are NOT aliased and return 404 JSON (resolve_v1_path returns None)
+    legacy_urls = [
+        "https://ihsg.bad.ai.id/api/price/BBCA",
+        "https://ihsg.bad.ai.id/api/prices",
+        "https://ihsg.bad.ai.id/api/prices?codes=BBCA,BBRI",
+        "https://ihsg.bad.ai.id/api/feedback/status",
+        "https://ihsg.bad.ai.id/api/feedback",
     ]
-    alias_map = {
-        "/api/prices": "/api/v1/prices",
-        "/api/feedback/status": "/api/v1/feedback/status",
-        "/api/feedback": "/api/v1/feedback",
-    }
-    for req_url, expected_target in alias_urls:
+    for req_url in legacy_urls:
         parsed = urlparse(req_url)
-        path = alias_map.get(parsed.path)
-        if path is None and parsed.path.startswith("/api/price/"):
-            path = "/api/v1/prices/" + parsed.path.rsplit("/", 1)[1]
-        assert path is not None
-        target_url = urljoin(v1_origin, path + (f"?{parsed.query}" if parsed.query else ""))
-        assert target_url == expected_target
+        assert resolve_v1_path(parsed.path) is None, f"{req_url} should not resolve to v1"
+        assert parsed.path == "/api" or parsed.path.startswith("/api/")
 
     # V1 routes directed to VPS origin when V1_ORIGIN is set
     v1_urls = [
         ("https://ihsg.bad.ai.id/api/v1/me", f"{v1_origin}/api/v1/me"),
         ("https://ihsg.bad.ai.id/api/v1/billing/checkout?plan=pro", f"{v1_origin}/api/v1/billing/checkout?plan=pro"),
         ("https://ihsg.bad.ai.id/api/v1/billing/webhooks/mayar/sec_123", f"{v1_origin}/api/v1/billing/webhooks/mayar/sec_123"),
+        ("https://ihsg.bad.ai.id/api/v1/prices?codes=BBCA,BBRI", f"{v1_origin}/api/v1/prices?codes=BBCA,BBRI"),
+        ("https://ihsg.bad.ai.id/api/v1/prices/BBCA", f"{v1_origin}/api/v1/prices/BBCA"),
+        ("https://ihsg.bad.ai.id/api/v1/feedback/status", f"{v1_origin}/api/v1/feedback/status"),
+        ("https://ihsg.bad.ai.id/api/v1/feedback", f"{v1_origin}/api/v1/feedback"),
     ]
 
     for req_url, expected_target in v1_urls:
         parsed = urlparse(req_url)
-        assert parsed.path.startswith("/api/v1/"), f"{req_url} must be a v1 route"
-        target_path_and_query = parsed.path + (f"?{parsed.query}" if parsed.query else "")
+        v1_path = resolve_v1_path(parsed.path)
+        assert v1_path is not None, f"{req_url} must be a v1 route"
+        target_path_and_query = v1_path + (f"?{parsed.query}" if parsed.query else "")
         target_url = urljoin(v1_origin, target_path_and_query)
         assert target_url == expected_target
 
